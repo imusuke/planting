@@ -163,6 +163,36 @@ function validateRenames(renames) {
   return null;
 }
 
+/**
+ * KV に保存済みのマスタより後から plants.json に追加したエリアを Web に出すため、
+ * 既定リストにあって KV に無い id だけを末尾に追記する（既存 KV の順序・編集は維持）。
+ */
+function mergeMissingAreasFromDefault(kvAreas, defaultAreas) {
+  if (!Array.isArray(kvAreas) || !kvAreas.length) return kvAreas;
+  if (!Array.isArray(defaultAreas) || !defaultAreas.length) return kvAreas;
+  var have = {};
+  for (var i = 0; i < kvAreas.length; i++) {
+    var a = kvAreas[i];
+    if (a && a.id) have[a.id] = true;
+  }
+  var out = kvAreas.slice();
+  for (var j = 0; j < defaultAreas.length; j++) {
+    var d = defaultAreas[j];
+    if (!d || !d.id || have[d.id]) continue;
+    have[d.id] = true;
+    out.push(
+      JSON.parse(
+        JSON.stringify({
+          id: d.id,
+          label: d.label,
+          plants: Array.isArray(d.plants) ? d.plants.slice() : [],
+        })
+      )
+    );
+  }
+  return out;
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -197,7 +227,9 @@ module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     var fromKv = await readCatalogKv();
     var hasKv = !!(fromKv && Array.isArray(fromKv.areas) && fromKv.areas.length);
-    var areas = hasKv ? fromKv.areas : defaultCatalog.areas;
+    var areas = hasKv
+      ? mergeMissingAreasFromDefault(fromKv.areas, defaultCatalog.areas)
+      : defaultCatalog.areas;
     return res.status(200).json({
       areas: areas,
       source: hasKv ? "kv" : "file",
