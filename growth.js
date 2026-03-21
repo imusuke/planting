@@ -1126,8 +1126,23 @@
       })
       .then(function () {
         showToast(wasEdit ? "更新しました" : "保存しました");
+        return loadPlantsData().catch(function () {
+          return null;
+        });
+      })
+      .then(function (pack) {
+        if (pack) {
+          state.areas = pack.areas || [];
+          state.plantsBaseline = JSON.parse(JSON.stringify(state.areas));
+          state.plantsSource = pack.source;
+        }
         clearEditMode();
         if (dateInput) dateInput.value = todayInputValue();
+        populateAreaSelects();
+        renderPlantsCatalogEditor();
+        renderPlantChecks(el.area.value);
+        updateFilterPlantOptions();
+        updatePlantsCatalogSourceLabel();
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {

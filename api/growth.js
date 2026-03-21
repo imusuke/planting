@@ -3,6 +3,10 @@ const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
 
 const KV_KEY = "planting_growth_records_v1";
+const KV_PLANTS = "planting_plants_catalog_v1";
+
+/** @type {{ areas: Array<{ id: string, label: string, plants: string[] }> }} */
+const defaultCatalog = require("../data/plants.json");
 
 /**
  * `private` by default (works with all Blob stores; images use `/api/growth-image`).
@@ -32,6 +36,96 @@ async function readRecords() {
 
 async function writeRecords(records) {
   await kv.set(KV_KEY, JSON.stringify(records));
+}
+
+async function readCatalogKv() {
+  try {
+    var raw = await kv.get(KV_PLANTS);
+    if (raw == null || raw === "") return null;
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch (e) {
+    console.error("KV plants read (growth)", e);
+    return null;
+  }
+}
+
+async function writeCatalogKv(data) {
+  await kv.set(KV_PLANTS, JSON.stringify(data));
+}
+
+/** plants.js GET と同じ補完（KV 単体に無い既定エリアを含める） */
+function mergeMissingAreasFromDefault(kvAreas, defaultAreas) {
+  if (!Array.isArray(kvAreas) || !kvAreas.length) return kvAreas;
+  if (!Array.isArray(defaultAreas) || !defaultAreas.length) return kvAreas;
+  var have = {};
+  for (var i = 0; i < kvAreas.length; i++) {
+    var a = kvAreas[i];
+    if (a && a.id) have[a.id] = true;
+  }
+  var out = kvAreas.slice();
+  for (var j = 0; j < defaultAreas.length; j++) {
+    var d = defaultAreas[j];
+    if (!d || !d.id || have[d.id]) continue;
+    have[d.id] = true;
+    out.push(
+      JSON.parse(
+        JSON.stringify({
+          id: d.id,
+          label: d.label,
+          plants: Array.isArray(d.plants) ? d.plants.slice() : [],
+        })
+      )
+    );
+  }
+  return out;
+}
+
+/**
+ * 記録に含まれる植栽名のうち、当該エリアのマスタに無いものを KV のカタログへ追記する。
+ * 失敗しても成長記録の保存は成功扱い（ログのみ）。
+ */
+async function appendRecordPlantsToCatalog(areaId, plantNames) {
+  if (!areaId || typeof areaId !== "string" || !areaId.trim()) return;
+  if (!Array.isArray(plantNames) || !plantNames.length) return;
+
+  var fromKv = await readCatalogKv();
+  var hasKv = !!(fromKv && Array.isArray(fromKv.areas) && fromKv.areas.length);
+  var areas;
+  if (hasKv) {
+    areas = JSON.parse(JSON.stringify(fromKv.areas));
+  } else {
+    areas = JSON.parse(JSON.stringify(defaultCatalog.areas));
+  }
+  areas = mergeMissingAreasFromDefault(areas, defaultCatalog.areas);
+
+  var idx = areas.findIndex(function (a) {
+    return a && a.id === areaId;
+  });
+  if (idx < 0) {
+    console.warn("appendRecordPlantsToCatalog: area not in catalog", areaId);
+    return;
+  }
+
+  var list = Array.isArray(areas[idx].plants) ? areas[idx].plants.slice() : [];
+  var seen = {};
+  for (var s = 0; s < list.length; s++) {
+    seen[list[s]] = true;
+  }
+
+  var changed = false;
+  for (var p = 0; p < plantNames.length; p++) {
+    var n = typeof plantNames[p] === "string" ? plantNames[p].trim() : "";
+    if (!n) continue;
+    if (seen[n]) continue;
+    seen[n] = true;
+    list.push(n);
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  areas[idx] = Object.assign({}, areas[idx], { plants: list });
+  await writeCatalogKv({ areas: areas });
 }
 
 function jsonError(res, status, code, err) {
@@ -184,6 +278,13 @@ module.exports = async function handler(req, res) {
     } catch (kvErr) {
       return jsonError(res, 503, "kv_write_failed", kvErr);
     }
+
+    try {
+      await appendRecordPlantsToCatalog(record.areaId, record.plants);
+    } catch (catErr) {
+      console.error("appendRecordPlantsToCatalog", catErr);
+    }
+
     return res.status(200).json({ ok: true, record: record });
     } catch (unexpected) {
       return jsonError(res, 500, "internal_error", unexpected);
