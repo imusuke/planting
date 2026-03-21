@@ -285,6 +285,27 @@ label.growth-file-label:hover {
 
 .growth-card-actions {
   padding: 0 14px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button.growth-edit {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(45, 106, 79, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--green);
+  cursor: pointer;
+}
+
+button.growth-edit:hover,
+button.growth-edit:focus-visible {
+  border-color: rgba(45, 106, 79, 0.55);
+  outline: none;
 }
 
 button.growth-danger {
@@ -297,6 +318,17 @@ button.growth-danger {
   background: rgba(255, 255, 255, 0.8);
   color: #a32f2f;
   cursor: pointer;
+}
+
+.growth-edit-banner {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink);
+  background: rgba(116, 198, 157, 0.2);
+  border: 1px solid rgba(45, 106, 79, 0.2);
 }
 
 .growth-backup-row {

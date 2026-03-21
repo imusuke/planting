@@ -135,6 +135,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    var createdAtStored =
+      existing && existing.createdAt
+        ? existing.createdAt
+        : body.createdAt || new Date().toISOString();
+
     var record = {
       id: body.id,
       recordedAt: body.recordedAt,
@@ -144,8 +149,11 @@ module.exports = async function handler(req, res) {
       note: body.note || "",
       imageUrl: imageUrl,
       imagePathname: imagePathname,
-      createdAt: body.createdAt || new Date().toISOString(),
+      createdAt: createdAtStored,
     };
+    if (existing) {
+      record.updatedAt = new Date().toISOString();
+    }
 
     var idx = records.findIndex(function (r) {
       return r.id === record.id;

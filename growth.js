@@ -9,6 +9,8 @@
 
   var state = {
     areas: [],
+    /** @type {null | { id: string, createdAt: string|null, plants: string[] }} */
+    editRecord: null,
   };
 
   var el = {
@@ -28,6 +30,9 @@
     cloudToken: null,
     cloudTokenSave: null,
     cloudStatus: null,
+    newHeading: null,
+    editBanner: null,
+    editCancel: null,
   };
 
   function $(id) {
@@ -153,8 +158,72 @@
       }
     }
     var extra = el.customPlant && el.customPlant.value.trim();
-    if (extra) names.push(extra);
+    if (extra) {
+      extra.split(/[、,]/).forEach(function (part) {
+        var t = part.trim();
+        if (t && names.indexOf(t) === -1) names.push(t);
+      });
+    }
     return names;
+  }
+
+  function applyPlantsToForm(plantNames, areaId) {
+    if (!el.plantChecks || !el.customPlant) return;
+    var area = state.areas.find(function (a) {
+      return a.id === areaId;
+    });
+    var known = area && area.plants ? area.plants : [];
+    var extras = [];
+    for (var i = 0; i < plantNames.length; i++) {
+      if (known.indexOf(plantNames[i]) === -1) extras.push(plantNames[i]);
+    }
+    var boxes = el.plantChecks.querySelectorAll('input[type="checkbox"]');
+    for (var j = 0; j < boxes.length; j++) {
+      boxes[j].checked = plantNames.indexOf(boxes[j].value) !== -1;
+    }
+    el.customPlant.value = extras.join("、");
+  }
+
+  function syncEditFormUI() {
+    var editing = !!state.editRecord;
+    if (el.newHeading) {
+      el.newHeading.textContent = editing ? "記録を編集" : "新しい記録を追加";
+    }
+    if (el.submit) {
+      el.submit.textContent = editing ? "更新して保存" : "保存";
+    }
+    if (el.editBanner) el.editBanner.hidden = !editing;
+    if (el.editCancel) el.editCancel.hidden = !editing;
+  }
+
+  function clearEditMode() {
+    state.editRecord = null;
+    syncEditFormUI();
+    if (!el.form || !el.area) return;
+    el.form.reset();
+    if (el.date) el.date.value = todayInputValue();
+    renderPlantChecks(el.area.value);
+  }
+
+  function startEdit(r) {
+    state.editRecord = {
+      id: r.id,
+      createdAt: r.createdAt || null,
+      plants: Array.isArray(r.plants) ? r.plants.slice() : [],
+    };
+    if (el.area) el.area.value = r.areaId || el.area.value || "";
+    renderPlantChecks(el.area.value);
+    applyPlantsToForm(state.editRecord.plants, el.area.value);
+    var di = (r.recordedAt || "").slice(0, 10);
+    if (el.date) el.date.value = di || todayInputValue();
+    var note = el.form.querySelector('[name="note"]');
+    if (note) note.value = r.note || "";
+    if (el.photo) el.photo.value = "";
+    syncEditFormUI();
+    requestAnimationFrame(function () {
+      var t = document.getElementById("new-record");
+      if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function renderPlantChecks(areaId) {
@@ -411,10 +480,18 @@
 
       var actions = document.createElement("div");
       actions.className = "growth-card-actions";
+      var editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "growth-edit";
+      editBtn.textContent = "編集";
+      editBtn.addEventListener("click", function () {
+        startEdit(r);
+      });
+      actions.appendChild(editBtn);
       var del = document.createElement("button");
       del.type = "button";
       del.className = "growth-danger";
-      del.textContent = "この記録を削除";
+      del.textContent = "削除";
       del.addEventListener("click", function () {
         if (!confirm("この記録を削除しますか？")) return;
         fetch(API_GROWTH + "?id=" + encodeURIComponent(r.id), {
@@ -471,6 +548,8 @@
 
   function onSubmit(e) {
     e.preventDefault();
+    var editing = state.editRecord;
+    var wasEdit = !!editing;
     var areaId = el.area.value;
     var area = state.areas.find(function (a) {
       return a.id === areaId;
@@ -501,9 +580,10 @@
 
     el.submit.disabled = true;
 
-    var id = uuid();
+    var id = editing ? editing.id : uuid();
     var recordedAt = dateVal + "T12:00:00.000Z";
-    var createdAt = new Date().toISOString();
+    var createdAt =
+      editing && editing.createdAt ? editing.createdAt : new Date().toISOString();
 
     promise
       .then(function (blob) {
@@ -557,10 +637,9 @@
         });
       })
       .then(function () {
-        showToast("保存しました");
-        el.form.reset();
+        showToast(wasEdit ? "更新しました" : "保存しました");
+        clearEditMode();
         if (dateInput) dateInput.value = todayInputValue();
-        renderPlantChecks(el.area.value);
         if (el.photo) el.photo.value = "";
         return refreshFeed();
       })
@@ -635,8 +714,21 @@
     el.cloudToken = $("cloud-token");
     el.cloudTokenSave = $("cloud-token-save");
     el.cloudStatus = $("cloud-status");
+    el.newHeading = $("new-heading");
+    el.editBanner = $("growth-edit-banner");
+    el.editCancel = $("growth-edit-cancel");
 
     if (!el.form || !el.area) return;
+
+    syncEditFormUI();
+    if (el.editCancel) {
+      el.editCancel.addEventListener("click", function () {
+        if (!state.editRecord) return;
+        if (!confirm("編集をやめて入力内容を破棄しますか？")) return;
+        clearEditMode();
+        showToast("編集を取り消しました");
+      });
+    }
 
     var tokenStored = localStorage.getItem(LS_CLOUD_TOKEN);
     if (el.cloudToken && tokenStored) el.cloudToken.value = tokenStored;
@@ -664,6 +756,9 @@
 
     el.area.addEventListener("change", function () {
       renderPlantChecks(el.area.value);
+      if (state.editRecord && state.editRecord.plants) {
+        applyPlantsToForm(state.editRecord.plants, el.area.value);
+      }
       updateFilterPlantOptions();
     });
 

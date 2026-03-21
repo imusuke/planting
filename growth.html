@@ -109,6 +109,9 @@
 
     <section class="growth-section growth-section--composer" id="new-record" aria-labelledby="new-heading">
       <h2 id="new-heading">新しい記録を追加</h2>
+      <p id="growth-edit-banner" class="growth-edit-banner" role="status" hidden>
+        この記録を編集しています。保存で上書きするか、「編集をやめる」で取り消せます。写真を選ばなければ今の画像のままです。
+      </p>
       <form id="growth-form" class="growth-form">
         <label class="block">
           <span>記録日</span>
@@ -142,6 +145,7 @@
 
         <div class="growth-actions">
           <button type="submit" id="growth-submit" class="growth-primary">保存</button>
+          <button type="button" id="growth-edit-cancel" class="growth-secondary" hidden>編集をやめる</button>
           <button type="button" id="photo-clear" class="growth-secondary">写真をクリア</button>
         </div>
         <p class="growth-hint">
