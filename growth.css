@@ -1,4 +1,4 @@
-/* 成長記録（閲覧 growth.html / 編集 growth-edit.html） */
+/* 成長記録（閲覧 index.html / 編集 growth-edit.html） */
 
 .growth-top-nav {
   flex-wrap: wrap;
@@ -244,6 +244,25 @@ label.growth-file-label:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+}
+
+/* サムネイル表示サイズ（トップ閲覧ページ） */
+.growth-feed.growth-feed--thumb-sm {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.growth-feed.growth-feed--thumb-sm .growth-card-img-wrap {
+  aspect-ratio: 1;
+}
+
+.growth-feed.growth-feed--thumb-lg {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 22px;
+}
+
+.growth-feed.growth-feed--thumb-lg .growth-card-img-wrap {
+  aspect-ratio: 16 / 10;
 }
 
 .growth-card {

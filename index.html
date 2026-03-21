@@ -1,33 +1,37 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-growth-page="view">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 一覧</title>
+  <title>植栽メモ — 成長記録</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./growth.css" />
 </head>
 <body>
-  <main class="panel">
-    <div class="top top-row">
+  <main class="panel growth-panel">
+    <div class="top top-row growth-top-nav">
+      <a href="./plants.html">植栽一覧</a>
       <a href="../imusasa-hub/index.html" data-hub-link data-hub-fallback="../imusasa-hub/index.html"
         >リンク集へ戻る</a>
-      <a href="./growth.html">成長記録（閲覧）</a>
-      <a href="./growth-edit.html">追加・編集</a>
+      <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
     </div>
 
+    <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
+
     <header class="page-header">
-      <p class="eyebrow">Planting</p>
-      <h1>植栽一覧</h1>
+      <p class="eyebrow">Growth log</p>
+      <h1>成長記録</h1>
       <p class="lead lead--with-info">
-        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと、その植物の成長記録ページが開きます。
+        このサイトのトップです。写真付きの記録を閲覧できます。追加・編集は<strong>記録を追加・編集</strong>から。<strong>植栽一覧</strong>は別ページです。URL に
+        <code>?area=…&amp;plant=…</code> を付けると一覧を絞り込めます。
         <button
           type="button"
           class="info-icon-btn"
-          data-open-dialog="index-page-info-dialog"
-          aria-label="この一覧について（説明を開く）"
+          data-open-dialog="growth-view-info-dialog"
+          aria-label="このページについて（説明を開く）"
           title="説明"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -38,54 +42,60 @@
       </p>
     </header>
 
-    <section class="grid grid--cta" aria-label="成長記録へのリンク">
-      <a class="card growthlog" href="./growth.html">
-        <span class="card-label">Log</span>
-        <h2>成長記録（閲覧）</h2>
-        <p>写真付きの一覧を見られます。表の植栽名からは<strong>追加・編集ページ</strong>が開き、その植物が選ばれた状態で記録できます。</p>
-        <span class="open">閲覧ページを開く →</span>
-      </a>
+    <section class="growth-section" aria-labelledby="list-heading">
+      <h2 id="list-heading">記録一覧</h2>
+      <p id="growth-view-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div class="growth-filters">
+        <label>
+          エリア
+          <select id="filter-area"></select>
+        </label>
+        <label>
+          植栽
+          <select id="filter-plant"></select>
+        </label>
+        <label>
+          サムネイル
+          <select id="growth-thumb-size" aria-label="写真サムネイルの表示サイズ">
+            <option value="sm">小</option>
+            <option value="md" selected>中</option>
+            <option value="lg">大</option>
+          </select>
+        </label>
+      </div>
+      <div id="growth-feed" class="growth-feed"></div>
     </section>
 
-    <section class="plant-overview" aria-labelledby="plant-overview-heading">
-      <h2 id="plant-overview-heading">植栽一覧（全エリア）</h2>
-      <div class="plant-table-wrap">
-        <table class="plant-table">
-          <thead>
-            <tr>
-              <th scope="col">エリア</th>
-              <th scope="col">植栽（名前を押すと記録）</th>
-            </tr>
-          </thead>
-          <tbody id="plant-table-body">
-            <tr>
-              <td colspan="2" class="plant-loading">読み込み中…</td>
-            </tr>
-          </tbody>
-        </table>
+    <section class="growth-section" aria-labelledby="backup-heading">
+      <h2 id="backup-heading">バックアップ</h2>
+      <p class="growth-hint">
+        記録はサーバーに保存されています。必要なら一覧の内容を JSON ファイルでダウンロードできます（画像はリンクのまま含まれます）。
+      </p>
+      <div class="growth-backup-row" style="margin-top: 12px">
+        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
       </div>
     </section>
 
-    <dialog id="index-page-info-dialog" class="info-dialog" aria-labelledby="index-info-title">
+    <dialog id="growth-view-info-dialog" class="info-dialog" aria-labelledby="growth-view-info-title">
       <div class="info-dialog-inner">
         <div class="info-dialog-head">
-          <h2 id="index-info-title" class="info-dialog-title">この一覧について</h2>
+          <h2 id="growth-view-info-title" class="info-dialog-title">トップ（閲覧）ページについて</h2>
           <form method="dialog">
             <button type="submit" class="info-dialog-close">閉じる</button>
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>表示している植栽のリストは、サイト用のデータファイルから読み込んでいます。</p>
-          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、このページに埋め込んである<strong>コピー用データ</strong>の両方を同じ内容にしておくと、どこで開いてもずれません。</p>
-          <p>パソコンで HTML をダブルクリックして開いているだけのときは、ブラウザの仕組み上、ファイルではなく埋め込みのコピーが使われることがあります。ウェブサーバー経由（アドレスが <code>http</code> や <code>https</code> で始まる）で開くと、ファイルから最新を読み込めます。</p>
+          <p>このページがサイトのトップ（<code>index.html</code>）です。記録の閲覧と JSON のエクスポート、サムネイル表示サイズの切り替えができます。トークンは不要です（選択はこのブラウザに記憶されます）。</p>
+          <p>エリア別の植栽名の表は<strong>植栽一覧</strong>ページから開けます。新しい記録の追加や編集・削除、植栽名マスタの変更は「記録を追加・編集」から行います。</p>
+          <p>ブラウザのアドレスが <code>http</code> や <code>https</code> で始まる形で開いている必要があります。</p>
         </div>
       </div>
     </dialog>
 
-    <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title">
+    <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title-growth">
       <div class="info-dialog-inner">
         <div class="info-dialog-head">
-          <h2 id="hub-link-setup-title" class="info-dialog-title">リンク集のURLを設定してください</h2>
+          <h2 id="hub-link-setup-title-growth" class="info-dialog-title">リンク集のURLを設定してください</h2>
           <form method="dialog">
             <button type="submit" class="info-dialog-close">閉じる</button>
           </form>
@@ -101,7 +111,6 @@
       </div>
     </dialog>
   </main>
-  <!-- fetch が使えない環境（file:// など）用。data/plants.json と同じ内容に保つ -->
   <script type="application/json" id="plants-embed">
 {
   "areas": [
@@ -114,11 +123,10 @@
 }
   </script>
   <script>
-    /* 本番のリンク集トップのURLを直書きする場合はここに（例: "https://example.vercel.app/"）。空なら data/hub-link.json を参照します。 */
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
   <script src="./ui-info.js" defer></script>
-  <script src="./index.js" defer></script>
+  <script src="./growth.js" defer></script>
 </body>
 </html>

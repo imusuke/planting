@@ -98,7 +98,7 @@
       td.colSpan = 2;
       td.className = "plant-load-error";
       td.innerHTML =
-        "表を読み込めませんでした。<code>data/plants.json</code> を確認するか、<code>index.html</code> 内の <code>plants-embed</code> を <code>plants.json</code> と同じ内容に更新してください。";
+        "表を読み込めませんでした。<code>data/plants.json</code> を確認するか、<code>plants.html</code> 内の <code>plants-embed</code> を <code>plants.json</code> と同じ内容に更新してください。";
       tr.appendChild(td);
       tbody.appendChild(tr);
     });

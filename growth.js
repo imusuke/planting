@@ -8,6 +8,7 @@
   var IS_VIEW = PAGE === "view";
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
+  var LS_THUMB_SIZE = "growthThumbSize";
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_PLANTS = "/api/plants";
@@ -53,6 +54,7 @@
     plantsRecordRenameFrom: null,
     plantsRecordRenameTo: null,
     deleteRecordBtn: null,
+    thumbSize: null,
   };
 
   function $(id) {
@@ -987,7 +989,7 @@
         }
         if (!res.ok) throw new Error("削除に失敗しました");
         showToast("削除しました");
-        window.location.href = "./growth.html";
+        window.location.href = "./index.html";
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "削除に失敗しました", true);
@@ -997,6 +999,19 @@
       });
   }
 
+  function applyThumbFeedClass() {
+    if (!el.feed) return;
+    el.feed.classList.remove(
+      "growth-feed--thumb-sm",
+      "growth-feed--thumb-md",
+      "growth-feed--thumb-lg"
+    );
+    var v = localStorage.getItem(LS_THUMB_SIZE) || "md";
+    if (v !== "sm" && v !== "lg") v = "md";
+    el.feed.classList.add("growth-feed--thumb-" + v);
+    if (el.thumbSize && el.thumbSize.value !== v) el.thumbSize.value = v;
+  }
+
   function initViewPage() {
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
@@ -1004,8 +1019,21 @@
     el.feed = $("growth-feed");
     el.exportBtn = $("export-btn");
     el.viewStatus = $("growth-view-status");
+    el.thumbSize = $("growth-thumb-size");
 
     if (!el.feed) return;
+
+    if (el.thumbSize) {
+      var saved = localStorage.getItem(LS_THUMB_SIZE) || "md";
+      if (saved === "sm" || saved === "md" || saved === "lg") {
+        el.thumbSize.value = saved;
+      }
+      el.thumbSize.addEventListener("change", function () {
+        localStorage.setItem(LS_THUMB_SIZE, el.thumbSize.value);
+        applyThumbFeedClass();
+      });
+    }
+    applyThumbFeedClass();
 
     loadPlantsData()
       .then(function (pack) {
