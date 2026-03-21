@@ -27,6 +27,16 @@ main.growth-panel {
   padding-top: 4px;
 }
 
+/* 一覧の下：接続・追加フォームエリアをひと目で分ける */
+.growth-section--composer {
+  padding-top: 22px;
+  background: linear-gradient(180deg, rgba(26, 46, 36, 0.045), transparent 72%);
+}
+
+main.growth-panel .growth-section:last-of-type {
+  padding-bottom: 32px;
+}
+
 .growth-section h2 {
   margin: 0 0 14px;
   font-size: 1.05rem;

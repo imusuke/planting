@@ -24,7 +24,7 @@
       <p class="eyebrow">Growth log</p>
       <h1>成長記録</h1>
       <p class="lead lead--with-info">
-        エリアと植栽を選び、写真とメモをクラウドに保存できます。植栽のリストは一覧ページと同じです。
+        まずはこれまでの記録を一覧できます。新しい記録の追加は<strong>画面下のフォーム</strong>から行います。植栽のリストは一覧ページと同じです。
         <button
           type="button"
           class="info-icon-btn"
@@ -40,7 +40,32 @@
       </p>
     </header>
 
-    <section class="growth-section" aria-labelledby="growth-storage-h2">
+    <section class="growth-section" aria-labelledby="list-heading">
+      <h2 id="list-heading">記録一覧</h2>
+      <div class="growth-filters">
+        <label>
+          エリア
+          <select id="filter-area"></select>
+        </label>
+        <label>
+          植栽
+          <select id="filter-plant"></select>
+        </label>
+      </div>
+      <div id="growth-feed" class="growth-feed"></div>
+    </section>
+
+    <section class="growth-section" aria-labelledby="backup-heading">
+      <h2 id="backup-heading">バックアップ</h2>
+      <p class="growth-hint">
+        記録はサーバーに保存されています。必要なら一覧の内容を JSON ファイルでダウンロードできます（画像はリンクのまま含まれます）。
+      </p>
+      <div class="growth-backup-row" style="margin-top: 12px">
+        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
+      </div>
+    </section>
+
+    <section class="growth-section growth-section--composer" aria-labelledby="growth-storage-h2">
       <div class="section-heading-row">
         <h2 id="growth-storage-h2">保存先への接続</h2>
         <button
@@ -82,8 +107,8 @@
       </div>
     </section>
 
-    <section class="growth-section" aria-labelledby="new-heading">
-      <h2 id="new-heading">新しい記録</h2>
+    <section class="growth-section growth-section--composer" id="new-record" aria-labelledby="new-heading">
+      <h2 id="new-heading">新しい記録を追加</h2>
       <form id="growth-form" class="growth-form">
         <label class="block">
           <span>記録日</span>
@@ -123,31 +148,6 @@
           写真は長辺おおよそ 1280px に縮小して JPEG 保存します。角庭のように一覧に無い植栽は「その他」に入力してください。
         </p>
       </form>
-    </section>
-
-    <section class="growth-section" aria-labelledby="list-heading">
-      <h2 id="list-heading">記録一覧</h2>
-      <div class="growth-filters">
-        <label>
-          エリア
-          <select id="filter-area"></select>
-        </label>
-        <label>
-          植栽
-          <select id="filter-plant"></select>
-        </label>
-      </div>
-      <div id="growth-feed" class="growth-feed"></div>
-    </section>
-
-    <section class="growth-section" aria-labelledby="backup-heading">
-      <h2 id="backup-heading">バックアップ</h2>
-      <p class="growth-hint">
-        記録はサーバーに保存されています。必要なら一覧の内容を JSON ファイルでダウンロードできます（画像はリンクのまま含まれます）。
-      </p>
-      <div class="growth-backup-row" style="margin-top: 12px">
-        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
-      </div>
     </section>
 
     <dialog id="growth-page-info-dialog" class="info-dialog" aria-labelledby="growth-page-info-title">
