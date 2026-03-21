@@ -34,6 +34,26 @@ main.growth-panel {
   color: var(--ink);
 }
 
+.growth-section .section-heading-row {
+  margin-bottom: 14px;
+}
+
+.growth-section .section-heading-row h2 {
+  margin: 0;
+}
+
+.growth-label-with-info {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.info-icon-btn--small {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
 .growth-form {
   display: grid;
   gap: 16px;

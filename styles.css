@@ -98,6 +98,140 @@ h1 {
   text-decoration: underline;
 }
 
+.lead--with-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 10px;
+  max-width: 40rem;
+}
+
+.info-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--green);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.info-icon-btn:hover,
+.info-icon-btn:focus-visible {
+  background: rgba(116, 198, 157, 0.2);
+  border-color: rgba(45, 106, 79, 0.25);
+  outline: none;
+}
+
+.info-icon-btn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.35);
+}
+
+.section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.section-heading-row h2 {
+  margin: 0;
+}
+
+dialog.info-dialog {
+  max-width: min(34rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+dialog.info-dialog::backdrop {
+  background: rgba(26, 46, 36, 0.35);
+}
+
+.info-dialog-inner {
+  padding: 20px 22px 22px;
+}
+
+.info-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.info-dialog-title {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.info-dialog-close {
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--green);
+  cursor: pointer;
+}
+
+.info-dialog-close:hover,
+.info-dialog-close:focus-visible {
+  background: rgba(116, 198, 157, 0.18);
+  outline: none;
+}
+
+.info-dialog-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.info-dialog-body p {
+  margin: 0 0 12px;
+}
+
+.info-dialog-body p:last-child {
+  margin-bottom: 0;
+}
+
+.info-dialog-body ul {
+  margin: 8px 0 12px;
+  padding-left: 1.25rem;
+}
+
+.info-dialog-body li {
+  margin-bottom: 6px;
+}
+
+.info-dialog-body code {
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(26, 46, 36, 0.06);
+}
+
+a.hub-link--needs-config {
+  cursor: help;
+  opacity: 0.88;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

@@ -9,15 +9,28 @@
 <body>
   <main class="panel">
     <div class="top top-row">
-      <a href="../imusasa-hub/index.html">リンク集へ戻る</a>
+      <a href="../imusasa-hub/index.html" data-hub-link data-hub-fallback="../imusasa-hub/index.html"
+        >リンク集へ戻る</a>
       <a href="./growth.html">成長記録</a>
     </div>
 
     <header class="page-header">
       <p class="eyebrow">Planting</p>
       <h1>植栽一覧</h1>
-      <p class="lead">
-        表はまず <code>data/plants.json</code> を読み込みます（Vercel や <code>npx serve</code> など）。HTML を直接開いただけのときは、ページ内の埋め込みデータ（<code>plants-embed</code>）が使われます。<strong>植栽名</strong>をクリックすると、その植栽に紐づいた成長記録ページが開きます。内容を変えたら <code>plants.json</code> と <code>plants-embed</code> の両方を揃えてください。
+      <p class="lead lead--with-info">
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと、その植物の成長記録ページが開きます。
+        <button
+          type="button"
+          class="info-icon-btn"
+          data-open-dialog="index-page-info-dialog"
+          aria-label="この一覧について（説明を開く）"
+          title="説明"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+        </button>
       </p>
     </header>
 
@@ -25,7 +38,7 @@
       <a class="card growthlog" href="./growth.html">
         <span class="card-label">Log</span>
         <h2>成長記録</h2>
-        <p>エリアと植栽を選んで記録（表の植栽名から開くと、その植栽が事前に選ばれます）。保存は Vercel 経由です。</p>
+        <p>表の名前から開くと、その植物があらかじめ選ばれます。写真やメモはサーバーに保存されます。</p>
         <span class="open">記録ページを開く →</span>
       </a>
     </section>
@@ -48,6 +61,41 @@
         </table>
       </div>
     </section>
+
+    <dialog id="index-page-info-dialog" class="info-dialog" aria-labelledby="index-info-title">
+      <div class="info-dialog-inner">
+        <div class="info-dialog-head">
+          <h2 id="index-info-title" class="info-dialog-title">この一覧について</h2>
+          <form method="dialog">
+            <button type="submit" class="info-dialog-close">閉じる</button>
+          </form>
+        </div>
+        <div class="info-dialog-body">
+          <p>表示している植栽のリストは、サイト用のデータファイルから読み込んでいます。</p>
+          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、このページに埋め込んである<strong>コピー用データ</strong>の両方を同じ内容にしておくと、どこで開いてもずれません。</p>
+          <p>パソコンで HTML をダブルクリックして開いているだけのときは、ブラウザの仕組み上、ファイルではなく埋め込みのコピーが使われることがあります。ウェブサーバー経由（アドレスが <code>http</code> や <code>https</code> で始まる）で開くと、ファイルから最新を読み込めます。</p>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title">
+      <div class="info-dialog-inner">
+        <div class="info-dialog-head">
+          <h2 id="hub-link-setup-title" class="info-dialog-title">リンク集のURLを設定してください</h2>
+          <form method="dialog">
+            <button type="submit" class="info-dialog-close">閉じる</button>
+          </form>
+        </div>
+        <div class="info-dialog-body">
+          <p>「リンク集へ戻る」は、入口のトップページへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
+          <ul>
+            <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
+            <li>または、HTML の先頭付近の <code>window.__PLANTING_HUB_URL__</code> に同じURLを書く</li>
+          </ul>
+          <p>自分のパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開くようになっています。</p>
+        </div>
+      </div>
+    </dialog>
   </main>
   <!-- fetch が使えない環境（file:// など）用。data/plants.json と同じ内容に保つ -->
   <script type="application/json" id="plants-embed">
@@ -61,6 +109,12 @@
   ]
 }
   </script>
+  <script>
+    /* 本番のリンク集トップのURLを直書きする場合はここに（例: "https://example.vercel.app/"）。空なら data/hub-link.json を参照します。 */
+    window.__PLANTING_HUB_URL__ = "";
+  </script>
+  <script src="./hub-link.js" defer></script>
+  <script src="./ui-info.js" defer></script>
   <script src="./index.js" defer></script>
 </body>
 </html>

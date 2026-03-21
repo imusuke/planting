@@ -10,6 +10,7 @@
 - **`package.json`** … `@vercel/blob`・`@vercel/kv` など。デプロイ前に `npm install` が必要です。
 - **`data/plants.json`** … 成長記録のエリア／植栽マスタ。**`index.html` の表と植栽名を揃える**と運用が楽です。
 - **`styles.css`** … 一覧の見た目。
+- **`data/hub-link.json`** … 「リンク集へ戻る」の遷先。`linkCollectionUrl` に入口ページの **絶対URL**（`https://…`）を書きます（planting 単体を Vercel に出したときに必須）。空のときは `localhost` / `127.0.0.1` / `file://` ではフォルダ用の相対パスに自動します。
 
 ## Git をまた使う場合
 
@@ -27,6 +28,6 @@
    - **パブリックストア**だけ使う場合は、環境変数 **`BLOB_PUT_ACCESS=public`** を設定してください（従来どおり画像 URL をそのまま表示します）。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、API が保護されます。**未設定のままだと、公開 URL では誰でも読み書きできる**状態になります。
-5. 再デプロイ後、本番 URL の `growth.html` を開き、**API 接続**のステータスが接続済みになるか確認します。
+5. 再デプロイ後、本番 URL の `growth.html` を開き、**保存先への接続**のステータスが接続済みになるか確認します。
 
 ローカルで API を試す場合は `npm install` のあと `vercel dev`（Vercel CLI）を使うと `/api/growth` にアクセスできます。`file://` で HTML を開いただけでは API は使えません。

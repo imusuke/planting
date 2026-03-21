@@ -442,12 +442,12 @@
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
         if (res.status === 401) {
-          updateCloudStatus("API がトークンを要求しています。下に正しいトークンを保存してください。");
+          updateCloudStatus("トークンが必要です。下の欄に正しい文字列を入れて保存してください。");
           renderFeed([]);
           return null;
         }
         if (res.status === 404) {
-          updateCloudStatus("/api/growth が見つかりません。Vercel にデプロイされているか確認してください。");
+          updateCloudStatus("サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。");
           renderFeed([]);
           return null;
         }
@@ -460,7 +460,7 @@
       })
       .then(function (data) {
         if (!data) return;
-        updateCloudStatus("Vercel に接続済み。写真は Blob、記録は KV に保存されます。");
+        updateCloudStatus("サーバーに接続できています。写真と記録を保存できます。");
         renderFeed(data.records || []);
       })
       .catch(function () {
@@ -533,18 +533,18 @@
           body: JSON.stringify(payload),
         }).then(function (res) {
           if (res.status === 401) {
-            throw new Error("トークンが無効です。Vercel の GROWTH_UPLOAD_TOKEN と一致させてください。");
+            throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
           }
           if (res.status === 503) {
             return apiErrorMessage(
               res,
-              "KV（Redis）の保存に失敗したか、ストレージが未設定です"
+              "サーバー側のデータ保存先に問題があるか、設定が足りない可能性があります"
             ).then(function (msg) {
               throw new Error(msg);
             });
           }
           if (res.status === 502) {
-            return apiErrorMessage(res, "写真の保存（Vercel Blob）に失敗しました").then(function (msg) {
+            return apiErrorMessage(res, "写真の保存に失敗しました").then(function (msg) {
               throw new Error(msg);
             });
           }
@@ -602,7 +602,7 @@
         a.download = "planting-growth-backup.json";
         a.click();
         URL.revokeObjectURL(a.href);
-        showToast("エクスポートしました（画像は URL のまま）");
+        showToast("エクスポートしました（画像はリンクのまま含まれます）");
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "エクスポートに失敗しました", true);
