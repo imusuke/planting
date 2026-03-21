@@ -1,6 +1,12 @@
 (function () {
   "use strict";
 
+  var PAGE =
+    (document.documentElement.getAttribute("data-growth-page") ||
+      document.body.getAttribute("data-growth-page") ||
+      "edit").toLowerCase();
+  var IS_VIEW = PAGE === "view";
+
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
@@ -35,6 +41,7 @@
     cloudToken: null,
     cloudTokenSave: null,
     cloudStatus: null,
+    viewStatus: null,
     newHeading: null,
     editBanner: null,
     editCancel: null,
@@ -45,6 +52,7 @@
     plantsRecordRenameArea: null,
     plantsRecordRenameFrom: null,
     plantsRecordRenameTo: null,
+    deleteRecordBtn: null,
   };
 
   function $(id) {
@@ -91,6 +99,7 @@
   }
 
   function updateCloudStatus(text) {
+    if (el.viewStatus) el.viewStatus.textContent = text || "";
     if (el.cloudStatus) el.cloudStatus.textContent = text || "";
   }
 
@@ -203,6 +212,7 @@
     }
     if (el.editBanner) el.editBanner.hidden = !editing;
     if (el.editCancel) el.editCancel.hidden = !editing;
+    if (el.deleteRecordBtn) el.deleteRecordBtn.hidden = !editing;
   }
 
   function clearEditMode() {
@@ -230,7 +240,7 @@
     if (el.photo) el.photo.value = "";
     syncEditFormUI();
     requestAnimationFrame(function () {
-      var t = document.getElementById("new-record");
+      var t = document.getElementById("edit-record-section");
       if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
@@ -468,7 +478,7 @@
             ? "保存しました（記録内の植栽名も置き換えた行があります）"
             : "保存しました"
         );
-        return refreshFeed();
+        if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "保存に失敗しました", true);
@@ -493,7 +503,7 @@
           applyPlantsToForm(state.editRecord.plants, el.area.value);
         }
         showToast("植栽リストを再読み込みしました");
-        return refreshFeed();
+        if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "読み込みに失敗しました", true);
@@ -607,12 +617,61 @@
 
     if (applied) {
       requestAnimationFrame(function () {
-        var target = document.getElementById("growth-form");
+        var target = document.getElementById("edit-record-section");
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     }
+  }
+
+  function applyViewQueryFilters() {
+    if (!IS_VIEW || !el.filterArea) return;
+    var params = new URLSearchParams(window.location.search);
+    var areaId = params.get("area");
+    var plantName = params.get("plant");
+    if (plantName) {
+      try {
+        plantName = decodeURIComponent(plantName);
+      } catch (e) {}
+    }
+    if (areaId && state.areas.some(function (a) {
+      return a.id === areaId;
+    })) {
+      el.filterArea.value = areaId;
+    }
+    updateFilterPlantOptions();
+    if (plantName && el.filterPlant) {
+      var opts = el.filterPlant.querySelectorAll("option");
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === plantName) {
+          el.filterPlant.value = plantName;
+          break;
+        }
+      }
+    }
+  }
+
+  function fetchRecordByIdAndEdit(id) {
+    return fetch(API_GROWTH, { headers: cloudHeaders(false) })
+      .then(function (res) {
+        if (!res.ok) throw new Error("一覧の取得に失敗しました");
+        return res.json();
+      })
+      .then(function (data) {
+        var list = data.records || [];
+        var r = list.find(function (x) {
+          return x.id === id;
+        });
+        if (!r) {
+          showToast("該当する記録が見つかりません。", true);
+          return;
+        }
+        startEdit(r);
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "読み込みに失敗しました", true);
+      });
   }
 
   function updateFilterPlantOptions() {
@@ -716,34 +775,11 @@
 
       var actions = document.createElement("div");
       actions.className = "growth-card-actions";
-      var editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "growth-edit";
-      editBtn.textContent = "編集";
-      editBtn.addEventListener("click", function () {
-        startEdit(r);
-      });
-      actions.appendChild(editBtn);
-      var del = document.createElement("button");
-      del.type = "button";
-      del.className = "growth-danger";
-      del.textContent = "削除";
-      del.addEventListener("click", function () {
-        if (!confirm("この記録を削除しますか？")) return;
-        fetch(API_GROWTH + "?id=" + encodeURIComponent(r.id), {
-          method: "DELETE",
-          headers: cloudHeaders(false),
-        })
-          .then(function (res) {
-            if (!res.ok) throw new Error("削除に失敗しました");
-            showToast("削除しました");
-            return refreshFeed();
-          })
-          .catch(function (err) {
-            showToast(err && err.message ? err.message : "削除に失敗しました", true);
-          });
-      });
-      actions.appendChild(del);
+      var editLink = document.createElement("a");
+      editLink.className = "growth-edit growth-card-edit-link";
+      editLink.href = "./growth-edit.html?id=" + encodeURIComponent(r.id);
+      editLink.textContent = "編集する";
+      actions.appendChild(editLink);
       card.appendChild(actions);
 
       el.feed.appendChild(card);
@@ -756,26 +792,32 @@
       .then(function (res) {
         if (res.status === 404) {
           updateCloudStatus("サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。");
-          renderFeed([]);
+          if (el.feed) renderFeed([]);
           return null;
         }
         if (!res.ok) {
           updateCloudStatus("一覧の取得に失敗しました（" + res.status + "）。");
-          renderFeed([]);
+          if (el.feed) renderFeed([]);
           return null;
         }
         return res.json();
       })
       .then(function (data) {
         if (!data) return;
-        updateCloudStatus(
-          "記録と写真を表示できています。新規の投稿・編集・削除や植栽名のサーバー保存には、サイトでトークンが設定されている場合のみ、下の欄への入力が必要です。"
-        );
-        renderFeed(data.records || []);
+        if (IS_VIEW) {
+          updateCloudStatus(
+            "記録と写真を表示できています。追加・編集・削除は「記録を追加・編集」から行ってください。"
+          );
+        } else {
+          updateCloudStatus(
+            "記録と写真を表示できています。新規の投稿・編集・削除や植栽名のサーバー保存には、サイトでトークンが設定されている場合のみ、下の欄への入力が必要です。"
+          );
+        }
+        if (el.feed) renderFeed(data.records || []);
       })
       .catch(function () {
         updateCloudStatus("ネットワークエラーで一覧を取得できませんでした。");
-        renderFeed([]);
+        if (el.feed) renderFeed([]);
       });
   }
 
@@ -874,7 +916,7 @@
         clearEditMode();
         if (dateInput) dateInput.value = todayInputValue();
         if (el.photo) el.photo.value = "";
-        return refreshFeed();
+        if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "保存に失敗しました", true);
@@ -927,10 +969,73 @@
     if (v) localStorage.setItem(LS_CLOUD_TOKEN, v);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
     showToast("トークンを保存しました");
-    refreshFeed();
+    if (el.feed) refreshFeed();
   }
 
-  function init() {
+  function onDeleteRecord() {
+    if (!state.editRecord || !el.deleteRecordBtn) return;
+    if (!confirm("この記録を削除しますか？（写真もサーバーから削除されます）")) return;
+    var id = state.editRecord.id;
+    el.deleteRecordBtn.disabled = true;
+    fetch(API_GROWTH + "?id=" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: cloudHeaders(false),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが必要です。上の欄に正しい文字列を入れて保存してください。");
+        }
+        if (!res.ok) throw new Error("削除に失敗しました");
+        showToast("削除しました");
+        window.location.href = "./growth.html";
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "削除に失敗しました", true);
+      })
+      .finally(function () {
+        el.deleteRecordBtn.disabled = false;
+      });
+  }
+
+  function initViewPage() {
+    el.toast = $("growth-toast");
+    el.filterArea = $("filter-area");
+    el.filterPlant = $("filter-plant");
+    el.feed = $("growth-feed");
+    el.exportBtn = $("export-btn");
+    el.viewStatus = $("growth-view-status");
+
+    if (!el.feed) return;
+
+    loadPlantsData()
+      .then(function (pack) {
+        state.areas = pack.areas || [];
+        populateAreaSelects();
+        applyViewQueryFilters();
+        return refreshFeed();
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "初期化に失敗しました", true);
+      });
+
+    if (el.filterArea) {
+      el.filterArea.addEventListener("change", function () {
+        if (el.filterPlant) el.filterPlant.value = "";
+        updateFilterPlantOptions();
+        refreshFeed();
+      });
+    }
+
+    if (el.filterPlant) {
+      el.filterPlant.addEventListener("change", function () {
+        refreshFeed();
+      });
+    }
+
+    if (el.exportBtn) el.exportBtn.addEventListener("click", onExport);
+  }
+
+  function initEditPage() {
     el.form = $("growth-form");
     el.date = $("field-date");
     el.area = $("field-area");
@@ -957,6 +1062,7 @@
     el.plantsRecordRenameArea = $("plants-record-rename-area");
     el.plantsRecordRenameFrom = $("plants-record-rename-from");
     el.plantsRecordRenameTo = $("plants-record-rename-to");
+    el.deleteRecordBtn = $("growth-delete-record");
 
     if (!el.form || !el.area) return;
 
@@ -982,6 +1088,10 @@
       el.plantsCatalogSave.addEventListener("click", savePlantsCatalog);
     }
 
+    if (el.deleteRecordBtn) {
+      el.deleteRecordBtn.addEventListener("click", onDeleteRecord);
+    }
+
     loadPlantsData()
       .then(function (pack) {
         state.areas = pack.areas || [];
@@ -991,6 +1101,10 @@
         renderPlantsCatalogEditor();
         updatePlantsCatalogSourceLabel();
         var q = new URLSearchParams(window.location.search);
+        var idParam = q.get("id");
+        if (idParam) {
+          return fetchRecordByIdAndEdit(idParam);
+        }
         if (q.get("area") || q.get("plant")) {
           applyQueryPrefill();
         }
@@ -999,7 +1113,6 @@
           updateFilterPlantOptions();
         }
         if (el.date) el.date.value = todayInputValue();
-        return refreshFeed();
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "初期化に失敗しました", true);
@@ -1036,6 +1149,14 @@
     }
 
     if (el.exportBtn) el.exportBtn.addEventListener("click", onExport);
+  }
+
+  function init() {
+    if (IS_VIEW) {
+      initViewPage();
+      return;
+    }
+    initEditPage();
   }
 
   if (document.readyState === "loading") {

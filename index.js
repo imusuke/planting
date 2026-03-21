@@ -24,7 +24,7 @@
         tdPlants.appendChild(dot);
         var aOnly = document.createElement("a");
         aOnly.className = "plant-record-link";
-        aOnly.href = "growth.html?area=" + encodeURIComponent(area.id);
+        aOnly.href = "growth-edit.html?area=" + encodeURIComponent(area.id);
         aOnly.textContent = "このエリアで記録";
         aOnly.setAttribute("title", area.label + "の成長記録を追加");
         tdPlants.appendChild(aOnly);
@@ -39,7 +39,7 @@
           var a = document.createElement("a");
           a.className = "plant-record-link";
           a.href =
-            "growth.html?area=" +
+            "growth-edit.html?area=" +
             encodeURIComponent(area.id) +
             "&plant=" +
             encodeURIComponent(p);

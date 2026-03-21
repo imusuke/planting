@@ -4,8 +4,9 @@
 
 ## 公開サイト向け
 
-- **`index.html`** … **全エリアの植栽一覧表**と、成長記録への導線。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。植栽名から **成長記録**（`growth.html?area=…&plant=…`）へ進めます。
-- **`growth.html`** … エリア・植栽を選んで写真・メモを残す**成長記録**。保存は **Vercel（Blob + KV）の API のみ**（`file://` では保存・一覧不可。デプロイ URL または `vercel dev` を使う）。マスタは `data/plants.json`（失敗時は **`plants-embed`**）。
+- **`index.html`** … **全エリアの植栽一覧表**と、成長記録への導線。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。植栽名から **追加・編集**（`growth-edit.html?area=…&plant=…`）へ進めます。
+- **`growth.html`** … 成長記録の**閲覧**（一覧・写真・フィルタ・JSON エクスポート）。保存や編集はしません。
+- **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は **`plants-embed`**）。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
 - **`package.json`** … `@vercel/blob`・`@vercel/kv` など。デプロイ前に `npm install` が必要です。
 - **`data/plants.json`** … 成長記録のエリア／植栽マスタ。**`index.html` の表と植栽名を揃える**と運用が楽です。
@@ -28,6 +29,6 @@
    - **`BLOB_PUT_ACCESS=private`** にすると非公開 Blob に保存し、サムネイルは **`/api/growth-image`** が代理で配信します（閲覧はトークン不要。パスは `growth/{id}.jpg` 形式に限定）。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、**投稿・編集・削除・植栽マスタの保存**だけが保護されます。**記録一覧の取得（GET）はトークンなし**で行えるため、どの端末でも一覧と写真を閲覧できます。**トークン未設定のままだと、公開 URL では誰でも書き込める**状態になります。
-5. 再デプロイ後、本番 URL の `growth.html` を開き、**保存先への接続**のステータスが接続済みになるか確認します。
+5. 再デプロイ後、本番 URL の `growth.html`（閲覧）と `growth-edit.html`（編集）を開き、一覧取得と保存ができるか確認します。
 
 ローカルで API を試す場合は `npm install` のあと `vercel dev`（Vercel CLI）を使うと `/api/growth` にアクセスできます。`file://` で HTML を開いただけでは API は使えません。

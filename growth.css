@@ -1,4 +1,32 @@
-/* 成長記録ページ（growth.html） */
+/* 成長記録（閲覧 growth.html / 編集 growth-edit.html） */
+
+.growth-top-nav {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+a.growth-nav-cta {
+  font-weight: 700;
+}
+
+a.growth-card-edit-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(45, 106, 79, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--green);
+  text-decoration: none;
+  text-align: center;
+}
+
+a.growth-card-edit-link:hover,
+a.growth-card-edit-link:focus-visible {
+  border-color: rgba(45, 106, 79, 0.55);
+  outline: none;
+}
 
 main.growth-panel {
   max-width: 920px;
