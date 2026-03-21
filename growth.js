@@ -12,8 +12,8 @@
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_PLANTS = "/api/plants";
-  var MAX_IMAGE_WIDTH = 1280;
-  var JPEG_QUALITY = 0.82;
+  var MAX_IMAGE_WIDTH = 1024;
+  var JPEG_QUALITY = 0.76;
 
   var state = {
     areas: [],
@@ -891,6 +891,11 @@
         }).then(function (res) {
           if (res.status === 401) {
             throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+          }
+          if (res.status === 413) {
+            throw new Error(
+              "送るデータが大きすぎて拒否されました。写真を別の画像に変えるか、スマホのカメラ設定で解像度を下げてから試してください。"
+            );
           }
           if (res.status === 503) {
             return apiErrorMessage(

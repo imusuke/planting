@@ -42,6 +42,16 @@ function jsonError(res, status, code, err) {
   return res.status(status).json({ error: code, detail: detail });
 }
 
+function isParsedJsonObject(body) {
+  return (
+    body != null &&
+    typeof body === "object" &&
+    !Buffer.isBuffer(body) &&
+    !Array.isArray(body) &&
+    typeof body.pipe !== "function"
+  );
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -50,24 +60,23 @@ async function readJsonBody(req) {
       return null;
     }
   }
-  if (req.body != null && typeof req.body === "object") {
+  if (isParsedJsonObject(req.body)) {
     return req.body;
   }
   if (typeof req.body === "string") {
     try {
       return JSON.parse(req.body);
     } catch (e) {
-      return null;
+      /* fall through: try raw stream (some hosts leave body unparsed) */
     }
   }
   try {
-    var len = req.headers["content-length"];
     var buf = await getRawBody(req, {
-      length: len,
-      limit: "6mb",
+      limit: "10mb",
     });
     return JSON.parse(buf.toString("utf8"));
   } catch (e) {
+    console.error("readJsonBody", e);
     return null;
   }
 }
