@@ -1,14 +1,6 @@
 const { get } = require("@vercel/blob");
 const { Readable } = require("stream");
 
-function assertImageAuth(req) {
-  var need = process.env.GROWTH_UPLOAD_TOKEN;
-  if (!need) return true;
-  var q = req.query || {};
-  if (q.token === need) return true;
-  return req.headers["x-growth-token"] === need;
-}
-
 /** Only serve paths uploaded by this app (api/growth.js). */
 function safeGrowthPathname(p) {
   if (!p || typeof p !== "string" || p.length > 400) return null;
@@ -21,10 +13,6 @@ module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).end("Method Not Allowed");
-  }
-
-  if (!assertImageAuth(req)) {
-    return res.status(401).json({ error: "unauthorized" });
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -49,7 +37,7 @@ module.exports = async function handler(req, res) {
 
     res.setHeader("Content-Type", result.blob.contentType || "image/jpeg");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Cache-Control", "private, no-cache");
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     if (result.blob.etag) res.setHeader("ETag", result.blob.etag);
 
     var nodeStream = Readable.fromWeb(result.stream);

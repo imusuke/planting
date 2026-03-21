@@ -4,9 +4,9 @@ const getRawBody = require("raw-body");
 
 const KV_KEY = "planting_growth_records_v1";
 
-/** Private store (Vercel default): `private`. Public store: set env `BLOB_PUT_ACCESS=public`. */
+/** Default `public` so image URLs work on any device without a proxy token. Set `BLOB_PUT_ACCESS=private` for non-public blobs (served via `/api/growth-image`). */
 function blobPutAccess() {
-  return process.env.BLOB_PUT_ACCESS === "public" ? "public" : "private";
+  return process.env.BLOB_PUT_ACCESS === "private" ? "private" : "public";
 }
 
 function assertAuth(req) {
@@ -73,16 +73,16 @@ async function readJsonBody(req) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!assertAuth(req)) {
-    return res.status(401).json({ error: "unauthorized" });
-  }
-
   if (req.method === "GET") {
     var records = await readRecords();
     if (records === null) {
       return res.status(503).json({ error: "kv_unavailable" });
     }
     return res.status(200).json({ records: records });
+  }
+
+  if (!assertAuth(req)) {
+    return res.status(401).json({ error: "unauthorized" });
   }
 
   if (req.method === "POST") {

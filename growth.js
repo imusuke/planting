@@ -72,10 +72,7 @@
 
   function growthImageSrc(r) {
     if (r.imagePathname) {
-      var q = "pathname=" + encodeURIComponent(r.imagePathname);
-      var t = localStorage.getItem(LS_CLOUD_TOKEN);
-      if (t) q += "&token=" + encodeURIComponent(t);
-      return API_GROWTH_IMAGE + "?" + q;
+      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
     }
     return r.imageUrl || null;
   }
@@ -757,11 +754,6 @@
     updateCloudStatus("一覧を取得中…");
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
-        if (res.status === 401) {
-          updateCloudStatus("トークンが必要です。下の欄に正しい文字列を入れて保存してください。");
-          renderFeed([]);
-          return null;
-        }
         if (res.status === 404) {
           updateCloudStatus("サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。");
           renderFeed([]);
@@ -776,7 +768,9 @@
       })
       .then(function (data) {
         if (!data) return;
-        updateCloudStatus("サーバーに接続できています。写真と記録を保存できます。");
+        updateCloudStatus(
+          "記録と写真を表示できています。新規の投稿・編集・削除や植栽名のサーバー保存には、サイトでトークンが設定されている場合のみ、下の欄への入力が必要です。"
+        );
         renderFeed(data.records || []);
       })
       .catch(function () {
