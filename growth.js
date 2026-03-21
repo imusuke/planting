@@ -52,6 +52,19 @@
     return h;
   }
 
+  function apiErrorMessage(res, fallbackPrefix) {
+    return res.text().then(function (text) {
+      var detail = "";
+      try {
+        var j = JSON.parse(text);
+        if (j && j.detail) detail = j.detail;
+        else if (j && j.error) detail = j.error;
+      } catch (e) {}
+      var base = fallbackPrefix + "（" + res.status + "）";
+      return detail ? base + " — " + detail : base;
+    });
+  }
+
   function updateCloudStatus(text) {
     if (el.cloudStatus) el.cloudStatus.textContent = text || "";
   }
@@ -511,12 +524,22 @@
             throw new Error("トークンが無効です。Vercel の GROWTH_UPLOAD_TOKEN と一致させてください。");
           }
           if (res.status === 503) {
-            throw new Error(
-              "Vercel Blob または KV（Redis）が未設定の可能性があります。ダッシュボードでストレージを接続してください。"
-            );
+            return apiErrorMessage(
+              res,
+              "KV（Redis）の保存に失敗したか、ストレージが未設定です"
+            ).then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          if (res.status === 502) {
+            return apiErrorMessage(res, "写真の保存（Vercel Blob）に失敗しました").then(function (msg) {
+              throw new Error(msg);
+            });
           }
           if (!res.ok) {
-            throw new Error("保存に失敗しました（" + res.status + "）");
+            return apiErrorMessage(res, "保存に失敗しました").then(function (msg) {
+              throw new Error(msg);
+            });
           }
           return res.json();
         });

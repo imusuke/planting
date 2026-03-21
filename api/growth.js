@@ -26,6 +26,17 @@ async function writeRecords(records) {
   await kv.set(KV_KEY, JSON.stringify(records));
 }
 
+function jsonError(res, status, code, err) {
+  var detail =
+    err && err.message
+      ? String(err.message)
+      : err
+        ? String(err)
+        : "";
+  console.error(code, detail || err);
+  return res.status(status).json({ error: code, detail: detail });
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -70,6 +81,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    try {
     var body = await readJsonBody(req);
     if (!body || !body.id) {
       return res.status(400).json({ error: "missing_id" });
@@ -97,13 +109,20 @@ module.exports = async function handler(req, res) {
           console.error("blob del before replace", e);
         }
       }
-      var buf = Buffer.from(body.imageBase64, "base64");
-      var uploaded = await put("growth/" + body.id + ".jpg", buf, {
-        access: "public",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-        contentType: body.imageMime || "image/jpeg",
-      });
-      imageUrl = uploaded.url;
+      try {
+        var buf = Buffer.from(body.imageBase64, "base64");
+        if (!buf.length) {
+          return res.status(400).json({ error: "invalid_image_data" });
+        }
+        var uploaded = await put("growth/" + body.id + ".jpg", buf, {
+          access: "public",
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+          contentType: body.imageMime || "image/jpeg",
+        });
+        imageUrl = uploaded.url;
+      } catch (blobErr) {
+        return jsonError(res, 502, "blob_put_failed", blobErr);
+      }
     }
 
     var record = {
@@ -128,8 +147,15 @@ module.exports = async function handler(req, res) {
     records.sort(function (a, b) {
       return (b.recordedAt || "").localeCompare(a.recordedAt || "");
     });
-    await writeRecords(records);
+    try {
+      await writeRecords(records);
+    } catch (kvErr) {
+      return jsonError(res, 503, "kv_write_failed", kvErr);
+    }
     return res.status(200).json({ ok: true, record: record });
+    } catch (unexpected) {
+      return jsonError(res, 500, "internal_error", unexpected);
+    }
   }
 
   if (req.method === "DELETE") {
