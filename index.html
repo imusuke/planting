@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>植栽メモ — 一覧</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="panel">
+    <div class="top top-row">
+      <a href="../imusasa-hub/index.html">リンク集へ戻る</a>
+      <a href="./growth.html">成長記録</a>
+    </div>
+
+    <header class="page-header">
+      <p class="eyebrow">Planting</p>
+      <h1>植栽一覧</h1>
+      <p class="lead">
+        表はまず <code>data/plants.json</code> を読み込みます（Vercel や <code>npx serve</code> など）。HTML を直接開いただけのときは、ページ内の埋め込みデータ（<code>plants-embed</code>）が使われます。<strong>植栽名</strong>をクリックすると、その植栽に紐づいた成長記録ページが開きます。内容を変えたら <code>plants.json</code> と <code>plants-embed</code> の両方を揃えてください。
+      </p>
+    </header>
+
+    <section class="grid grid--cta" aria-label="成長記録へのリンク">
+      <a class="card growthlog" href="./growth.html">
+        <span class="card-label">Log</span>
+        <h2>成長記録</h2>
+        <p>エリアと植栽を選んで記録（表の植栽名から開くと、その植栽が事前に選ばれます）。保存は Vercel 経由です。</p>
+        <span class="open">記録ページを開く →</span>
+      </a>
+    </section>
+
+    <section class="plant-overview" aria-labelledby="plant-overview-heading">
+      <h2 id="plant-overview-heading">植栽一覧（全エリア）</h2>
+      <div class="plant-table-wrap">
+        <table class="plant-table">
+          <thead>
+            <tr>
+              <th scope="col">エリア</th>
+              <th scope="col">植栽（名前を押すと記録）</th>
+            </tr>
+          </thead>
+          <tbody id="plant-table-body">
+            <tr>
+              <td colspan="2" class="plant-loading">読み込み中…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <!-- fetch が使えない環境（file:// など）用。data/plants.json と同じ内容に保つ -->
+  <script type="application/json" id="plants-embed">
+{
+  "areas": [
+    { "id": "entrance", "label": "玄関前", "plants": ["ノリウツギ", "柏葉あじさい"] },
+    { "id": "parking", "label": "駐車場脇", "plants": ["シルバープリペット"] },
+    { "id": "deck", "label": "ウッドデッキ", "plants": ["落葉ヤマボウシ（日本固有種）"] },
+    { "id": "corner", "label": "角庭", "plants": [] },
+    { "id": "indoor", "label": "室内", "plants": ["ドラセナコンシンナ", "ウンベラータ"] }
+  ]
+}
+  </script>
+  <script src="./index.js" defer></script>
+</body>
+</html>

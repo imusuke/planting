@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "functions": {
+    "api/growth.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}

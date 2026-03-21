@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>成長記録 — 植栽</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./growth.css" />
+</head>
+<body>
+  <main class="panel growth-panel">
+    <div class="top top-row">
+      <a href="./index.html">一覧へ戻る</a>
+      <a href="../imusasa-hub/index.html">リンク集へ戻る</a>
+    </div>
+
+    <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
+
+    <header class="page-header">
+      <p class="eyebrow">Growth log</p>
+      <h1>成長記録</h1>
+      <p class="lead">
+        エリアと植栽を選び、写真とメモを <strong>Vercel</strong>（Blob + KV）に保存します。一覧のマスタは <code>data/plants.json</code> から読み込みます（HTML を直接開いたときは <code>plants-embed</code> を使います）。<strong>file:// のままでは API に届かない</strong>ため、一覧取得・保存にはデプロイ URL または <code>vercel dev</code> が必要です。
+      </p>
+    </header>
+
+    <section class="growth-section" aria-labelledby="storage-heading">
+      <h2 id="storage-heading">API 接続</h2>
+      <p id="cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div class="growth-token-row">
+        <label class="block" style="flex: 1; min-width: 200px">
+          <span>アップロード用トークン（任意・推奨）</span>
+          <input id="cloud-token" type="password" autocomplete="off" placeholder="Vercel の GROWTH_UPLOAD_TOKEN と同じ文字列" />
+        </label>
+        <button type="button" id="cloud-token-save" class="growth-secondary" style="align-self: end">
+          トークンを保存
+        </button>
+      </div>
+      <p class="growth-hint">
+        トークンはブラウザの localStorage にだけ入ります。Vercel の環境変数 <code>GROWTH_UPLOAD_TOKEN</code> を設定している場合は、同じ値を入力してください。未設定の API は誰でも読み書きできるため、公開 URL では必ずトークンを設定してください。
+      </p>
+    </section>
+
+    <section class="growth-section" aria-labelledby="new-heading">
+      <h2 id="new-heading">新しい記録</h2>
+      <form id="growth-form" class="growth-form">
+        <label class="block">
+          <span>記録日</span>
+          <input id="field-date" name="date" type="date" required />
+        </label>
+
+        <label class="block">
+          <span>エリア</span>
+          <select id="field-area" required></select>
+        </label>
+
+        <fieldset id="plant-fieldset" class="block">
+          <legend>植栽（複数選択可）</legend>
+          <div id="plant-checks" class="plant-checks"></div>
+        </fieldset>
+
+        <label class="block">
+          <span>その他の植栽（自由入力・任意）</span>
+          <input id="field-custom-plant" type="text" placeholder="例: 今年植えた苗の名前" autocomplete="off" />
+        </label>
+
+        <label class="block">
+          <span>メモ（任意）</span>
+          <textarea name="note" placeholder="葉の様子、花、灌水など"></textarea>
+        </label>
+
+        <label class="block">
+          <span>写真（任意・スマホではカメラを起動しやすくします）</span>
+          <input id="field-photo" type="file" accept="image/*" capture="environment" />
+        </label>
+
+        <div class="growth-actions">
+          <button type="submit" id="growth-submit" class="growth-primary">保存</button>
+          <button type="button" id="photo-clear" class="growth-secondary">写真をクリア</button>
+        </div>
+        <p class="growth-hint">
+          写真は長辺おおよそ 1280px に縮小して JPEG 保存します。角庭のように一覧に無い植栽は「その他」に入力してください。
+        </p>
+      </form>
+    </section>
+
+    <section class="growth-section" aria-labelledby="list-heading">
+      <h2 id="list-heading">記録一覧</h2>
+      <div class="growth-filters">
+        <label>
+          エリア
+          <select id="filter-area"></select>
+        </label>
+        <label>
+          植栽
+          <select id="filter-plant"></select>
+        </label>
+      </div>
+      <div id="growth-feed" class="growth-feed"></div>
+    </section>
+
+    <section class="growth-section" aria-labelledby="backup-heading">
+      <h2 id="backup-heading">バックアップ</h2>
+      <p class="growth-hint">
+        記録は Vercel 側に保存されます。念のためメタデータを JSON でダウンロードできます（画像は URL のまま参照されます）。
+      </p>
+      <div class="growth-backup-row" style="margin-top: 12px">
+        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
+      </div>
+    </section>
+  </main>
+  <!-- file:// 等で fetch が失敗する場合用。index.html / data/plants.json と同じ内容に保つ -->
+  <script type="application/json" id="plants-embed">
+{
+  "areas": [
+    { "id": "entrance", "label": "玄関前", "plants": ["ノリウツギ", "柏葉あじさい"] },
+    { "id": "parking", "label": "駐車場脇", "plants": ["シルバープリペット"] },
+    { "id": "deck", "label": "ウッドデッキ", "plants": ["落葉ヤマボウシ（日本固有種）"] },
+    { "id": "corner", "label": "角庭", "plants": [] },
+    { "id": "indoor", "label": "室内", "plants": ["ドラセナコンシンナ", "ウンベラータ"] }
+  ]
+}
+  </script>
+  <script src="./growth.js"></script>
+</body>
+</html>

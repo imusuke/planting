@@ -1,0 +1,29 @@
+{
+  "areas": [
+    {
+      "id": "entrance",
+      "label": "玄関前",
+      "plants": ["ノリウツギ", "柏葉あじさい"]
+    },
+    {
+      "id": "parking",
+      "label": "駐車場脇",
+      "plants": ["シルバープリペット"]
+    },
+    {
+      "id": "deck",
+      "label": "ウッドデッキ",
+      "plants": ["落葉ヤマボウシ（日本固有種）"]
+    },
+    {
+      "id": "corner",
+      "label": "角庭",
+      "plants": []
+    },
+    {
+      "id": "indoor",
+      "label": "室内",
+      "plants": ["ドラセナコンシンナ", "ウンベラータ"]
+    }
+  ]
+}
