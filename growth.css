@@ -190,6 +190,7 @@ button.growth-primary:disabled {
 }
 
 button.growth-secondary,
+label.growth-secondary,
 label.growth-file-label {
   font: inherit;
   font-weight: 600;
@@ -203,8 +204,78 @@ label.growth-file-label {
 }
 
 button.growth-secondary:hover,
+label.growth-secondary:hover,
 label.growth-file-label:hover {
   border-color: rgba(26, 46, 36, 0.22);
+}
+
+button.growth-secondary:focus-visible,
+label.growth-secondary:focus-visible {
+  outline: 2px solid var(--green-soft, #2d6a4f);
+  outline-offset: 2px;
+}
+
+.growth-photo-block-title {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.growth-photo-block-lead {
+  margin: 0 0 10px;
+}
+
+.growth-photo-block {
+  position: relative;
+}
+
+.growth-photo-pick-row {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+label.growth-photo-pick-label {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  text-align: center;
+}
+
+/* PC では width:0 でも隠れるが、iOS/Android の WebKit はネイティブの「ファイルを選択」を描画し続けることがある */
+.growth-file-input-hidden {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+  font-size: 0;
+}
+
+.growth-file-input-hidden::-webkit-file-upload-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.growth-file-input-hidden::file-selector-button {
+  display: none;
+}
+
+.growth-photo-file-status {
+  margin: 10px 0 0;
 }
 
 .growth-hint {

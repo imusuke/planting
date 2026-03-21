@@ -31,7 +31,9 @@
     area: null,
     plantChecks: null,
     customPlant: null,
-    photo: null,
+    photoCamera: null,
+    photoLibrary: null,
+    photoStatus: null,
     photoClear: null,
     submit: null,
     toast: null,
@@ -204,6 +206,57 @@
     el.customPlant.value = extras.join("、");
   }
 
+  function getPhotoFile() {
+    if (el.photoCamera && el.photoCamera.files && el.photoCamera.files[0]) {
+      return el.photoCamera.files[0];
+    }
+    if (el.photoLibrary && el.photoLibrary.files && el.photoLibrary.files[0]) {
+      return el.photoLibrary.files[0];
+    }
+    return null;
+  }
+
+  function updatePhotoStatusFromInputs() {
+    if (!el.photoStatus) return;
+    var f = getPhotoFile();
+    if (f) {
+      el.photoStatus.textContent = "選択中: " + (f.name || "画像");
+      el.photoStatus.hidden = false;
+    } else {
+      el.photoStatus.textContent = "";
+      el.photoStatus.hidden = true;
+    }
+  }
+
+  function clearPhotoInputs() {
+    if (el.photoCamera) el.photoCamera.value = "";
+    if (el.photoLibrary) el.photoLibrary.value = "";
+    updatePhotoStatusFromInputs();
+  }
+
+  function onPhotoInputChange(source) {
+    if (source === "camera") {
+      if (
+        el.photoCamera &&
+        el.photoCamera.files &&
+        el.photoCamera.files[0] &&
+        el.photoLibrary
+      ) {
+        el.photoLibrary.value = "";
+      }
+    } else if (source === "library") {
+      if (
+        el.photoLibrary &&
+        el.photoLibrary.files &&
+        el.photoLibrary.files[0] &&
+        el.photoCamera
+      ) {
+        el.photoCamera.value = "";
+      }
+    }
+    updatePhotoStatusFromInputs();
+  }
+
   function syncEditFormUI() {
     var editing = !!state.editRecord;
     if (el.newHeading) {
@@ -224,6 +277,7 @@
     el.form.reset();
     if (el.date) el.date.value = todayInputValue();
     renderPlantChecks(el.area.value);
+    updatePhotoStatusFromInputs();
   }
 
   function startEdit(r) {
@@ -239,7 +293,7 @@
     if (el.date) el.date.value = di || todayInputValue();
     var note = el.form.querySelector('[name="note"]');
     if (note) note.value = r.note || "";
-    if (el.photo) el.photo.value = "";
+    clearPhotoInputs();
     syncEditFormUI();
     requestAnimationFrame(function () {
       var t = document.getElementById("edit-record-section");
@@ -847,7 +901,7 @@
       return;
     }
 
-    var file = el.photo && el.photo.files && el.photo.files[0];
+    var file = getPhotoFile();
     var promise;
     if (file) {
       promise = loadImageFile(file).then(imageToJpegBlob);
@@ -922,7 +976,6 @@
         showToast(wasEdit ? "更新しました" : "保存しました");
         clearEditMode();
         if (dateInput) dateInput.value = todayInputValue();
-        if (el.photo) el.photo.value = "";
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
@@ -1074,7 +1127,9 @@
     el.area = $("field-area");
     el.plantChecks = $("plant-checks");
     el.customPlant = $("field-custom-plant");
-    el.photo = $("field-photo");
+    el.photoCamera = $("field-photo-camera");
+    el.photoLibrary = $("field-photo-library");
+    el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
     el.submit = $("growth-submit");
     el.toast = $("growth-toast");
@@ -1175,9 +1230,20 @@
 
     el.form.addEventListener("submit", onSubmit);
 
-    if (el.photoClear && el.photo) {
+    if (el.photoCamera) {
+      el.photoCamera.addEventListener("change", function () {
+        onPhotoInputChange("camera");
+      });
+    }
+    if (el.photoLibrary) {
+      el.photoLibrary.addEventListener("change", function () {
+        onPhotoInputChange("library");
+      });
+    }
+
+    if (el.photoClear) {
       el.photoClear.addEventListener("click", function () {
-        el.photo.value = "";
+        clearPhotoInputs();
       });
     }
 

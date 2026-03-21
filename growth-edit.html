@@ -171,10 +171,32 @@
           <textarea name="note" placeholder="葉の様子、花、灌水など"></textarea>
         </label>
 
-        <label class="block">
-          <span>写真（任意）</span>
-          <input id="field-photo" type="file" accept="image/*" />
-        </label>
+        <div class="block growth-photo-block">
+          <span class="growth-photo-block-title">写真（任意）</span>
+          <p class="growth-hint growth-photo-block-lead">
+            スマホでは次のどちらかから選べます（同時に選べるのは1枚だけです）。
+          </p>
+          <div class="growth-photo-pick-row">
+            <input
+              id="field-photo-camera"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              class="growth-file-input-hidden"
+              tabindex="-1"
+            />
+            <label for="field-photo-camera" class="growth-secondary growth-photo-pick-label">カメラで撮る</label>
+            <input
+              id="field-photo-library"
+              type="file"
+              accept="image/*"
+              class="growth-file-input-hidden"
+              tabindex="-1"
+            />
+            <label for="field-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
+          </div>
+          <p id="field-photo-status" class="growth-hint growth-photo-file-status" hidden></p>
+        </div>
 
         <div class="growth-actions">
           <button type="submit" id="growth-submit" class="growth-primary">保存</button>
@@ -183,7 +205,7 @@
           <button type="button" id="photo-clear" class="growth-secondary">写真をクリア</button>
         </div>
         <p class="growth-hint">
-          スマホでは「ファイルを選ぶ」と、カメラで撮影するか、すでに端末に保存してある写真を選ぶかを切り替えられます。写真は長辺おおよそ 1024px に縮小して JPEG 保存します。角庭のように一覧に無い植栽は「その他」に入力してください。
+          写真は長辺おおよそ 1024px に縮小して JPEG 保存します。角庭のように一覧に無い植栽は「その他」に入力してください。
         </p>
       </form>
     </section>
