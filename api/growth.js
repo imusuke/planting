@@ -4,6 +4,11 @@ const getRawBody = require("raw-body");
 
 const KV_KEY = "planting_growth_records_v1";
 
+/** Private store (Vercel default): `private`. Public store: set env `BLOB_PUT_ACCESS=public`. */
+function blobPutAccess() {
+  return process.env.BLOB_PUT_ACCESS === "public" ? "public" : "private";
+}
+
 function assertAuth(req) {
   var need = process.env.GROWTH_UPLOAD_TOKEN;
   if (!need) return true;
@@ -97,6 +102,8 @@ module.exports = async function handler(req, res) {
     });
     var existing = idx0 >= 0 ? records[idx0] : null;
     var imageUrl = existing && existing.imageUrl ? existing.imageUrl : null;
+    var imagePathname =
+      existing && existing.imagePathname ? existing.imagePathname : null;
 
     if (body.imageBase64) {
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
@@ -114,12 +121,15 @@ module.exports = async function handler(req, res) {
         if (!buf.length) {
           return res.status(400).json({ error: "invalid_image_data" });
         }
+        var access = blobPutAccess();
         var uploaded = await put("growth/" + body.id + ".jpg", buf, {
-          access: "public",
+          access: access,
           token: process.env.BLOB_READ_WRITE_TOKEN,
           contentType: body.imageMime || "image/jpeg",
+          addRandomSuffix: false,
         });
         imageUrl = uploaded.url;
+        imagePathname = access === "private" ? uploaded.pathname : null;
       } catch (blobErr) {
         return jsonError(res, 502, "blob_put_failed", blobErr);
       }
@@ -133,6 +143,7 @@ module.exports = async function handler(req, res) {
       plants: Array.isArray(body.plants) ? body.plants : [],
       note: body.note || "",
       imageUrl: imageUrl,
+      imagePathname: imagePathname,
       createdAt: body.createdAt || new Date().toISOString(),
     };
 

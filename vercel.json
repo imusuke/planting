@@ -4,6 +4,10 @@
     "api/growth.js": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "api/growth-image.js": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   }
 }

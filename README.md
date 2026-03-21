@@ -23,6 +23,8 @@
 
 1. このフォルダを **Vercel のプロジェクト**としてデプロイする（Root Directory を `planting` にするか、リポジトリ全体からこのフォルダだけを選ぶ）。
 2. Vercel ダッシュボードで **Blob** ストアを作成し、プロジェクトに接続する（`BLOB_READ_WRITE_TOKEN` が自動で入ります）。
+   - **プライベートストア**（作成時のデフォルト）では、`api/growth.js` が `access: 'private'` で保存し、一覧のサムネイルは **`/api/growth-image`** が代理で配信します（`GROWTH_UPLOAD_TOKEN` 設定時は、成長記録ページで保存したトークンがクエリに付きます）。
+   - **パブリックストア**だけ使う場合は、環境変数 **`BLOB_PUT_ACCESS=public`** を設定してください（従来どおり画像 URL をそのまま表示します）。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、API が保護されます。**未設定のままだと、公開 URL では誰でも読み書きできる**状態になります。
 5. 再デプロイ後、本番 URL の `growth.html` を開き、**API 接続**のステータスが接続済みになるか確認します。

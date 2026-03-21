@@ -3,6 +3,7 @@
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var API_GROWTH = "/api/growth";
+  var API_GROWTH_IMAGE = "/api/growth-image";
   var MAX_IMAGE_WIDTH = 1280;
   var JPEG_QUALITY = 0.82;
 
@@ -50,6 +51,16 @@
     var t = localStorage.getItem(LS_CLOUD_TOKEN);
     if (t) h["x-growth-token"] = t;
     return h;
+  }
+
+  function growthImageSrc(r) {
+    if (r.imagePathname) {
+      var q = "pathname=" + encodeURIComponent(r.imagePathname);
+      var t = localStorage.getItem(LS_CLOUD_TOKEN);
+      if (t) q += "&token=" + encodeURIComponent(t);
+      return API_GROWTH_IMAGE + "?" + q;
+    }
+    return r.imageUrl || null;
   }
 
   function apiErrorMessage(res, fallbackPrefix) {
@@ -357,9 +368,10 @@
       var imgWrap = document.createElement("div");
       imgWrap.className = "growth-card-img-wrap";
 
-      if (r.imageUrl) {
+      var imgSrc = growthImageSrc(r);
+      if (imgSrc) {
         var img = document.createElement("img");
-        img.src = r.imageUrl;
+        img.src = imgSrc;
         img.alt = "";
         img.loading = "lazy";
         img.referrerPolicy = "no-referrer";
