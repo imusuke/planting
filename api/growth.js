@@ -4,9 +4,12 @@ const getRawBody = require("raw-body");
 
 const KV_KEY = "planting_growth_records_v1";
 
-/** Default `public` so image URLs work on any device without a proxy token. Set `BLOB_PUT_ACCESS=private` for non-public blobs (served via `/api/growth-image`). */
+/**
+ * `private` by default (works with all Blob stores; images use `/api/growth-image`).
+ * Set `BLOB_PUT_ACCESS=public` for direct public URLs (no pathname proxy).
+ */
 function blobPutAccess() {
-  return process.env.BLOB_PUT_ACCESS === "private" ? "private" : "public";
+  return process.env.BLOB_PUT_ACCESS === "public" ? "public" : "private";
 }
 
 function assertAuth(req) {
@@ -136,6 +139,7 @@ module.exports = async function handler(req, res) {
           token: process.env.BLOB_READ_WRITE_TOKEN,
           contentType: body.imageMime || "image/jpeg",
           addRandomSuffix: false,
+          allowOverwrite: true,
         });
         imageUrl = uploaded.url;
         imagePathname = access === "private" ? uploaded.pathname : null;

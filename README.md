@@ -26,8 +26,8 @@
 
 1. このフォルダを **Vercel のプロジェクト**としてデプロイする（Root Directory を `planting` にするか、リポジトリ全体からこのフォルダだけを選ぶ）。
 2. Vercel ダッシュボードで **Blob** ストアを作成し、プロジェクトに接続する（`BLOB_READ_WRITE_TOKEN` が自動で入ります）。
-   - **既定**では新規アップロードは **`access: 'public'`**（環境変数未設定時）で、画像は **そのままの URL** でどの端末からも表示できます。
-   - **`BLOB_PUT_ACCESS=private`** にすると非公開 Blob に保存し、サムネイルは **`/api/growth-image`** が代理で配信します（閲覧はトークン不要。パスは `growth/{id}.jpg` 形式に限定）。
+   - **既定**では新規アップロードは **`access: 'private'`**（環境変数未設定時）で、画像は **`/api/growth-image`** 経由で配信されます（閲覧はトークン不要）。
+   - **`BLOB_PUT_ACCESS=public`** にすると Blob の **公開 URL** をそのまま記録に保存できます（ストアが公開アップロードに対応している必要があります）。上書き時は **`allowOverwrite`** を付けているため、同じ `growth/{id}.jpg` への差し替えも失敗しにくくなっています。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、**投稿・編集・削除・植栽マスタの保存**だけが保護されます。**記録一覧の取得（GET）はトークンなし**で行えるため、どの端末でも一覧と写真を閲覧できます。**トークン未設定のままだと、公開 URL では誰でも書き込める**状態になります。
 5. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、一覧取得と保存ができるか確認します。
