@@ -67,10 +67,21 @@
     }
   }
 
-  fetch("data/plants.json", { cache: "no-store" })
+  fetch("/api/plants", { cache: "no-store" })
     .then(function (res) {
-      if (!res.ok) throw new Error("bad status");
+      if (!res.ok) throw new Error("api plants");
       return res.json();
+    })
+    .then(function (data) {
+      if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
+      return { areas: data.areas };
+    })
+    .catch(function () {
+      return fetch("data/plants.json", { cache: "no-store" })
+        .then(function (res) {
+          if (!res.ok) throw new Error("bad status");
+          return res.json();
+        });
     })
     .catch(function () {
       var embedded = readEmbeddedPlants();

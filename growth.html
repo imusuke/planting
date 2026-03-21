@@ -107,6 +107,59 @@
       </div>
     </section>
 
+    <section
+      class="growth-section growth-section--composer"
+      id="plants-catalog-section"
+      aria-labelledby="plants-catalog-heading"
+    >
+      <div class="section-heading-row">
+        <h2 id="plants-catalog-heading">植栽名リスト</h2>
+        <button
+          type="button"
+          class="info-icon-btn"
+          data-open-dialog="plants-catalog-info-dialog"
+          aria-label="植栽名リストの編集について（説明を開く）"
+          title="説明"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4M12 8h.01" />
+          </svg>
+        </button>
+      </div>
+      <p id="plants-catalog-source" class="growth-hint" aria-live="polite"></p>
+      <div id="plants-catalog-editor" class="plants-catalog-editor" hidden></div>
+      <div class="plants-catalog-actions">
+        <button type="button" id="plants-catalog-reload" class="growth-secondary">一覧を再読み込み</button>
+        <button type="button" id="plants-catalog-save" class="growth-primary">植栽名をサーバーに保存</button>
+      </div>
+      <p id="plants-catalog-hint" class="growth-hint">
+        保存には<strong>上</strong>の「アップロード用トークン」と同じ合言葉が必要です。名称を変えた行について、同じエリアの成長記録に含まれる旧名を新名へ置き換えます。
+      </p>
+      <div class="plants-catalog-record-rename" aria-label="記録内の旧名をまとめて置き換え（任意）">
+        <p class="growth-hint plants-catalog-record-rename-title">記録にだけ古い名前が残っているとき（任意）</p>
+        <div class="plants-catalog-record-rename-row">
+          <label>
+            エリア
+            <select id="plants-record-rename-area">
+              <option value="">（指定しない）</option>
+            </select>
+          </label>
+          <label>
+            旧名
+            <input id="plants-record-rename-from" type="text" autocomplete="off" placeholder="例: ドラセナコンシンナ" />
+          </label>
+          <label>
+            新名
+            <input id="plants-record-rename-to" type="text" autocomplete="off" placeholder="例: ドラセナ・コンシンナ" />
+          </label>
+        </div>
+        <p class="growth-hint">
+          一覧の名前はすでに新しくても、過去の記録だけ旧表記のまま、というときに使います。「植栽名をサーバーに保存」と同時に、指定したエリアの記録だけ置き換えます。
+        </p>
+      </div>
+    </section>
+
     <section class="growth-section growth-section--composer" id="new-record" aria-labelledby="new-heading">
       <h2 id="new-heading">新しい記録を追加</h2>
       <p id="growth-edit-banner" class="growth-edit-banner" role="status" hidden>
@@ -153,6 +206,25 @@
         </p>
       </form>
     </section>
+
+    <dialog id="plants-catalog-info-dialog" class="info-dialog" aria-labelledby="plants-catalog-info-title">
+      <div class="info-dialog-inner">
+        <div class="info-dialog-head">
+          <h2 id="plants-catalog-info-title" class="info-dialog-title">植栽名リストの編集</h2>
+          <form method="dialog">
+            <button type="submit" class="info-dialog-close">閉じる</button>
+          </form>
+        </div>
+        <div class="info-dialog-body">
+          <p>
+            ここで変えた名前は、植栽一覧ページとこのページのチェックボックスの両方に反映されます。データはサーバー（KV）に保存され、リポジトリの <code>data/plants.json</code> より優先されます。
+          </p>
+          <p>
+            既存の成長記録に載っている植栽名を変えたときは、<strong>同じエリア</strong>の記録だけ、旧名を新名に置き換えます。行の追加・削除や並べ替えだけでは、記録側の名前は自動では変わりません。
+          </p>
+        </div>
+      </div>
+    </dialog>
 
     <dialog id="growth-page-info-dialog" class="info-dialog" aria-labelledby="growth-page-info-title">
       <div class="info-dialog-inner">
@@ -227,7 +299,7 @@
     { "id": "parking", "label": "駐車場脇", "plants": ["シルバープリペット"] },
     { "id": "deck", "label": "ウッドデッキ", "plants": ["落葉ヤマボウシ（日本固有種）"] },
     { "id": "corner", "label": "角庭", "plants": [] },
-    { "id": "indoor", "label": "室内", "plants": ["ドラセナコンシンナ", "ウンベラータ"] }
+    { "id": "indoor", "label": "室内", "plants": ["ドラセナ・コンシンナ", "ウンベラータ"] }
   ]
 }
   </script>

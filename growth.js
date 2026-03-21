@@ -4,11 +4,16 @@
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
+  var API_PLANTS = "/api/plants";
   var MAX_IMAGE_WIDTH = 1280;
   var JPEG_QUALITY = 0.82;
 
   var state = {
     areas: [],
+    /** Snapshot for rename detection when saving the catalog */
+    plantsBaseline: [],
+    /** "kv" | "file" | "embed" */
+    plantsSource: "file",
     /** @type {null | { id: string, createdAt: string|null, plants: string[] }} */
     editRecord: null,
   };
@@ -33,6 +38,13 @@
     newHeading: null,
     editBanner: null,
     editCancel: null,
+    plantsCatalogSource: null,
+    plantsCatalogEditor: null,
+    plantsCatalogReload: null,
+    plantsCatalogSave: null,
+    plantsRecordRenameArea: null,
+    plantsRecordRenameFrom: null,
+    plantsRecordRenameTo: null,
   };
 
   function $(id) {
@@ -264,18 +276,244 @@
   }
 
   function loadPlantsData() {
-    return fetch("data/plants.json", { cache: "no-store" })
+    return fetch(API_PLANTS, { cache: "no-store" })
       .then(function (res) {
-        if (!res.ok) throw new Error("bad status");
+        if (!res.ok) throw new Error("api plants");
         return res.json();
+      })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.areas)) throw new Error("bad api shape");
+        return { areas: data.areas, source: data.source === "kv" ? "kv" : "file" };
+      })
+      .catch(function () {
+        return fetch("data/plants.json", { cache: "no-store" })
+          .then(function (res) {
+            if (!res.ok) throw new Error("bad status");
+            return res.json();
+          })
+          .then(function (data) {
+            return { areas: data.areas || [], source: "file" };
+          });
       })
       .catch(function () {
         var embedded = readEmbeddedPlants();
         if (embedded && embedded.areas) {
-          return embedded;
+          return { areas: embedded.areas, source: "embed" };
         }
         throw new Error("plants.json を読めず、埋め込みデータも使えません");
       });
+  }
+
+  function computePlantRenames(beforeAreas, afterAreas) {
+    var byId = {};
+    beforeAreas.forEach(function (a) {
+      byId[a.id] = a;
+    });
+    var renames = [];
+    afterAreas.forEach(function (after) {
+      var before = byId[after.id];
+      if (!before) return;
+      var op = before.plants || [];
+      var np = after.plants || [];
+      var n = Math.min(op.length, np.length);
+      for (var i = 0; i < n; i++) {
+        if (op[i] !== np[i]) {
+          renames.push({ areaId: after.id, from: op[i], to: np[i] });
+        }
+      }
+    });
+    return renames;
+  }
+
+  function makePlantCatalogRow(initial) {
+    var row = document.createElement("div");
+    row.className = "plants-catalog-row";
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "plants-catalog-name-input";
+    inp.value = initial || "";
+    inp.autocomplete = "off";
+    row.appendChild(inp);
+    var rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "growth-secondary plants-catalog-remove";
+    rm.textContent = "削除";
+    rm.addEventListener("click", function () {
+      var parent = row.parentElement;
+      if (parent && parent.childElementCount <= 1) {
+        inp.value = "";
+        return;
+      }
+      row.remove();
+    });
+    row.appendChild(rm);
+    return row;
+  }
+
+  function renderPlantsCatalogEditor() {
+    if (!el.plantsCatalogEditor) return;
+    el.plantsCatalogEditor.innerHTML = "";
+    el.plantsCatalogEditor.hidden = false;
+    state.areas.forEach(function (area) {
+      var block = document.createElement("div");
+      block.className = "plants-catalog-area-block";
+      block.dataset.areaId = area.id;
+      var h = document.createElement("h3");
+      h.className = "plants-catalog-area-title";
+      h.textContent = area.label;
+      block.appendChild(h);
+      var list = document.createElement("div");
+      list.className = "plants-catalog-name-rows";
+      var plants = area.plants || [];
+      if (plants.length === 0) {
+        list.appendChild(makePlantCatalogRow(""));
+      } else {
+        plants.forEach(function (name) {
+          list.appendChild(makePlantCatalogRow(name));
+        });
+      }
+      block.appendChild(list);
+      var addBtn = document.createElement("button");
+      addBtn.type = "button";
+      addBtn.className = "growth-secondary plants-catalog-add";
+      addBtn.textContent = "行を追加";
+      addBtn.addEventListener("click", function () {
+        list.appendChild(makePlantCatalogRow(""));
+      });
+      block.appendChild(addBtn);
+      el.plantsCatalogEditor.appendChild(block);
+    });
+  }
+
+  function collectPlantsCatalogFromEditor() {
+    var out = [];
+    if (!el.plantsCatalogEditor) return out;
+    var blocks = el.plantsCatalogEditor.querySelectorAll(".plants-catalog-area-block");
+    for (var i = 0; i < blocks.length; i++) {
+      var block = blocks[i];
+      var id = block.dataset.areaId;
+      var meta = state.areas.find(function (a) {
+        return a.id === id;
+      });
+      if (!meta) continue;
+      var inputs = block.querySelectorAll(".plants-catalog-name-input");
+      var plants = [];
+      for (var j = 0; j < inputs.length; j++) {
+        var t = inputs[j].value.trim();
+        if (t) plants.push(t);
+      }
+      out.push({ id: meta.id, label: meta.label, plants: plants });
+    }
+    return out;
+  }
+
+  function updatePlantsCatalogSourceLabel() {
+    if (!el.plantsCatalogSource) return;
+    if (state.plantsSource === "kv") {
+      el.plantsCatalogSource.textContent =
+        "現在の表示: サーバーに保存した植栽名リスト（Web で編集した内容）";
+    } else if (state.plantsSource === "embed") {
+      el.plantsCatalogSource.textContent = "現在の表示: ページ内の埋め込みデータ（オフライン用）";
+    } else {
+      el.plantsCatalogSource.textContent =
+        "現在の表示: サイトに同梱の既定リスト（サーバーへの上書きがまだないときは data/plants.json と同じ内容です）";
+    }
+  }
+
+  function savePlantsCatalog() {
+    if (!el.plantsCatalogSave) return;
+    var collected = collectPlantsCatalogFromEditor();
+    if (collected.length !== state.areas.length) {
+      showToast("エリア数が一致しません。再読み込みしてからやり直してください。", true);
+      return;
+    }
+    var renames = computePlantRenames(state.plantsBaseline, collected);
+    if (el.plantsRecordRenameArea && el.plantsRecordRenameFrom && el.plantsRecordRenameTo) {
+      var aid = el.plantsRecordRenameArea.value.trim();
+      var fr = el.plantsRecordRenameFrom.value.trim();
+      var to = el.plantsRecordRenameTo.value.trim();
+      if (aid && fr && to && fr !== to) {
+        renames.push({ areaId: aid, from: fr, to: to });
+      }
+    }
+    el.plantsCatalogSave.disabled = true;
+    fetch(API_PLANTS, {
+      method: "PUT",
+      headers: cloudHeaders(true),
+      body: JSON.stringify({ areas: collected, renames: renames }),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが必要です。下の欄に正しい文字列を入れて保存してください。");
+        }
+        if (!res.ok) {
+          return apiErrorMessage(res, "植栽リストの保存に失敗しました").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function () {
+        state.areas = collected;
+        state.plantsBaseline = JSON.parse(JSON.stringify(collected));
+        state.plantsSource = "kv";
+        populateAreaSelects();
+        renderPlantChecks(el.area.value);
+        updateFilterPlantOptions();
+        updatePlantsCatalogSourceLabel();
+        if (state.editRecord && state.editRecord.plants) {
+          applyPlantsToForm(state.editRecord.plants, el.area.value);
+        }
+        if (el.plantsRecordRenameFrom) el.plantsRecordRenameFrom.value = "";
+        if (el.plantsRecordRenameTo) el.plantsRecordRenameTo.value = "";
+        showToast(
+          renames.length
+            ? "保存しました（記録内の植栽名も置き換えた行があります）"
+            : "保存しました"
+        );
+        return refreshFeed();
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "保存に失敗しました", true);
+      })
+      .finally(function () {
+        el.plantsCatalogSave.disabled = false;
+      });
+  }
+
+  function reloadPlantsCatalogUi() {
+    loadPlantsData()
+      .then(function (pack) {
+        state.areas = pack.areas || [];
+        state.plantsSource = pack.source;
+        state.plantsBaseline = JSON.parse(JSON.stringify(state.areas));
+        populateAreaSelects();
+        renderPlantChecks(el.area.value);
+        updateFilterPlantOptions();
+        renderPlantsCatalogEditor();
+        updatePlantsCatalogSourceLabel();
+        if (state.editRecord && state.editRecord.plants) {
+          applyPlantsToForm(state.editRecord.plants, el.area.value);
+        }
+        showToast("植栽リストを再読み込みしました");
+        return refreshFeed();
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "読み込みに失敗しました", true);
+      });
+  }
+
+  function populateRecordRenameAreaSelect() {
+    if (!el.plantsRecordRenameArea) return;
+    var keep = el.plantsRecordRenameArea.value;
+    el.plantsRecordRenameArea.innerHTML = '<option value="">（指定しない）</option>';
+    state.areas.forEach(function (a) {
+      var opt = document.createElement("option");
+      opt.value = a.id;
+      opt.textContent = a.label;
+      el.plantsRecordRenameArea.appendChild(opt);
+    });
+    if (keep) el.plantsRecordRenameArea.value = keep;
   }
 
   function populateAreaSelects() {
@@ -299,6 +537,7 @@
       });
       if (keep) el.filterArea.value = keep;
     }
+    populateRecordRenameAreaSelect();
     updateFilterPlantOptions();
   }
 
@@ -717,6 +956,13 @@
     el.newHeading = $("new-heading");
     el.editBanner = $("growth-edit-banner");
     el.editCancel = $("growth-edit-cancel");
+    el.plantsCatalogSource = $("plants-catalog-source");
+    el.plantsCatalogEditor = $("plants-catalog-editor");
+    el.plantsCatalogReload = $("plants-catalog-reload");
+    el.plantsCatalogSave = $("plants-catalog-save");
+    el.plantsRecordRenameArea = $("plants-record-rename-area");
+    el.plantsRecordRenameFrom = $("plants-record-rename-from");
+    el.plantsRecordRenameTo = $("plants-record-rename-to");
 
     if (!el.form || !el.area) return;
 
@@ -735,10 +981,21 @@
 
     if (el.cloudTokenSave) el.cloudTokenSave.addEventListener("click", onCloudTokenSave);
 
+    if (el.plantsCatalogReload) {
+      el.plantsCatalogReload.addEventListener("click", reloadPlantsCatalogUi);
+    }
+    if (el.plantsCatalogSave) {
+      el.plantsCatalogSave.addEventListener("click", savePlantsCatalog);
+    }
+
     loadPlantsData()
-      .then(function (data) {
-        state.areas = data.areas || [];
+      .then(function (pack) {
+        state.areas = pack.areas || [];
+        state.plantsSource = pack.source;
+        state.plantsBaseline = JSON.parse(JSON.stringify(state.areas));
         populateAreaSelects();
+        renderPlantsCatalogEditor();
+        updatePlantsCatalogSourceLabel();
         var q = new URLSearchParams(window.location.search);
         if (q.get("area") || q.get("plant")) {
           applyQueryPrefill();

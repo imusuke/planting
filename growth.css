@@ -366,6 +366,95 @@ button.growth-danger {
   color: var(--ink);
 }
 
+.plants-catalog-editor {
+  display: grid;
+  gap: 20px;
+  margin-top: 12px;
+  max-width: 40rem;
+}
+
+.plants-catalog-area-block {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.plants-catalog-area-title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.plants-catalog-name-rows {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.plants-catalog-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.plants-catalog-name-input {
+  flex: 1;
+  min-width: 10rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+.plants-catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.plants-catalog-record-rename {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(45, 106, 79, 0.2);
+  max-width: 40rem;
+}
+
+.plants-catalog-record-rename-title {
+  margin-bottom: 8px;
+}
+
+.plants-catalog-record-rename-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.plants-catalog-record-rename-row label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.88rem;
+}
+
+.plants-catalog-record-rename-row select,
+.plants-catalog-record-rename-row input[type="text"] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+@media (min-width: 640px) {
+  .plants-catalog-record-rename-row {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+  }
+}
+
 @media (max-width: 760px) {
   .growth-section {
     padding: 0 18px 22px;
