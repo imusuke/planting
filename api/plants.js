@@ -44,11 +44,27 @@ async function writeGrowthRecords(records) {
   await kv.set(KV_GROWTH, JSON.stringify(records));
 }
 
+function isValidAreaId(id) {
+  return typeof id === "string" && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(id);
+}
+
+function validateUniqueAreaIds(areas) {
+  var seen = {};
+  for (var i = 0; i < areas.length; i++) {
+    var id = areas[i].id;
+    if (seen[id]) return "duplicate_area_id";
+    seen[id] = true;
+  }
+  return null;
+}
+
 function validateAreas(areas) {
   if (!Array.isArray(areas)) return "areas_not_array";
+  if (areas.length === 0) return "areas_empty";
   for (var i = 0; i < areas.length; i++) {
     var a = areas[i];
     if (!a || typeof a.id !== "string" || !a.id.trim()) return "bad_area_id";
+    if (!isValidAreaId(a.id.trim())) return "bad_area_id_format";
     if (typeof a.label !== "string" || !a.label.trim()) return "bad_area_label";
     if (!Array.isArray(a.plants)) return "bad_plants_array";
     for (var j = 0; j < a.plants.length; j++) {
@@ -58,6 +74,53 @@ function validateAreas(areas) {
     }
   }
   return null;
+}
+
+function validateAreaIdMigrations(migrations, areas) {
+  if (!Array.isArray(migrations)) return "area_migrations_not_array";
+  var toIds = {};
+  for (var a = 0; a < areas.length; a++) {
+    toIds[areas[a].id] = true;
+  }
+  var fromSeen = {};
+  for (var i = 0; i < migrations.length; i++) {
+    var m = migrations[i];
+    if (!m || typeof m.from !== "string" || !m.from.trim()) return "bad_migration_from";
+    if (typeof m.to !== "string" || !m.to.trim()) return "bad_migration_to";
+    var mf = m.from.trim();
+    var mt = m.to.trim();
+    if (mf === mt) return "bad_migration_same";
+    if (!isValidAreaId(mf) || !isValidAreaId(mt)) return "bad_migration_id_format";
+    if (fromSeen[mf]) return "duplicate_migration_from";
+    fromSeen[mf] = true;
+    if (!toIds[mt]) return "migration_target_missing";
+  }
+  return null;
+}
+
+function applyAreaIdMigrations(records, migrations, labelById) {
+  var map = {};
+  for (var i = 0; i < migrations.length; i++) {
+    map[migrations[i].from.trim()] = migrations[i].to.trim();
+  }
+  function resolve(id) {
+    var steps = 0;
+    var cur = id;
+    while (map[cur] && steps < 100) {
+      cur = map[cur];
+      steps++;
+    }
+    return cur;
+  }
+  return records.map(function (rec) {
+    var nid = resolve(rec.areaId);
+    if (nid === rec.areaId) return rec;
+    var lab = labelById[nid];
+    return Object.assign({}, rec, {
+      areaId: nid,
+      areaLabel: lab != null ? lab : rec.areaLabel,
+    });
+  });
 }
 
 function dedupePlantOrder(arr) {
@@ -156,6 +219,21 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: verr });
     }
 
+    var uerr = validateUniqueAreaIds(body.areas);
+    if (uerr) {
+      return res.status(400).json({ error: uerr });
+    }
+
+    var areaIdMigrations = body.areaIdMigrations;
+    if (areaIdMigrations != null) {
+      var merr = validateAreaIdMigrations(areaIdMigrations, body.areas);
+      if (merr) {
+        return res.status(400).json({ error: merr });
+      }
+    } else {
+      areaIdMigrations = [];
+    }
+
     var renames = body.renames;
     if (renames != null) {
       var rerr = validateRenames(renames);
@@ -166,18 +244,30 @@ module.exports = async function handler(req, res) {
       renames = [];
     }
 
-    if (renames.length) {
+    var needGrowthWrite = renames.length > 0 || areaIdMigrations.length > 0;
+    if (needGrowthWrite) {
       var records = await readGrowthRecords();
       if (records === null) {
         return res.status(503).json({ error: "kv_unavailable" });
       }
-      var nextRecords = records.map(function (rec) {
-        return applyAreaRenamesToRecord(rec, renames);
-      });
+      var labelById = {};
+      for (var li = 0; li < body.areas.length; li++) {
+        var ar = body.areas[li];
+        labelById[ar.id] = ar.label;
+      }
+      var nextRecords = records;
+      if (areaIdMigrations.length) {
+        nextRecords = applyAreaIdMigrations(nextRecords, areaIdMigrations, labelById);
+      }
+      if (renames.length) {
+        nextRecords = nextRecords.map(function (rec) {
+          return applyAreaRenamesToRecord(rec, renames);
+        });
+      }
       try {
         await writeGrowthRecords(nextRecords);
       } catch (e) {
-        console.error("growth write after plant rename", e);
+        console.error("growth write after catalog save", e);
         return res.status(503).json({ error: "kv_write_failed" });
       }
     }
@@ -189,7 +279,10 @@ module.exports = async function handler(req, res) {
       return res.status(503).json({ error: "kv_write_failed" });
     }
 
-    return res.status(200).json({ ok: true, updatedRecords: renames.length > 0 });
+    return res.status(200).json({
+      ok: true,
+      updatedRecords: needGrowthWrite,
+    });
   }
 
   res.setHeader("Allow", "GET, PUT");

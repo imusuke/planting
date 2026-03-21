@@ -51,6 +51,7 @@
     plantsCatalogSource: null,
     plantsCatalogEditor: null,
     plantsCatalogReload: null,
+    plantsCatalogAddArea: null,
     plantsCatalogSave: null,
     plantsRecordRenameArea: null,
     plantsRecordRenameFrom: null,
@@ -374,7 +375,11 @@
     });
     var renames = [];
     afterAreas.forEach(function (after) {
-      var before = byId[after.id];
+      var orig =
+        after._originalId != null && String(after._originalId).trim() !== ""
+          ? String(after._originalId).trim()
+          : after.id;
+      var before = byId[orig];
       if (!before) return;
       var op = before.plants || [];
       var np = after.plants || [];
@@ -386,6 +391,126 @@
       }
     });
     return renames;
+  }
+
+  var AREA_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+  function validateCollectedCatalog(collected) {
+    if (!collected.length) {
+      return "エリアを1つ以上登録してください。";
+    }
+    var seen = {};
+    for (var i = 0; i < collected.length; i++) {
+      var a = collected[i];
+      if (!a.id) {
+        return "エリアIDが空のブロックがあります。";
+      }
+      if (!AREA_ID_RE.test(a.id)) {
+        return "エリアIDは英小文字・数字・ハイフンのみ（例: north-garden）: " + a.id;
+      }
+      if (!a.label) {
+        return "表示名が空のエリアがあります（ID: " + a.id + "）。";
+      }
+      if (seen[a.id]) {
+        return "同じエリアIDが重複しています: " + a.id;
+      }
+      seen[a.id] = true;
+    }
+    return null;
+  }
+
+  function buildAreaIdMigrations(collected) {
+    var out = [];
+    var fromSeen = {};
+    for (var i = 0; i < collected.length; i++) {
+      var a = collected[i];
+      var o = a._originalId != null ? String(a._originalId).trim() : "";
+      if (o && o !== a.id) {
+        if (fromSeen[o]) {
+          return { error: "同じ旧エリアIDからの変更が複数あります: " + o };
+        }
+        fromSeen[o] = true;
+        out.push({ from: o, to: a.id });
+      }
+    }
+    return { migrations: out };
+  }
+
+  function makeCatalogAreaBlock(area, originalAreaId) {
+    var block = document.createElement("div");
+    block.className = "plants-catalog-area-block";
+    block.dataset.originalAreaId = originalAreaId != null && originalAreaId !== "" ? originalAreaId : "";
+
+    var meta = document.createElement("div");
+    meta.className = "plants-catalog-area-meta";
+
+    var idLab = document.createElement("label");
+    idLab.className = "plants-catalog-area-field";
+    var idCap = document.createElement("span");
+    idCap.textContent = "エリアID";
+    var idInput = document.createElement("input");
+    idInput.type = "text";
+    idInput.className = "plants-catalog-area-id-input";
+    idInput.value = area.id || "";
+    idInput.autocomplete = "off";
+    idInput.placeholder = "例: north-garden";
+    idLab.appendChild(idCap);
+    idLab.appendChild(idInput);
+
+    var labelLab = document.createElement("label");
+    labelLab.className = "plants-catalog-area-field";
+    var labelCap = document.createElement("span");
+    labelCap.textContent = "表示名";
+    var labelInput = document.createElement("input");
+    labelInput.type = "text";
+    labelInput.className = "plants-catalog-area-label-input";
+    labelInput.value = area.label || "";
+    labelInput.autocomplete = "off";
+    labelInput.placeholder = "例: 北側花壇";
+    labelLab.appendChild(labelCap);
+    labelLab.appendChild(labelInput);
+
+    meta.appendChild(idLab);
+    meta.appendChild(labelLab);
+
+    var rmArea = document.createElement("button");
+    rmArea.type = "button";
+    rmArea.className = "growth-secondary plants-catalog-remove-area";
+    rmArea.textContent = "このエリアを削除";
+    rmArea.addEventListener("click", function () {
+      if (!el.plantsCatalogEditor) return;
+      var blocks = el.plantsCatalogEditor.querySelectorAll(".plants-catalog-area-block");
+      if (blocks.length <= 1) {
+        showToast("エリアは最低1つ必要です。", true);
+        return;
+      }
+      if (!window.confirm("このエリアと、その下の植栽行を一覧から外します。よろしいですか？")) return;
+      block.remove();
+    });
+
+    meta.appendChild(rmArea);
+    block.appendChild(meta);
+
+    var list = document.createElement("div");
+    list.className = "plants-catalog-name-rows";
+    var plants = area.plants || [];
+    if (plants.length === 0) {
+      list.appendChild(makePlantCatalogRow(""));
+    } else {
+      plants.forEach(function (name) {
+        list.appendChild(makePlantCatalogRow(name));
+      });
+    }
+    block.appendChild(list);
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "growth-secondary plants-catalog-add";
+    addBtn.textContent = "植栽の行を追加";
+    addBtn.addEventListener("click", function () {
+      list.appendChild(makePlantCatalogRow(""));
+    });
+    block.appendChild(addBtn);
+    return block;
   }
 
   function makePlantCatalogRow(initial) {
@@ -418,33 +543,12 @@
     el.plantsCatalogEditor.innerHTML = "";
     el.plantsCatalogEditor.hidden = false;
     state.areas.forEach(function (area) {
-      var block = document.createElement("div");
-      block.className = "plants-catalog-area-block";
-      block.dataset.areaId = area.id;
-      var h = document.createElement("h3");
-      h.className = "plants-catalog-area-title";
-      h.textContent = area.label;
-      block.appendChild(h);
-      var list = document.createElement("div");
-      list.className = "plants-catalog-name-rows";
-      var plants = area.plants || [];
-      if (plants.length === 0) {
-        list.appendChild(makePlantCatalogRow(""));
-      } else {
-        plants.forEach(function (name) {
-          list.appendChild(makePlantCatalogRow(name));
-        });
-      }
-      block.appendChild(list);
-      var addBtn = document.createElement("button");
-      addBtn.type = "button";
-      addBtn.className = "growth-secondary plants-catalog-add";
-      addBtn.textContent = "行を追加";
-      addBtn.addEventListener("click", function () {
-        list.appendChild(makePlantCatalogRow(""));
-      });
-      block.appendChild(addBtn);
-      el.plantsCatalogEditor.appendChild(block);
+      el.plantsCatalogEditor.appendChild(
+        makeCatalogAreaBlock(
+          { id: area.id, label: area.label, plants: area.plants || [] },
+          area.id
+        )
+      );
     });
   }
 
@@ -454,18 +558,23 @@
     var blocks = el.plantsCatalogEditor.querySelectorAll(".plants-catalog-area-block");
     for (var i = 0; i < blocks.length; i++) {
       var block = blocks[i];
-      var id = block.dataset.areaId;
-      var meta = state.areas.find(function (a) {
-        return a.id === id;
-      });
-      if (!meta) continue;
+      var idInput = block.querySelector(".plants-catalog-area-id-input");
+      var labelInput = block.querySelector(".plants-catalog-area-label-input");
+      var id = idInput ? idInput.value.trim() : "";
+      var label = labelInput ? labelInput.value.trim() : "";
+      var original = (block.dataset.originalAreaId || "").trim();
       var inputs = block.querySelectorAll(".plants-catalog-name-input");
       var plants = [];
       for (var j = 0; j < inputs.length; j++) {
         var t = inputs[j].value.trim();
         if (t) plants.push(t);
       }
-      out.push({ id: meta.id, label: meta.label, plants: plants });
+      out.push({
+        id: id,
+        label: label,
+        plants: plants,
+        _originalId: original,
+      });
     }
     return out;
   }
@@ -486,10 +595,17 @@
   function savePlantsCatalog() {
     if (!el.plantsCatalogSave) return;
     var collected = collectPlantsCatalogFromEditor();
-    if (collected.length !== state.areas.length) {
-      showToast("エリア数が一致しません。再読み込みしてからやり直してください。", true);
+    var verr = validateCollectedCatalog(collected);
+    if (verr) {
+      showToast(verr, true);
       return;
     }
+    var migPack = buildAreaIdMigrations(collected);
+    if (migPack.error) {
+      showToast(migPack.error, true);
+      return;
+    }
+    var areaIdMigrations = migPack.migrations;
     var renames = computePlantRenames(state.plantsBaseline, collected);
     if (el.plantsRecordRenameArea && el.plantsRecordRenameFrom && el.plantsRecordRenameTo) {
       var aid = el.plantsRecordRenameArea.value.trim();
@@ -499,11 +615,18 @@
         renames.push({ areaId: aid, from: fr, to: to });
       }
     }
+    var payloadAreas = collected.map(function (a) {
+      return { id: a.id, label: a.label, plants: a.plants };
+    });
     el.plantsCatalogSave.disabled = true;
     fetch(API_PLANTS, {
       method: "PUT",
       headers: cloudHeaders(true),
-      body: JSON.stringify({ areas: collected, renames: renames }),
+      body: JSON.stringify({
+        areas: payloadAreas,
+        renames: renames,
+        areaIdMigrations: areaIdMigrations,
+      }),
     })
       .then(function (res) {
         if (res.status === 401) {
@@ -517,10 +640,34 @@
         return res.json();
       })
       .then(function () {
-        state.areas = collected;
-        state.plantsBaseline = JSON.parse(JSON.stringify(collected));
+        var stored = collected.map(function (a) {
+          return { id: a.id, label: a.label, plants: a.plants };
+        });
+        var prevArea = el.area ? el.area.value : "";
+        if (areaIdMigrations.length && el.area) {
+          var mmap = {};
+          areaIdMigrations.forEach(function (m) {
+            mmap[m.from] = m.to;
+          });
+          var steps = 0;
+          var cur = prevArea;
+          while (mmap[cur] && steps < 50) {
+            cur = mmap[cur];
+            steps++;
+          }
+          prevArea = cur;
+        }
+        state.areas = stored;
+        state.plantsBaseline = JSON.parse(JSON.stringify(stored));
         state.plantsSource = "kv";
         populateAreaSelects();
+        if (el.area && state.areas.length) {
+          var hasPrev = state.areas.some(function (a) {
+            return a.id === prevArea;
+          });
+          el.area.value = hasPrev ? prevArea : state.areas[0].id;
+        }
+        renderPlantsCatalogEditor();
         renderPlantChecks(el.area.value);
         updateFilterPlantOptions();
         updatePlantsCatalogSourceLabel();
@@ -529,10 +676,15 @@
         }
         if (el.plantsRecordRenameFrom) el.plantsRecordRenameFrom.value = "";
         if (el.plantsRecordRenameTo) el.plantsRecordRenameTo.value = "";
+        var toastParts = [];
+        if (areaIdMigrations.length) {
+          toastParts.push("記録のエリアIDを更新");
+        }
+        if (renames.length) {
+          toastParts.push("記録内の植栽名を置換");
+        }
         showToast(
-          renames.length
-            ? "保存しました（記録内の植栽名も置き換えた行があります）"
-            : "保存しました"
+          toastParts.length ? "保存しました（" + toastParts.join("・") + "）" : "保存しました"
         );
         if (el.feed) return refreshFeed();
       })
@@ -1146,6 +1298,7 @@
     el.plantsCatalogSource = $("plants-catalog-source");
     el.plantsCatalogEditor = $("plants-catalog-editor");
     el.plantsCatalogReload = $("plants-catalog-reload");
+    el.plantsCatalogAddArea = $("plants-catalog-add-area");
     el.plantsCatalogSave = $("plants-catalog-save");
     el.plantsRecordRenameArea = $("plants-record-rename-area");
     el.plantsRecordRenameFrom = $("plants-record-rename-from");
@@ -1171,6 +1324,13 @@
 
     if (el.plantsCatalogReload) {
       el.plantsCatalogReload.addEventListener("click", reloadPlantsCatalogUi);
+    }
+    if (el.plantsCatalogAddArea && el.plantsCatalogEditor) {
+      el.plantsCatalogAddArea.addEventListener("click", function () {
+        el.plantsCatalogEditor.appendChild(
+          makeCatalogAreaBlock({ id: "", label: "", plants: [] }, "")
+        );
+      });
     }
     if (el.plantsCatalogSave) {
       el.plantsCatalogSave.addEventListener("click", savePlantsCatalog);

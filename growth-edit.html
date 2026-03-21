@@ -107,10 +107,12 @@
       <div id="plants-catalog-editor" class="plants-catalog-editor" hidden></div>
       <div class="plants-catalog-actions">
         <button type="button" id="plants-catalog-reload" class="growth-secondary">一覧を再読み込み</button>
+        <button type="button" id="plants-catalog-add-area" class="growth-secondary">エリアを追加</button>
         <button type="button" id="plants-catalog-save" class="growth-primary">植栽名をサーバーに保存</button>
       </div>
       <p id="plants-catalog-hint" class="growth-hint">
-        保存には<strong>上</strong>の「アップロード用トークン」と同じ合言葉が必要です。名称を変えた行について、同じエリアの成長記録に含まれる旧名を新名へ置き換えます。
+        保存には<strong>上</strong>の「アップロード用トークン」と同じ合言葉が必要です。各エリアの<strong>エリアID</strong>は英小文字・数字・ハイフンのみ（例:
+        <code>north-garden</code>）です。IDを変えると、既存の成長記録のエリア紐づけも保存時に更新されます。植栽名を変えた行は、同じエリアの記録内の旧名を新名へ置き換えます。
       </p>
       <div class="plants-catalog-record-rename" aria-label="記録内の旧名をまとめて置き換え（任意）">
         <p class="growth-hint plants-catalog-record-rename-title">記録にだけ古い名前が残っているとき（任意）</p>
@@ -230,10 +232,13 @@
         </div>
         <div class="info-dialog-body">
           <p>
-            ここで変えた名前は、植栽一覧ページと成長記録フォームのチェックボックスの両方に反映されます。データはサーバー（KV）に保存され、リポジトリの <code>data/plants.json</code> より優先されます。
+            ここで変えた内容は、植栽一覧ページと成長記録フォームのエリア・チェックボックスの両方に反映されます。データはサーバー（KV）に保存され、リポジトリの <code>data/plants.json</code> より優先されます。
           </p>
           <p>
-            既存の成長記録に載っている植栽名を変えたときは、<strong>同じエリア</strong>の記録だけ、旧名を新名に置き換えます。行の追加・削除や並べ替えだけでは、記録側の名前は自動では変わりません。
+            <strong>エリア</strong>は「エリアを追加」で増やしたり、表示名・エリアIDの編集、「このエリアを削除」で減らせます（エリアは最低1つ必要です）。エリアIDを変えて保存すると、紐づく成長記録のエリアIDも更新されます。
+          </p>
+          <p>
+            既存の成長記録に載っている植栽名を変えたときは、<strong>同じエリア</strong>（変更後のID）の記録だけ、旧名を新名に置き換えます。行の追加・削除や並べ替えだけでは、記録側の名前は自動では変わりません。
           </p>
         </div>
       </div>
@@ -312,6 +317,7 @@
     { "id": "parking", "label": "駐車場脇", "plants": ["シルバープリペット"] },
     { "id": "deck", "label": "ウッドデッキ", "plants": ["落葉ヤマボウシ（日本固有種）"] },
     { "id": "corner", "label": "角庭", "plants": [] },
+    { "id": "yatsu-hatake", "label": "谷津畑", "plants": [] },
     { "id": "indoor", "label": "室内", "plants": ["ドラセナ・コンシンナ", "ウンベラータ"] }
   ]
 }

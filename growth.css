@@ -498,11 +498,45 @@ button.growth-danger {
   background: rgba(255, 255, 255, 0.45);
 }
 
-.plants-catalog-area-title {
-  margin: 0 0 10px;
-  font-size: 0.95rem;
+.plants-catalog-area-meta {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(45, 106, 79, 0.2);
+}
+
+.plants-catalog-area-field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
   font-weight: 700;
+  color: var(--muted);
+}
+
+.plants-catalog-area-field input {
+  font-weight: 500;
   color: var(--ink);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+.plants-catalog-remove-area {
+  align-self: end;
+  justify-self: start;
+}
+
+@media (min-width: 640px) {
+  .plants-catalog-area-meta {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+
+  .plants-catalog-remove-area {
+    justify-self: end;
+  }
 }
 
 .plants-catalog-name-rows {

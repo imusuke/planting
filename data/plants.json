@@ -21,6 +21,11 @@
       "plants": []
     },
     {
+      "id": "yatsu-hatake",
+      "label": "谷津畑",
+      "plants": []
+    },
+    {
       "id": "indoor",
       "label": "室内",
       "plants": ["ドラセナ・コンシンナ", "ウンベラータ"]
