@@ -31,14 +31,16 @@
 2. 本番の**ベース URL**（`https://…`、末尾 `/` なし）を付けて、**GET `/api/plants` と GET `/api/growth`** をまとめて取り込む（**トークン不要**）:
    - **`npm run sync:prod -- https://あなたのサイト.vercel.app`**
    - または環境変数 **`PLANTING_BASE_URL`** または **`GROWTH_SNAPSHOT_URL`** に同じ URL を設定して `npm run sync:prod`
-3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**、および **`index.html` / `growth-edit.html` / `plants.html`**（内蔵の **`plants-embed`** が自動で `plants.json` と一致するよう更新されます）を `git add` → `commit` → `push` する。
-4. 他の環境では **`git pull`** で同じ `data/` が揃います。
+3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html`**（**`plants-embed`** 自動更新）を `git add` → `commit` → `push` する。
+4. 他の環境では **`git pull`** で同じ `data/` と画像が揃います。スナップショットの各記録には **`localSnapshotImage`**（例: `./data/growth-images/{id}.jpg`）が付き、閲覧時は **ローカルファイルを優先**して表示します（オフラインや API 失敗時のフォールバック向け）。
 
-**個別に取り込む場合:** `npm run sync:plants -- <URL>`（マスタのみ・**plants-embed 付き HTML も更新**）、`npm run sync:growth -- <URL>`（成長記録のみ）。
+**個別に取り込む場合:** `npm run sync:plants -- <URL>`（マスタのみ・**plants-embed 付き HTML も更新**）、`npm run sync:growth -- <URL>`（成長記録＋**写真ダウンロード**）。**JSON だけ欲しいとき:** `npm run sync:growth -- <URL> --no-images`
+
+**いまある `growth-snapshot.json` にだけ写真を足す:** `npm run sync:images -- <URL>`
 
 **手元だけ `plants.json` を直したとき:** `npm run embed:plants` で 3 つの HTML の `plants-embed` を揃えられます。
 
-**注意:** 同期は手動（または CI）まで古いままです。画像ファイル本体は引き続き Blob にあり、JSON には URL のみが入ります。記録件数が非常に多い場合はリポジトリサイズに注意してください。
+**注意:** 同期は手動（または CI）まで古いままです。写真を Git に含めると **リポジトリが大きくなります**。画像取得で `self-signed certificate in certificate chain` などになる場合は、社内プロキシの影響のことがあります。**同期用に限り**環境変数 `PLANTING_SYNC_INSECURE_TLS=1` を付けて再実行すると TLS 検証を省略します（**普段のブラウザ運用では使わないでください**）。PowerShell 例: `$env:PLANTING_SYNC_INSECURE_TLS='1'; npm run sync:prod -- https://…`
 
 ## 成長記録（Vercel のセットアップ）
 

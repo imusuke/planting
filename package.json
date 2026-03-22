@@ -5,7 +5,8 @@
     "sync:prod": "node scripts/sync-from-prod.cjs",
     "sync:plants": "node scripts/sync-from-prod.cjs --plants-only",
     "sync:growth": "node scripts/sync-from-prod.cjs --growth-only",
-    "embed:plants": "node scripts/update-plants-embed.cjs"
+    "embed:plants": "node scripts/update-plants-embed.cjs",
+    "sync:images": "node scripts/download-growth-snapshot-images.cjs"
   },
   "engines": {
     "node": ">=18"

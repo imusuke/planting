@@ -100,6 +100,9 @@
   }
 
   function growthImageSrc(r) {
+    if (r.localSnapshotImage) {
+      return r.localSnapshotImage;
+    }
     if (r.imagePathname) {
       return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
     }

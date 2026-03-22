@@ -12,6 +12,7 @@
  * オプション:
  *   --plants-only … data/plants.json のみ（あわせて HTML 内 plants-embed も更新）
  *   --growth-only … data/growth-snapshot.json のみ
+ *   --no-images … 成長記録 JSON のみ（写真は data/growth-images に落とさない）
  */
 
 var fs = require("fs");
@@ -20,8 +21,13 @@ var path = require("path");
 var args = process.argv.slice(2);
 var growthOnlyFlag = args.indexOf("--growth-only") >= 0;
 var plantsOnlyFlag = args.indexOf("--plants-only") >= 0;
+var noImagesFlag = args.indexOf("--no-images") >= 0;
 var urlArgs = args.filter(function (a) {
-  return a !== "--growth-only" && a !== "--plants-only";
+  return (
+    a !== "--growth-only" &&
+    a !== "--plants-only" &&
+    a !== "--no-images"
+  );
 });
 
 var base = (
@@ -49,6 +55,8 @@ var doPlants = plantsOnlyFlag || !growthOnlyFlag;
 var root = path.join(__dirname, "..");
 var plantsPath = path.join(root, "data", "plants.json");
 var growthPath = path.join(root, "data", "growth-snapshot.json");
+var downloadImages = require("./download-growth-snapshot-images.cjs")
+  .downloadSnapshotImages;
 
 function syncPlants() {
   var url = base + "/api/plants";
@@ -82,15 +90,30 @@ function syncGrowth() {
     })
     .then(function (data) {
       var records = data && Array.isArray(data.records) ? data.records : [];
-      var payload = {
-        version: 2,
-        source: "snapshot",
-        exportedAt: new Date().toISOString(),
-        records: records,
+      var cleaned = records.map(function (r) {
+        var c = Object.assign({}, r);
+        delete c.localSnapshotImage;
+        return c;
+      });
+      var writePayload = function (finalRecords) {
+        var payload = {
+          version: 2,
+          source: "snapshot",
+          exportedAt: new Date().toISOString(),
+          records: finalRecords,
+        };
+        fs.writeFileSync(growthPath, JSON.stringify(payload, null, 2), "utf8");
+        console.log("書き出しました: " + growthPath);
+        console.log("記録件数: " + finalRecords.length);
       };
-      fs.writeFileSync(growthPath, JSON.stringify(payload, null, 2), "utf8");
-      console.log("書き出しました: " + growthPath);
-      console.log("記録件数: " + records.length);
+      if (noImagesFlag) {
+        writePayload(cleaned);
+        return;
+      }
+      console.log("写真を data/growth-images に取得中…");
+      return downloadImages(base, cleaned).then(function (withImages) {
+        writePayload(withImages);
+      });
     });
 }
 
@@ -109,7 +132,7 @@ if (doGrowth) {
 chain
   .then(function () {
     console.log(
-      "\n次: git add data/plants.json data/growth-snapshot.json index.html growth-edit.html plants.html && git commit && git push"
+      "\n次: git add data/plants.json data/growth-snapshot.json data/growth-images index.html growth-edit.html plants.html && git commit && git push"
     );
     console.log(
       "（plants を同期した場合は plants-embed 入り HTML も add してください。片方だけのときは不要なファイルを外す）"
