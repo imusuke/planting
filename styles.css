@@ -534,6 +534,17 @@ a.plant-detail-link:focus-visible {
   color: #8b2942;
 }
 
+.plant-detail-warning {
+  margin: 0 0 1.25rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  line-height: 1.65;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: rgba(184, 134, 11, 0.12);
+  border: 1px solid rgba(184, 134, 11, 0.35);
+}
+
 .plant-detail-summary {
   margin: 0 0 1.35rem;
   font-size: 1.06rem;

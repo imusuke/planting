@@ -75,9 +75,16 @@
             <option value="lg">大</option>
           </select>
         </label>
+        <label>
+          並び順
+          <select id="growth-feed-sort" aria-label="記録・写真の並び順">
+            <option value="newest" selected>新しい順</option>
+            <option value="oldest">古い順</option>
+          </select>
+        </label>
       </div>
       <p class="growth-hint growth-timeline-lead" id="growth-timeline-lead" hidden>
-        選んだ植栽が含まれる記録だけを、日付の<strong>古い順</strong>に表示します。エリアの絞り込みも使えます。
+        選んだ植栽が含まれる記録だけを表示します。記録日の並びは上の「<strong>並び順</strong>」で<strong>新しい順</strong>／<strong>古い順</strong>を選べます。エリアの絞り込みも使えます。
       </p>
       <div id="growth-feed" class="growth-feed"></div>
       <div id="growth-plant-timeline" class="growth-plant-timeline" hidden></div>

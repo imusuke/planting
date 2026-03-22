@@ -9,6 +9,7 @@
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var LS_THUMB_SIZE = "growthThumbSize";
+  var LS_FEED_SORT = "growthFeedSort";
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
   /** 閲覧ページ: API 失敗時に試すリポジトリ内スナップショット（npm run sync:prod で更新） */
@@ -31,6 +32,8 @@
     viewLayout: "grid",
     /** URL の plant をタイムライン用セレクトに適用するまでの一時値 */
     pendingTimelinePlant: null,
+    /** 閲覧ページ: "newest" | "oldest" — 記録一覧・植栽別タイムラインの並び */
+    feedSortOrder: "newest",
   };
 
   var el = {
@@ -43,6 +46,8 @@
     photoLibrary: null,
     photoStatus: null,
     photoClear: null,
+    photoExistingWrap: null,
+    photoExistingImg: null,
     submit: null,
     toast: null,
     filterArea: null,
@@ -74,6 +79,7 @@
     viewModeGridRadio: null,
     viewModeTimelineRadio: null,
     plantTimeline: null,
+    feedSort: null,
   };
 
   function $(id) {
@@ -115,6 +121,35 @@
       return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
     }
     return r.imageUrl || null;
+  }
+
+  /** 同一記録日でも安定して並ぶよう createdAt・id でタイブレーク */
+  function compareGrowthRecordsForSort(a, b, newestFirst) {
+    var da = a.recordedAt || "";
+    var db = b.recordedAt || "";
+    var ca = a.createdAt || "";
+    var cb = b.createdAt || "";
+    var ia = String(a.id || "");
+    var ib = String(b.id || "");
+    if (newestFirst) {
+      var c = db.localeCompare(da);
+      if (c !== 0) return c;
+      c = cb.localeCompare(ca);
+      if (c !== 0) return c;
+      return ib.localeCompare(ia);
+    }
+    var c2 = da.localeCompare(db);
+    if (c2 !== 0) return c2;
+    c2 = ca.localeCompare(cb);
+    if (c2 !== 0) return c2;
+    return ia.localeCompare(ib);
+  }
+
+  function sortFilteredGrowthRecords(filtered) {
+    var newest = state.feedSortOrder !== "oldest";
+    filtered.sort(function (a, b) {
+      return compareGrowthRecordsForSort(a, b, newest);
+    });
   }
 
   var growthPhotoLightboxEls = null;
@@ -326,6 +361,31 @@
     return null;
   }
 
+  function refreshEditExistingPhotoPreview() {
+    if (!el.photoExistingWrap || !el.photoExistingImg) return;
+    if (getPhotoFile()) {
+      el.photoExistingWrap.hidden = true;
+      return;
+    }
+    if (!state.editRecord) {
+      el.photoExistingWrap.hidden = true;
+      el.photoExistingImg.removeAttribute("src");
+      delete el.photoExistingImg.dataset.growthImgFallback;
+      return;
+    }
+    var src = growthImageSrc(state.editRecord);
+    if (!src) {
+      el.photoExistingWrap.hidden = true;
+      el.photoExistingImg.removeAttribute("src");
+      delete el.photoExistingImg.dataset.growthImgFallback;
+      return;
+    }
+    delete el.photoExistingImg.dataset.growthImgFallback;
+    el.photoExistingImg.alt = "現在保存されている写真";
+    el.photoExistingImg.src = src;
+    el.photoExistingWrap.hidden = false;
+  }
+
   function updatePhotoStatusFromInputs() {
     if (!el.photoStatus) return;
     var f = getPhotoFile();
@@ -336,6 +396,7 @@
       el.photoStatus.textContent = "";
       el.photoStatus.hidden = true;
     }
+    refreshEditExistingPhotoPreview();
   }
 
   function clearPhotoInputs() {
@@ -395,6 +456,9 @@
       id: r.id,
       createdAt: r.createdAt || null,
       plants: Array.isArray(r.plants) ? r.plants.slice() : [],
+      imageUrl: r.imageUrl || null,
+      imagePathname: r.imagePathname || null,
+      localSnapshotImage: r.localSnapshotImage || null,
     };
     if (el.area) el.area.value = r.areaId || el.area.value || "";
     renderPlantChecks(el.area.value);
@@ -1068,6 +1132,62 @@
     }
   }
 
+  function normalizeLooseString(s) {
+    return String(s || "")
+      .replace(/\u3000/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** areaId が無い旧データは areaLabel（またはラベルと同じ文字列の id）から補完 */
+  function resolveGrowthRecordAreaId(r) {
+    var aid = (r.areaId && String(r.areaId).trim()) || "";
+    if (aid) return aid;
+    var label = normalizeLooseString(r.areaLabel);
+    if (!label || !state.areas || !state.areas.length) return "";
+    for (var i = 0; i < state.areas.length; i++) {
+      var a = state.areas[i];
+      if (!a) continue;
+      var idPart = (a.id && String(a.id).trim()) || "";
+      var lab = normalizeLooseString(a.label);
+      if (lab && lab === label) return idPart;
+      if (idPart && idPart === label) return idPart;
+    }
+    return "";
+  }
+
+  /** 記録のエリアが取れないとき、植栽マスタ上の所属エリアから推定 */
+  function resolveGrowthRecordAreaIdForPlant(r, plantName) {
+    var fromRecord = resolveGrowthRecordAreaId(r);
+    if (fromRecord) return fromRecord;
+    var pn = normalizeLooseString(plantName);
+    if (!pn || !state.areas || !state.areas.length) return "";
+    for (var j = 0; j < state.areas.length; j++) {
+      var ar = state.areas[j];
+      if (!ar || !Array.isArray(ar.plants)) continue;
+      for (var k = 0; k < ar.plants.length; k++) {
+        var p = ar.plants[k];
+        var pt = normalizeLooseString(typeof p === "string" ? p : String(p));
+        if (pt && pt === pn) return (ar.id && String(ar.id).trim()) || "";
+      }
+    }
+    return "";
+  }
+
+  function plantDetailHref(areaId, plantName) {
+    var name = normalizeLooseString(plantName);
+    if (!name) return "./plant.html";
+    if (areaId) {
+      return (
+        "./plant.html?area=" +
+        encodeURIComponent(areaId) +
+        "&plant=" +
+        encodeURIComponent(name)
+      );
+    }
+    return "./plant.html?plant=" + encodeURIComponent(name);
+  }
+
   function createGrowthCardArticle(r, opts) {
     var inTimeline = opts && opts.inTimeline;
     var card = document.createElement("article");
@@ -1132,7 +1252,29 @@
 
     var title = document.createElement("h3");
     title.className = "growth-card-title";
-    title.textContent = r.plants && r.plants.length ? r.plants.join("、") : "—";
+    if (r.plants && r.plants.length) {
+      var firstPlant = true;
+      r.plants.forEach(function (pn) {
+        var name = typeof pn === "string" ? pn.trim() : String(pn || "").trim();
+        if (!name) return;
+        if (!firstPlant) {
+          title.appendChild(document.createTextNode("、"));
+        }
+        firstPlant = false;
+        var aid = resolveGrowthRecordAreaIdForPlant(r, name);
+        var a = document.createElement("a");
+        a.className = "growth-card-plant-link";
+        a.href = plantDetailHref(aid, name);
+        a.textContent = name;
+        a.setAttribute("title", name + "の詳細ページへ");
+        title.appendChild(a);
+      });
+      if (!title.childNodes.length) {
+        title.textContent = "—";
+      }
+    } else {
+      title.textContent = "—";
+    }
     body.appendChild(title);
 
     var areaRow = document.createElement("p");
@@ -1226,7 +1368,8 @@
     if (!plant) {
       var hint = document.createElement("p");
       hint.className = "growth-hint";
-      hint.textContent = "表示する植栽を選ぶと、その植栽が含まれる記録を記録日の古い順に並べます。エリアを絞り込むこともできます。";
+      hint.textContent =
+        "表示する植栽を選ぶと、その植栽が含まれる記録を一覧にします。記録日の並びは「並び順」で新しい順／古い順を選べます。エリアの絞り込みも使えます。";
       el.plantTimeline.appendChild(hint);
       return;
     }
@@ -1237,9 +1380,7 @@
       return true;
     });
 
-    filtered.sort(function (a, b) {
-      return (a.recordedAt || "").localeCompare(b.recordedAt || "");
-    });
+    sortFilteredGrowthRecords(filtered);
 
     if (filtered.length === 0) {
       var empty = document.createElement("p");
@@ -1295,9 +1436,7 @@
       return true;
     });
 
-    filtered.sort(function (a, b) {
-      return (b.recordedAt || "").localeCompare(a.recordedAt || "");
-    });
+    sortFilteredGrowthRecords(filtered);
 
     el.feed.innerHTML = "";
 
@@ -1649,6 +1788,7 @@
     el.exportBtn = $("export-btn");
     el.viewStatus = $("growth-view-status");
     el.thumbSize = $("growth-thumb-size");
+    el.feedSort = $("growth-feed-sort");
     el.viewModeGridRadio = $("growth-view-mode-grid");
     el.viewModeTimelineRadio = $("growth-view-mode-timeline");
     el.plantTimeline = $("growth-plant-timeline");
@@ -1698,6 +1838,22 @@
       el.thumbSize.addEventListener("change", function () {
         localStorage.setItem(LS_THUMB_SIZE, el.thumbSize.value);
         applyThumbFeedClass();
+      });
+    }
+    var sortSaved = "newest";
+    try {
+      var ssv = localStorage.getItem(LS_FEED_SORT);
+      if (ssv === "newest" || ssv === "oldest") sortSaved = ssv;
+    } catch (eSort) {}
+    state.feedSortOrder = sortSaved;
+    if (el.feedSort) {
+      el.feedSort.value = sortSaved;
+      el.feedSort.addEventListener("change", function () {
+        state.feedSortOrder = el.feedSort.value === "oldest" ? "oldest" : "newest";
+        try {
+          localStorage.setItem(LS_FEED_SORT, state.feedSortOrder);
+        } catch (eSort2) {}
+        renderViewMain(state.lastGrowthRecords);
       });
     }
     applyThumbFeedClass();
@@ -1834,6 +1990,8 @@
     el.photoLibrary = $("field-photo-library");
     el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
+    el.photoExistingWrap = $("growth-photo-existing-wrap");
+    el.photoExistingImg = $("growth-photo-existing-thumb");
     el.submit = $("growth-submit");
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
@@ -1964,6 +2122,22 @@
     if (el.photoClear) {
       el.photoClear.addEventListener("click", function () {
         clearPhotoInputs();
+      });
+    }
+
+    if (el.photoExistingImg) {
+      el.photoExistingImg.addEventListener("error", function onEditExistingImgErr() {
+        var er = state.editRecord;
+        if (!er || el.photoExistingImg.dataset.growthImgFallback === "1") return;
+        if (!er.localSnapshotImage) return;
+        var fb = er.imageUrl || "";
+        if (!fb && er.imagePathname) {
+          fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(er.imagePathname);
+        }
+        if (fb) {
+          el.photoExistingImg.dataset.growthImgFallback = "1";
+          el.photoExistingImg.src = fb;
+        }
       });
     }
 

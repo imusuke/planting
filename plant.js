@@ -106,8 +106,27 @@
     }
   }
 
-  function renderPage(area, plantName, entry) {
+  function renderPage(area, plantName, entry, options) {
+    options = options || {};
     clearRoot();
+    if (options.warnMultipleAreaMatch) {
+      var wMulti = document.createElement("p");
+      wMulti.className = "plant-detail-warning";
+      wMulti.setAttribute("role", "status");
+      wMulti.textContent =
+        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、成長記録にエリアが紐づいている状態にするか、植栽一覧の「詳細」から開いてください。";
+      root.appendChild(wMulti);
+    }
+    if (options.warnNotInMaster) {
+      var warn = document.createElement("p");
+      warn.className = "plant-detail-warning";
+      warn.setAttribute("role", "status");
+      warn.textContent =
+        "植栽一覧のマスタに「" +
+        plantName +
+        "」が見つかりませんでした（表記の違い、または一覧へ未反映の可能性があります）。成長記録の名前と植栽一覧を照合してください。";
+      root.appendChild(warn);
+    }
     document.title = plantName + " — 植栽メモ";
     titleEl.textContent = plantName;
     if (crumbEl) crumbEl.textContent = plantName;
@@ -160,10 +179,11 @@
     plantName = plantName.trim();
   }
 
-  if (!areaId || !plantName) {
+  if (!plantName) {
     renderError(
-      "URL にエリアと植栽名が必要です。例: plant.html?area=entrance&plant=" +
-        encodeURIComponent("ノリウツギ")
+      "URL に植栽名が必要です。例: plant.html?area=entrance&plant=" +
+        encodeURIComponent("ノリウツギ") +
+        " （エリア省略時は名前が一覧に1件だけのときに自動で特定します）"
     );
     return;
   }
@@ -172,19 +192,43 @@
     .then(function (results) {
       var plantsData = results[0];
       var entries = results[1];
-      var area = (plantsData.areas || []).find(function (a) {
-        return a && a.id === areaId;
+      var areas = plantsData.areas || [];
+      var area;
+      var warnMulti = false;
+      var resolvedAreaId;
+
+      if (areaId) {
+        area = areas.find(function (a) {
+          return a && a.id === areaId;
+        });
+        if (!area) {
+          renderError("指定されたエリアが見つかりません。");
+          return;
+        }
+        resolvedAreaId = areaId;
+      } else {
+        var matches = areas.filter(function (a) {
+          return a && areaHasPlant(a, plantName);
+        });
+        if (matches.length === 0) {
+          renderError(
+            "植栽「" +
+              plantName +
+              "」が一覧のどのエリアにも見つかりません。URL に area=（エリアid）を付けるか、表記を植栽一覧とそろえてください。"
+          );
+          return;
+        }
+        area = matches[0];
+        resolvedAreaId = area.id;
+        warnMulti = matches.length > 1;
+      }
+
+      var inMaster = areaHasPlant(area, plantName);
+      var entry = findDetailEntry(entries, resolvedAreaId, plantName);
+      renderPage(area, plantName, entry, {
+        warnNotInMaster: !!areaId && !inMaster,
+        warnMultipleAreaMatch: warnMulti,
       });
-      if (!area) {
-        renderError("指定されたエリアが見つかりません。");
-        return;
-      }
-      if (!areaHasPlant(area, plantName)) {
-        renderError("このエリアのマスタに「" + plantName + "」は登録されていません。");
-        return;
-      }
-      var entry = findDetailEntry(entries, areaId, plantName);
-      renderPage(area, plantName, entry);
     })
     .catch(function () {
       renderError("データを読み込めませんでした。data/plants.json またはネットワークを確認してください。");

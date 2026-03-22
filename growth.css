@@ -221,6 +221,39 @@ label.growth-secondary:focus-visible {
   margin: 0 0 10px;
 }
 
+.growth-photo-existing-wrap {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.growth-photo-existing-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--green-soft, #74c69d);
+}
+
+.growth-photo-existing-frame {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: rgba(26, 46, 36, 0.06);
+}
+
+img.growth-photo-existing-thumb {
+  display: block;
+  width: auto;
+  max-width: min(100%, 280px);
+  max-height: 200px;
+  height: auto;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 .growth-photo-block {
   position: relative;
 }
@@ -558,6 +591,24 @@ dialog.growth-photo-lightbox::backdrop {
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.35;
+  position: relative;
+  z-index: 1;
+}
+
+a.growth-card-plant-link {
+  color: var(--green);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+a.growth-card-plant-link:hover,
+a.growth-card-plant-link:focus-visible {
+  border-bottom-color: rgba(45, 106, 79, 0.5);
+  outline: none;
 }
 
 .growth-card-area {
