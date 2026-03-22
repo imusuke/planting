@@ -12,7 +12,12 @@ var path = require("path");
 
 var root = path.join(__dirname, "..");
 var plantsPath = path.join(root, "data", "plants.json");
-var htmlFiles = ["index.html", "growth-edit.html", "plants.html"];
+var htmlFiles = [
+  "index.html",
+  "growth-edit.html",
+  "plants.html",
+  "plant.html",
+];
 
 function run() {
   var raw = fs.readFileSync(plantsPath, "utf8");

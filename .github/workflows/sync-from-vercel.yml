@@ -46,7 +46,7 @@ jobs:
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html
+          git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html plant.html
           if git diff --staged --quiet; then
             echo "No changes to commit (already in sync with production)."
             exit 0

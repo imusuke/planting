@@ -25,7 +25,7 @@
       <p class="eyebrow">Planting</p>
       <h1>植栽一覧</h1>
       <p class="lead lead--with-info">
-        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと、追加・編集ページが開き、その植物が選ばれた状態で記録できます。
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと記録の追加・編集が開き、<strong>詳細</strong>から解説ページ（<code>data/plant-details.json</code>）へ進めます。
         <button
           type="button"
           class="info-icon-btn"
@@ -57,7 +57,7 @@
           <thead>
             <tr>
               <th scope="col">エリア</th>
-              <th scope="col">植栽（名前を押すと記録）</th>
+              <th scope="col">植栽（名前は記録・詳細）</th>
             </tr>
           </thead>
           <tbody id="plant-table-body">
@@ -79,7 +79,7 @@
         </div>
         <div class="info-dialog-body">
           <p>表示している植栽のリストは、サイト用のデータファイルから読み込んでいます。</p>
-          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、<code>plants.html</code> 内の <strong>コピー用データ</strong>（<code>plants-embed</code>）の両方を同じ内容にしておくと、どこで開いてもずれません。</p>
+          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、各ページ内の <strong>コピー用データ</strong>（<code>plants-embed</code>）を同じ内容にしておくと、どこで開いてもずれません（<code>npm run embed:plants</code> で一括更新）。<code>plant.html</code> にも同じ埋め込みがあります。</p>
           <p>パソコンで HTML をダブルクリックして開いているだけのときは、ブラウザの仕組み上、ファイルではなく埋め込みのコピーが使われることがあります。ウェブサーバー経由（アドレスが <code>http</code> や <code>https</code> で始まる）で開くと、ファイルから最新を読み込めます。</p>
         </div>
       </div>

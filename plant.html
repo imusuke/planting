@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>植栽メモ — 植栽の詳細</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="panel">
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li><a href="./index.html">成長記録</a></li>
+        <li><a href="./plants.html">植栽一覧</a></li>
+        <li aria-current="page" id="plant-detail-breadcrumb-current">植栽の詳細</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./growth-edit.html">記録の追加・編集</a>
+      </div>
+    </nav>
+
+    <header class="page-header plant-detail-header">
+      <p class="eyebrow">Planting</p>
+      <h1 id="plant-detail-title">植栽の詳細</h1>
+      <p id="plant-detail-area-line" class="lead plant-detail-area-line" hidden></p>
+    </header>
+
+    <article class="plant-detail-article" id="plant-detail-root" aria-live="polite">
+      <p class="plant-detail-loading">読み込み中…</p>
+    </article>
+  </main>
+  <script type="application/json" id="plants-embed">
+  {
+  "areas": [
+    {
+      "id": "entrance",
+      "label": "玄関前",
+      "plants": [
+        "ノリウツギ",
+        "カシワバアジサイ（柏葉紫陽花）",
+        "ユーカリ",
+        "ムスカリ（ブドウヒヤシンス）",
+        "レウコトエ・アクシラリス（セイヨウイワナンテン）",
+        "スイートアリッサム（庭薺/ニワナズナ）",
+        "コデマリ（小手毬）？"
+      ]
+    },
+    {
+      "id": "parking",
+      "label": "駐車場脇",
+      "plants": [
+        "シルバープリペット",
+        "シダ",
+        "アジュガ",
+        "クリスマスローズ（ヘレボルス）"
+      ]
+    },
+    {
+      "id": "deck",
+      "label": "ウッドデッキ",
+      "plants": [
+        "落葉ヤマボウシ（日本固有種）",
+        "ミモザ・アカシア",
+        "コルジリネ（コルジリネ・オーストラリス）",
+        "ウエストリンギア（オーストラリアンローズマリー）",
+        "キャットミント シックスヒルズ ジャイアント",
+        "ネペタ チューベローサ"
+      ]
+    },
+    {
+      "id": "corner",
+      "label": "角庭",
+      "plants": [
+        "アナベル",
+        "ローズマリー",
+        "ヤマアジサイ",
+        "サルビア スペルバ　ボルドー　ディープブルー",
+        "オリヅルラン（折鶴蘭）"
+      ]
+    },
+    {
+      "id": "indoor",
+      "label": "室内",
+      "plants": [
+        "ドラセナ・コンシンナ",
+        "フィカス・ウンベラータ",
+        "ゴムの木",
+        "ペペロミア・カペラータ",
+        "ホヤ・カルノーサ　クリムゾン・クイーン",
+        "サンスベリア（サンセベリア）　ローレンティ（Laurentii）"
+      ]
+    },
+    {
+      "id": "yatsu-hatake",
+      "label": "谷津畑",
+      "plants": [
+        "アジサイ",
+        "ソラマメ",
+        "スナップエンドウ",
+        "畑全体"
+      ]
+    }
+  ]
+}
+  </script>
+  <script>
+    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
+  </script>
+  <script src="./hub-link.js" defer></script>
+  <script src="./plant.js" defer></script>
+</body>
+</html>

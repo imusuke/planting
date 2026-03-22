@@ -36,6 +36,8 @@
             sep.textContent = "、";
             tdPlants.appendChild(sep);
           }
+          var group = document.createElement("span");
+          group.className = "plant-table-name-group";
           var a = document.createElement("a");
           a.className = "plant-record-link";
           a.href =
@@ -45,7 +47,22 @@
             encodeURIComponent(p);
           a.textContent = p;
           a.setAttribute("title", p + "の成長記録を追加");
-          tdPlants.appendChild(a);
+          group.appendChild(a);
+          var wrapDetail = document.createElement("span");
+          wrapDetail.className = "plant-table-detail-wrap";
+          wrapDetail.appendChild(document.createTextNode(" "));
+          var d = document.createElement("a");
+          d.className = "plant-detail-link";
+          d.href =
+            "plant.html?area=" +
+            encodeURIComponent(area.id) +
+            "&plant=" +
+            encodeURIComponent(p);
+          d.textContent = "詳細";
+          d.setAttribute("title", p + "の説明ページ");
+          wrapDetail.appendChild(d);
+          group.appendChild(wrapDetail);
+          tdPlants.appendChild(group);
         });
       }
 

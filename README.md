@@ -5,7 +5,9 @@
 ## 公開サイト向け
 
 - **`index.html`** … サイトの**トップ**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
-- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。植栽名から **追加・編集**（`growth-edit.html?area=…&plant=…`）へ進めます。
+- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。植栽名から **記録の追加・編集**（`growth-edit.html?area=…&plant=…`）、**詳細**から **`plant.html`** へ進めます。
+- **`plant.html`** + **`plant.js`** … **各植栽の説明ページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。本文は **`data/plant-details.json`** の `entries`（`areaId`・`name`・`summary`・`body`）から表示します。マスタに無い名前・エリアの組み合わせはエラーになります。
+- **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
 - **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
 - **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
@@ -31,7 +33,7 @@
 2. 本番の**ベース URL**（`https://…`、末尾 `/` なし）を付けて、**GET `/api/plants` と GET `/api/growth`** をまとめて取り込む（**トークン不要**）:
    - **`npm run sync:prod -- https://あなたのサイト.vercel.app`**
    - または環境変数 **`PLANTING_BASE_URL`** または **`GROWTH_SNAPSHOT_URL`** に同じ URL を設定して `npm run sync:prod`
-3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html`**（**`plants-embed`** 自動更新）を `git add` → `commit` → `push` する。
+3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html` / `plant.html`**（**`plants-embed`** 自動更新）を `git add` → `commit` → `push` する。
 4. 他の環境では **`git pull`** で同じ `data/` と画像が揃います。スナップショットの各記録には **`localSnapshotImage`**（例: `./data/growth-images/{id}.jpg`）が付き、閲覧時は **ローカルファイルを優先**して表示します（オフラインや API 失敗時のフォールバック向け）。
 
 **個別に取り込む場合:** `npm run sync:plants -- <URL>`（マスタのみ・**plants-embed 付き HTML も更新**）、`npm run sync:growth -- <URL>`（成長記録＋**写真ダウンロード**）。**JSON だけ欲しいとき:** `npm run sync:growth -- <URL> --no-images`
