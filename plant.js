@@ -17,6 +17,16 @@
     }
   }
 
+  function readEmbeddedPlantDetails() {
+    var el = document.getElementById("plant-details-embed");
+    if (!el || !el.textContent.trim()) return null;
+    try {
+      return JSON.parse(el.textContent.trim());
+    } catch (e) {
+      return null;
+    }
+  }
+
   function normalizePlantName(p) {
     return typeof p === "string" ? p.trim() : "";
   }
@@ -65,11 +75,24 @@
   }
 
   function loadDetailsData() {
+    function pickEntries(fromNet, fromEmb) {
+      var a = Array.isArray(fromNet) ? fromNet : [];
+      var b = Array.isArray(fromEmb) ? fromEmb : [];
+      if (b.length > a.length) return b;
+      return a.length ? a : b;
+    }
     return loadJson("data/plant-details.json")
       .then(function (data) {
-        return data && Array.isArray(data.entries) ? data.entries : [];
+        var fromNet = data && Array.isArray(data.entries) ? data.entries : [];
+        var emb = readEmbeddedPlantDetails();
+        var fromEmb = emb && Array.isArray(emb.entries) ? emb.entries : [];
+        return pickEntries(fromNet, fromEmb);
       })
       .catch(function () {
+        var embedded = readEmbeddedPlantDetails();
+        if (embedded && Array.isArray(embedded.entries)) {
+          return embedded.entries;
+        }
         return [];
       });
   }
