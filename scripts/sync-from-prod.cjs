@@ -17,6 +17,20 @@
 
 var fs = require("fs");
 var path = require("path");
+var undici = require("undici");
+
+/** 企業プロキシ等で証明書エラーになるときのみ 1（README 参照。画像取得と同じフラグ） */
+var insecureTls = process.env.PLANTING_SYNC_INSECURE_TLS === "1";
+var insecureDispatcher = insecureTls
+  ? new undici.Agent({ connect: { rejectUnauthorized: false } })
+  : null;
+
+function syncFetch(url) {
+  if (insecureDispatcher) {
+    return undici.fetch(url, { dispatcher: insecureDispatcher });
+  }
+  return fetch(url);
+}
 
 var args = process.argv.slice(2);
 var growthOnlyFlag = args.indexOf("--growth-only") >= 0;
@@ -60,7 +74,7 @@ var downloadImages = require("./download-growth-snapshot-images.cjs")
 
 function syncPlants() {
   var url = base + "/api/plants";
-  return fetch(url)
+  return syncFetch(url)
     .then(function (res) {
       if (!res.ok) {
         throw new Error("GET /api/plants HTTP " + res.status);
@@ -81,7 +95,7 @@ function syncPlants() {
 
 function syncGrowth() {
   var url = base + "/api/growth";
-  return fetch(url)
+  return syncFetch(url)
     .then(function (res) {
       if (!res.ok) {
         throw new Error("GET /api/growth HTTP " + res.status);
@@ -148,6 +162,22 @@ chain
     );
   })
   .catch(function (err) {
-    console.error(err.message || String(err));
+    var msg = err.message || String(err);
+    var c = err.cause;
+    if (c && c.code === "SELF_SIGNED_CERT_IN_CHAIN") {
+      console.error(
+        "TLS 証明書エラー（社内プロキシなどで証明書が差し替わっていることがあります）。\n" +
+          (c.message || msg) +
+          "\n\n同期のみ、検証をスキップする例（PowerShell）:\n" +
+          "  $env:PLANTING_SYNC_INSECURE_TLS='1'; npm run sync:prod -- " +
+          base +
+          "\n\n※ 普段のブラウザ運用ではこの変数を使わないでください。"
+      );
+    } else {
+      console.error(msg);
+      if (c && (c.message || c.code)) {
+        console.error("原因: " + (c.message || c.code));
+      }
+    }
     process.exit(1);
   });
