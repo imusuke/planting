@@ -318,7 +318,90 @@
     captionBase: "",
     captions: null,
     timelineCrossPlant: false,
+    anchorRecordId: "",
   };
+
+  function growthLightboxRefreshAreaSelect(pack) {
+    if (!pack || !pack.areaRow || !pack.areaSelect) return;
+    if (!IS_VIEW || !el.filterArea || !state.areas || !state.areas.length) {
+      pack.areaRow.hidden = true;
+      return;
+    }
+    pack.areaRow.hidden = false;
+    var sel = pack.areaSelect;
+    var keep = el.filterArea.value || "";
+    sel.innerHTML = "";
+    var o0 = document.createElement("option");
+    o0.value = "";
+    o0.textContent = "（すべて）";
+    sel.appendChild(o0);
+    state.areas.forEach(function (a) {
+      if (!a || !a.id) return;
+      var o = document.createElement("option");
+      o.value = a.id;
+      o.textContent = a.label || a.id;
+      sel.appendChild(o);
+    });
+    sel.value = keep;
+    if (sel.value !== keep && keep) sel.value = "";
+  }
+
+  function growthLightboxApplyAreaFilterAndRebuild(pack, newAreaValue) {
+    if (!IS_VIEW || !el.filterArea || !pack || !pack.areaSelect) return;
+    var prevArea = el.filterArea.value || "";
+    var prevPlant = el.filterPlant ? el.filterPlant.value || "" : "";
+    var prevUrls = growthLightboxGallery.urls.slice();
+    var prevIdx = growthLightboxGallery.index;
+    var prevCaptions = growthLightboxGallery.captions ? growthLightboxGallery.captions.slice() : null;
+    var prevTcp = growthLightboxGallery.timelineCrossPlant;
+
+    el.filterArea.value = newAreaValue || "";
+    if (state.viewLayout === "grid" && el.filterPlant) el.filterPlant.value = "";
+    updateFilterPlantOptions();
+    if (state.viewLayout === "timeline") {
+      renderPlantTimeline(state.lastGrowthRecords);
+    } else {
+      renderViewMain(state.lastGrowthRecords);
+    }
+    pack.areaSelect.value = el.filterArea.value;
+
+    var sorted = getGrowthViewRecordsForLightbox();
+    var flat = sorted && sorted.length ? flattenGrowthRecordsForLightbox(sorted) : { urls: [], captions: [] };
+    if (!flat.urls.length) {
+      el.filterArea.value = prevArea;
+      if (el.filterPlant) el.filterPlant.value = prevPlant;
+      updateFilterPlantOptions();
+      if (state.viewLayout === "timeline") {
+        renderPlantTimeline(state.lastGrowthRecords);
+      } else {
+        renderViewMain(state.lastGrowthRecords);
+      }
+      pack.areaSelect.value = prevArea;
+      growthLightboxGallery.urls = prevUrls;
+      growthLightboxGallery.captions = prevCaptions;
+      growthLightboxGallery.index = prevIdx;
+      growthLightboxGallery.timelineCrossPlant = prevTcp;
+      pack.showAt(pack, prevIdx);
+      showToast("このエリアに写真のある記録はありません。", true);
+      return;
+    }
+
+    var curUrl = prevUrls.length && prevIdx >= 0 && prevIdx < prevUrls.length ? prevUrls[prevIdx] : "";
+    var newIdx = curUrl ? flat.urls.indexOf(curUrl) : -1;
+    if (newIdx < 0 && growthLightboxGallery.anchorRecordId) {
+      newIdx = lightboxFlatIndexForRecordImage(sorted, growthLightboxGallery.anchorRecordId, 0);
+    }
+    if (newIdx < 0) newIdx = 0;
+
+    growthLightboxGallery.urls = flat.urls;
+    growthLightboxGallery.captions = flat.captions;
+    growthLightboxGallery.timelineCrossPlant =
+      state.viewLayout === "timeline" &&
+      el.filterPlant &&
+      el.filterPlant.value &&
+      lightboxFilterPlantChoiceCount() > 1;
+    pack.showAt(pack, newIdx);
+  }
 
   function growthLightboxSyncCaption(pack) {
     var g = growthLightboxGallery;
@@ -434,6 +517,18 @@
     bigImg.className = "growth-photo-lightbox-img";
     bigImg.alt = "";
 
+    var areaRow = document.createElement("div");
+    areaRow.className = "growth-photo-lightbox-area-row";
+    areaRow.hidden = true;
+    var areaLbl = document.createElement("span");
+    areaLbl.className = "growth-photo-lightbox-area-label";
+    areaLbl.textContent = "エリア";
+    var areaSelect = document.createElement("select");
+    areaSelect.className = "growth-photo-lightbox-area-select";
+    areaSelect.setAttribute("aria-label", "スライドの対象エリア");
+    areaRow.appendChild(areaLbl);
+    areaRow.appendChild(areaSelect);
+
     var cap = document.createElement("p");
     cap.className = "growth-photo-lightbox-caption";
 
@@ -441,7 +536,20 @@
     inner.appendChild(prevBtn);
     inner.appendChild(nextBtn);
     inner.appendChild(bigImg);
+    inner.appendChild(areaRow);
     inner.appendChild(cap);
+
+    if (!areaSelect.dataset.lbAreaBound) {
+      areaSelect.dataset.lbAreaBound = "1";
+      areaSelect.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+      areaSelect.addEventListener("change", function () {
+        var pk = growthPhotoLightboxEls;
+        if (!pk) return;
+        growthLightboxApplyAreaFilterAndRebuild(pk, areaSelect.value || "");
+      });
+    }
     shell.appendChild(inner);
     dlg.appendChild(shell);
     document.body.appendChild(dlg);
@@ -513,6 +621,7 @@
     function lbSwipeTargetOk(target) {
       if (!target || !target.closest) return false;
       if (target.closest("button")) return false;
+      if (target.closest(".growth-photo-lightbox-area-row")) return false;
       return !!target.closest(".growth-photo-lightbox-inner");
     }
     function lbApplySwipeEnd(clientX, clientY) {
@@ -642,6 +751,8 @@
       caption: cap,
       prevBtn: prevBtn,
       nextBtn: nextBtn,
+      areaRow: areaRow,
+      areaSelect: areaSelect,
       showAt: showAt,
       syncCaption: function (pack) {
         growthLightboxSyncCaption(pack);
@@ -651,23 +762,24 @@
   }
 
   function openGrowthViewLightbox(r, imgIndexInRecord, galleryUrls, zoomCaption) {
+    var anchorOpt = { anchorRecordId: r.id };
     if (!IS_VIEW) {
-      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption, anchorOpt);
       return;
     }
     var sorted = getGrowthViewRecordsForLightbox();
     if (!sorted || !sorted.length) {
-      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption, anchorOpt);
       return;
     }
     var flat = flattenGrowthRecordsForLightbox(sorted);
     if (!flat.urls.length) {
-      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption, anchorOpt);
       return;
     }
     var start = lightboxFlatIndexForRecordImage(sorted, r.id, imgIndexInRecord);
     if (start < 0) {
-      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption, anchorOpt);
       return;
     }
     var tcp =
@@ -678,6 +790,7 @@
     openGrowthPhotoLightbox(flat.urls, start, zoomCaption, {
       captions: flat.captions,
       timelineCrossPlant: tcp,
+      anchorRecordId: r.id,
     });
   }
 
@@ -703,10 +816,13 @@
       growthLightboxGallery.captions = null;
     }
     growthLightboxGallery.timelineCrossPlant = !!options.timelineCrossPlant;
+    growthLightboxGallery.anchorRecordId =
+      options.anchorRecordId != null ? String(options.anchorRecordId) : "";
 
     var pack = ensureGrowthPhotoLightbox();
     pack.img.referrerPolicy = "no-referrer";
     pack.showAt(pack, idx);
+    growthLightboxRefreshAreaSelect(pack);
     var d = pack.dialog;
     function doOpen() {
       if (typeof d.showModal === "function") {
@@ -746,9 +862,16 @@
     return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
   }
 
-  function loadImageFile(file) {
+  function growthIsImageBitmap(x) {
+    return typeof ImageBitmap !== "undefined" && x instanceof ImageBitmap;
+  }
+
+  /**
+   * Image 要素は HEIC 等で decode できない環境がある。createImageBitmap を次に試す。
+   */
+  function tryLoadImageViaObjectUrl(fileOrBlob) {
     return new Promise(function (resolve, reject) {
-      var url = URL.createObjectURL(file);
+      var url = URL.createObjectURL(fileOrBlob);
       var img = new Image();
       img.onload = function () {
         URL.revokeObjectURL(url);
@@ -756,32 +879,54 @@
       };
       img.onerror = function () {
         URL.revokeObjectURL(url);
-        reject(new Error("画像を読み込めませんでした"));
+        reject(new Error("__growth_img_decode__"));
       };
       img.src = url;
+    });
+  }
+
+  function tryLoadImageViaBitmap(fileOrBlob) {
+    if (typeof createImageBitmap !== "function") {
+      return Promise.reject(new Error("画像を読み込めませんでした"));
+    }
+    return createImageBitmap(fileOrBlob).catch(function () {
+      return Promise.reject(new Error("画像を読み込めませんでした"));
+    });
+  }
+
+  function loadImageFile(file) {
+    return tryLoadImageViaObjectUrl(file).catch(function (e) {
+      if (e && e.message === "__growth_img_decode__") {
+        return tryLoadImageViaBitmap(file);
+      }
+      throw e;
     });
   }
 
   function loadImageFileFromBlob(blob) {
-    return new Promise(function (resolve, reject) {
-      var url = URL.createObjectURL(blob);
-      var img = new Image();
-      img.onload = function () {
-        URL.revokeObjectURL(url);
-        resolve(img);
-      };
-      img.onerror = function () {
-        URL.revokeObjectURL(url);
-        reject(new Error("画像を読み込めませんでした"));
-      };
-      img.src = url;
+    return tryLoadImageViaObjectUrl(blob).catch(function (e) {
+      if (e && e.message === "__growth_img_decode__") {
+        return tryLoadImageViaBitmap(blob);
+      }
+      throw e;
     });
   }
 
-  function imageToJpegBlob(img) {
-    var w = img.naturalWidth;
-    var h = img.naturalHeight;
-    if (!w || !h) throw new Error("画像サイズが無効です");
+  function imageToJpegBlob(imgOrBitmap) {
+    var w = growthIsImageBitmap(imgOrBitmap)
+      ? imgOrBitmap.width
+      : imgOrBitmap.naturalWidth;
+    var h = growthIsImageBitmap(imgOrBitmap)
+      ? imgOrBitmap.height
+      : imgOrBitmap.naturalHeight;
+    if (!w || !h) {
+      if (growthIsImageBitmap(imgOrBitmap) && typeof imgOrBitmap.close === "function") {
+        try {
+          imgOrBitmap.close();
+        } catch (c1) {}
+      }
+      throw new Error("画像サイズが無効です");
+    }
 
     var scale = w > MAX_IMAGE_WIDTH ? MAX_IMAGE_WIDTH / w : 1;
     var cw = Math.round(w * scale);
@@ -791,7 +936,12 @@
     canvas.width = cw;
     canvas.height = ch;
     var ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, cw, ch);
+    ctx.drawImage(imgOrBitmap, 0, 0, cw, ch);
+    if (growthIsImageBitmap(imgOrBitmap) && typeof imgOrBitmap.close === "function") {
+      try {
+        imgOrBitmap.close();
+      } catch (c2) {}
+    }
 
     return new Promise(function (resolve, reject) {
       canvas.toBlob(
@@ -856,13 +1006,21 @@
     el.customPlant.value = extras.join("、");
   }
 
+  function growthFileLooksLikeImage(f) {
+    if (!f) return false;
+    var t = f.type || "";
+    if (t.indexOf("image/") === 0) return true;
+    var name = (f.name || "").toLowerCase();
+    return /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|tiff?)$/i.test(name);
+  }
+
   function appendFilesToPhotoQueue(fileList) {
     if (!fileList || !fileList.length) return;
     var n = 0;
     for (var i = 0; i < fileList.length; i++) {
       if (state.photoQueue.length >= MAX_GROWTH_PHOTOS) break;
       var f = fileList[i];
-      if (!f || !f.type || f.type.indexOf("image/") !== 0) continue;
+      if (!growthFileLooksLikeImage(f)) continue;
       state.photoQueue.push({ kind: "new", file: f });
       state.photosTouched = true;
       n++;

@@ -661,6 +661,35 @@ button.growth-photo-lightbox-nav:focus-visible {
   user-select: none;
 }
 
+.growth-photo-lightbox-area-row {
+  margin: 10px 0 0;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.growth-photo-lightbox-area-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(244, 247, 245, 0.92);
+}
+
+select.growth-photo-lightbox-area-select {
+  font: inherit;
+  font-size: 0.86rem;
+  max-width: min(72vw, 320px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(20, 30, 24, 0.92);
+  color: #f4f7f5;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 .growth-photo-lightbox-caption {
   margin: 12px 0 0;
   padding: 0 8px;
