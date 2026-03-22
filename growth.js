@@ -192,7 +192,21 @@
     var parts = [];
     parts.push((r.recordedAt || "").slice(0, 10));
     if (r.plants && r.plants.length) parts.push(r.plants.join("、"));
-    if (r.areaLabel) parts.push(r.areaLabel);
+    var areaText = r.areaLabel ? String(r.areaLabel).trim() : "";
+    if (!areaText && r.areaId && state.areas && state.areas.length) {
+      var aid = String(r.areaId).trim();
+      for (var ai = 0; ai < state.areas.length; ai++) {
+        var ar = state.areas[ai];
+        if (ar && ar.id === aid) {
+          areaText = (ar.label && String(ar.label).trim()) || aid;
+          break;
+        }
+      }
+      if (!areaText && aid) areaText = aid;
+    }
+    if (areaText) parts.push("エリア: " + areaText);
+    var noteText = typeof r.note === "string" ? r.note.trim() : "";
+    if (noteText) parts.push("メモ: " + noteText);
     return parts.filter(Boolean).join(" · ");
   }
 
@@ -1848,11 +1862,7 @@
     var imgWrap = document.createElement("div");
     imgWrap.className = "growth-card-img-wrap";
 
-    var zoomCaptionParts = [];
-    zoomCaptionParts.push((r.recordedAt || "").slice(0, 10));
-    if (r.plants && r.plants.length) zoomCaptionParts.push(r.plants.join("、"));
-    if (r.areaLabel) zoomCaptionParts.push(r.areaLabel);
-    var zoomCaption = zoomCaptionParts.filter(Boolean).join(" · ");
+    var zoomCaption = growthZoomCaptionForRecord(r);
 
     var slots = growthImageSlots(r);
     var galleryUrls = [];

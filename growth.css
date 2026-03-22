@@ -669,6 +669,9 @@ button.growth-photo-lightbox-nav:focus-visible {
   line-height: 1.45;
   color: rgba(244, 247, 245, 0.92);
   touch-action: none;
+  max-height: min(36vh, 320px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .growth-card-img-wrap--empty {
