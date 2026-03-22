@@ -42,6 +42,16 @@
 
 **注意:** 同期は手動（または CI）まで古いままです。写真を Git に含めると **リポジトリが大きくなります**。画像取得で `self-signed certificate in certificate chain` などになる場合は、社内プロキシの影響のことがあります。**同期用に限り**環境変数 `PLANTING_SYNC_INSECURE_TLS=1` を付けて再実行すると TLS 検証を省略します（**普段のブラウザ運用では使わないでください**）。PowerShell 例: `$env:PLANTING_SYNC_INSECURE_TLS='1'; npm run sync:prod -- https://…`
 
+### GitHub Actions で本番 → リポジトリを自動同期
+
+リポジトリに **`.github/workflows/sync-from-vercel.yml`** があります。次を設定すると、**定期（既定: 毎日 UTC 0:00）**と **手動（Actions タブ → Sync from Vercel → Run workflow）**で、本番 API から取り込み・差分があれば **自動 commit / push** されます。
+
+1. GitHub のリポジトリを開く → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+2. Name: **`PLANTING_BASE_URL`**、Secret: **`https://planting-three.vercel.app`**（お使いの本番 URL。末尾 `/` なし）
+3. 保存後、**Actions** からワークフローを手動実行して一度成功するか確認する
+
+**前提:** 本番の **GET `/api/plants` と GET `/api/growth` はトークン不要**のままであること（現状の設計どおり）。**ブランチ保護**で `github-actions[bot]` の push が弾かれる場合は、保護ルールの例外設定が必要です。
+
 ## 成長記録（Vercel のセットアップ）
 
 1. このフォルダを **Vercel のプロジェクト**としてデプロイする（Root Directory を `planting` にするか、リポジトリ全体からこのフォルダだけを選ぶ）。

@@ -1,0 +1,55 @@
+# 本番（Vercel）の公開 GET API から data/ と写真を取り込み、変更があれば commit & push します。
+# 使い方: リポジトリの Settings → Secrets and variables → Actions に
+#   PLANTING_BASE_URL = https://あなたのサイト.vercel.app
+# を追加してください（末尾の / は不要）。
+
+name: Sync from Vercel
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎日 00:00 UTC（日本時間 09:00）。変更する場合は crontab を編集してください。
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: sync-from-vercel
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sync plants, growth JSON, images, boot, plants-embed
+        env:
+          PLANTING_BASE_URL: ${{ secrets.PLANTING_BASE_URL }}
+        run: |
+          set -e
+          if [ -z "$PLANTING_BASE_URL" ]; then
+            echo "::error::Repository secret PLANTING_BASE_URL is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          node scripts/sync-from-prod.cjs
+
+      - name: Commit and push if there are changes
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html
+          if git diff --staged --quiet; then
+            echo "No changes to commit (already in sync with production)."
+            exit 0
+          fi
+          git commit -m "chore: sync data from Vercel (automated workflow)"
+          git push
