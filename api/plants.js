@@ -193,6 +193,41 @@ function mergeMissingAreasFromDefault(kvAreas, defaultAreas) {
   return out;
 }
 
+/**
+ * 同一エリア id について、plants.json（既定）にあって KV の配列に無い植栽名だけを末尾に追記する。
+ * KV 側の順序・一覧を優先し、git で追加したマスタだけ Web に反映させる（mergeMissingAreasFromDefault と同趣旨）。
+ */
+function mergeMissingPlantsFromDefault(areas, defaultAreas) {
+  if (!Array.isArray(areas) || !areas.length) return areas;
+  if (!Array.isArray(defaultAreas) || !defaultAreas.length) return areas;
+  var defById = {};
+  for (var d = 0; d < defaultAreas.length; d++) {
+    var da = defaultAreas[d];
+    if (da && da.id) defById[da.id] = da;
+  }
+  return areas.map(function (a) {
+    if (!a || !a.id) return a;
+    var def = defById[a.id];
+    if (!def || !Array.isArray(def.plants) || !def.plants.length) return a;
+    var kvPlants = Array.isArray(a.plants) ? a.plants.slice() : [];
+    var seen = {};
+    for (var i = 0; i < kvPlants.length; i++) {
+      seen[kvPlants[i]] = true;
+    }
+    var next = kvPlants.slice();
+    var appended = false;
+    for (var j = 0; j < def.plants.length; j++) {
+      var p = def.plants[j];
+      if (!p || seen[p]) continue;
+      seen[p] = true;
+      next.push(p);
+      appended = true;
+    }
+    if (!appended) return a;
+    return Object.assign({}, a, { plants: next });
+  });
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -230,6 +265,9 @@ module.exports = async function handler(req, res) {
     var areas = hasKv
       ? mergeMissingAreasFromDefault(fromKv.areas, defaultCatalog.areas)
       : defaultCatalog.areas;
+    if (hasKv) {
+      areas = mergeMissingPlantsFromDefault(areas, defaultCatalog.areas);
+    }
     return res.status(200).json({
       areas: areas,
       source: hasKv ? "kv" : "file",
