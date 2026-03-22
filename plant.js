@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  var API_GROWTH_IMAGE = "/api/growth-image";
+  var API_GROWTH = "/api/growth";
+  var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
+
   var root = document.getElementById("plant-detail-root");
   var titleEl = document.getElementById("plant-detail-title");
   var areaLineEl = document.getElementById("plant-detail-area-line");
@@ -72,6 +76,191 @@
         if (embedded && Array.isArray(embedded.areas)) return embedded;
         throw new Error("no plants");
       });
+  }
+
+  function growthImageSlots(r) {
+    if (!r) return [];
+    if (r.images && Array.isArray(r.images) && r.images.length) {
+      return r.images.map(function (im) {
+        if (!im || typeof im !== "object") return {};
+        return {
+          imageUrl: im.imageUrl || null,
+          imagePathname: im.imagePathname || null,
+          localSnapshotImage: im.localSnapshotImage || null,
+        };
+      });
+    }
+    if (r.localSnapshotImage || r.imagePathname || r.imageUrl) {
+      return [
+        {
+          imageUrl: r.imageUrl || null,
+          imagePathname: r.imagePathname || null,
+          localSnapshotImage: r.localSnapshotImage || null,
+        },
+      ];
+    }
+    return [];
+  }
+
+  function growthImageSrcFromSlot(slot) {
+    if (!slot) return null;
+    if (slot.localSnapshotImage) {
+      var p = String(slot.localSnapshotImage).trim();
+      if (/^https?:\/\//i.test(p)) {
+        return p;
+      }
+      try {
+        return new URL(p, window.location.href).href;
+      } catch (e0) {
+        return p;
+      }
+    }
+    if (slot.imagePathname) {
+      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+    }
+    return slot.imageUrl || null;
+  }
+
+  function loadGrowthRecordsList() {
+    return fetch(API_GROWTH, {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("growth bad");
+        return res.json();
+      })
+      .then(function (data) {
+        return Array.isArray(data.records) ? data.records : [];
+      })
+      .catch(function () {
+        return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
+          .then(function (res) {
+            if (!res.ok) return null;
+            return res.json();
+          })
+          .then(function (data) {
+            return data && Array.isArray(data.records) ? data.records : [];
+          })
+          .catch(function () {
+            return [];
+          });
+      });
+  }
+
+  function recordHasPlantInArea(r, plantName, areaId) {
+    if (!r || !Array.isArray(r.plants)) return false;
+    var has = false;
+    for (var i = 0; i < r.plants.length; i++) {
+      if (normalizePlantName(r.plants[i]) === plantName) {
+        has = true;
+        break;
+      }
+    }
+    if (!has) return false;
+    if (!areaId) return true;
+    return String(r.areaId || "").trim() === String(areaId).trim();
+  }
+
+  function collectPhotosForPlant(records, plantName, areaId) {
+    var rows = [];
+    if (!Array.isArray(records)) return rows;
+    for (var ri = 0; ri < records.length; ri++) {
+      var r = records[ri];
+      if (!recordHasPlantInArea(r, plantName, areaId)) continue;
+      var slots = growthImageSlots(r);
+      for (var si = 0; si < slots.length; si++) {
+        var url = growthImageSrcFromSlot(slots[si]);
+        if (!url) continue;
+        rows.push({
+          recordedAt: r.recordedAt || "",
+          url: url,
+          slot: slots[si],
+        });
+      }
+    }
+    rows.sort(function (a, b) {
+      return (b.recordedAt || "").localeCompare(a.recordedAt || "");
+    });
+    var seen = {};
+    var out = [];
+    for (var j = 0; j < rows.length; j++) {
+      var u = rows[j].url;
+      if (seen[u]) continue;
+      seen[u] = true;
+      out.push(rows[j]);
+    }
+    return out;
+  }
+
+  function renderGrowthPhotosSection(plantName, areaId, records) {
+    var section = document.createElement("section");
+    section.className = "plant-detail-photos";
+    var h = document.createElement("h2");
+    h.className = "plant-detail-photos-heading";
+    h.textContent = "成長記録の写真";
+    section.appendChild(h);
+
+    var items = collectPhotosForPlant(records, plantName, areaId);
+    if (items.length === 0) {
+      var empty = document.createElement("p");
+      empty.className = "plant-detail-photos-empty";
+      empty.textContent =
+        "この植栽・エリアの記録写真はまだありません。成長記録に写真を追加すると、ここに表示されます。";
+      section.appendChild(empty);
+      return section;
+    }
+
+    var grid = document.createElement("div");
+    grid.className = "plant-detail-photos-grid";
+    for (var k = 0; k < items.length; k++) {
+      (function (it) {
+        var fig = document.createElement("figure");
+        fig.className = "plant-detail-photo-figure";
+        var img = document.createElement("img");
+        img.className = "plant-detail-photo-img";
+        img.src = it.url;
+        img.alt = plantName + "の記録写真";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.addEventListener("error", function onPlantPhotoErr() {
+          img.removeEventListener("error", onPlantPhotoErr);
+          if (img.dataset.plantPhotoFb === "1") return;
+          var sl = it.slot;
+          if (!sl || !sl.localSnapshotImage) return;
+          var fb = sl.imageUrl || "";
+          if (!fb && sl.imagePathname) {
+            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
+          }
+          if (fb) {
+            img.dataset.plantPhotoFb = "1";
+            img.src = fb;
+          }
+        });
+        fig.appendChild(img);
+        var cap = document.createElement("figcaption");
+        cap.className = "plant-detail-photo-date";
+        cap.textContent = (it.recordedAt || "").slice(0, 10) || "—";
+        fig.appendChild(cap);
+        grid.appendChild(fig);
+      })(items[k]);
+    }
+    section.appendChild(grid);
+
+    var more = document.createElement("p");
+    more.className = "plant-detail-photos-more";
+    var a = document.createElement("a");
+    a.href =
+      "./index.html?view=timeline&plant=" +
+      encodeURIComponent(plantName) +
+      "&area=" +
+      encodeURIComponent(areaId);
+    a.className = "plant-detail-link";
+    a.textContent = "成長記録で植栽別・時系列を開く";
+    more.appendChild(a);
+    section.appendChild(more);
+
+    return section;
   }
 
   function loadDetailsData() {
@@ -165,6 +354,10 @@
       root.appendChild(sum);
     }
 
+    root.appendChild(
+      renderGrowthPhotosSection(plantName, area.id, options.growthRecords || [])
+    );
+
     var bodyWrap = document.createElement("div");
     bodyWrap.className = "plant-detail-body";
     if (entry && entry.body) {
@@ -211,10 +404,11 @@
     return;
   }
 
-  Promise.all([loadPlantsData(), loadDetailsData()])
+  Promise.all([loadPlantsData(), loadDetailsData(), loadGrowthRecordsList()])
     .then(function (results) {
       var plantsData = results[0];
       var entries = results[1];
+      var growthRecords = results[2] || [];
       var areas = plantsData.areas || [];
       var area;
       var warnMulti = false;
@@ -251,6 +445,7 @@
       renderPage(area, plantName, entry, {
         warnNotInMaster: !!areaId && !inMaster,
         warnMultipleAreaMatch: warnMulti,
+        growthRecords: growthRecords,
       });
     })
     .catch(function () {

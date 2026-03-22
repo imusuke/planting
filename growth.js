@@ -431,6 +431,11 @@
     var canNav = g.urls.length > 1 || g.timelineCrossPlant;
     pack.prevBtn.hidden = !canNav;
     pack.nextBtn.hidden = !canNav;
+    if (pack.cornerNav) {
+      pack.cornerNav.hidden = false;
+      if (pack.cornerPrev) pack.cornerPrev.disabled = !canNav;
+      if (pack.cornerNext) pack.cornerNext.disabled = !canNav;
+    }
     growthLightboxSyncCaption(pack);
   }
 
@@ -551,6 +556,30 @@
       });
     }
     shell.appendChild(inner);
+
+    var cornerNav = document.createElement("div");
+    cornerNav.className = "growth-photo-lightbox-corner-nav";
+    cornerNav.setAttribute("role", "group");
+    cornerNav.setAttribute("aria-label", "写真を前後に送る");
+    var cornerInner = document.createElement("div");
+    cornerInner.className = "growth-photo-lightbox-corner-inner";
+    var cornerPrev = document.createElement("button");
+    cornerPrev.type = "button";
+    cornerPrev.className = "growth-photo-lightbox-corner-btn growth-photo-lightbox-corner-prev";
+    cornerPrev.setAttribute("aria-label", "前の写真");
+    cornerPrev.textContent = "前へ";
+    var cornerNext = document.createElement("button");
+    cornerNext.type = "button";
+    cornerNext.className = "growth-photo-lightbox-corner-btn growth-photo-lightbox-corner-next";
+    cornerNext.setAttribute("aria-label", "次の写真");
+    cornerNext.textContent = "次へ";
+    cornerInner.appendChild(cornerPrev);
+    cornerInner.appendChild(cornerNext);
+    cornerNav.appendChild(cornerInner);
+    cornerInner.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+    shell.appendChild(cornerNav);
     dlg.appendChild(shell);
     document.body.appendChild(dlg);
 
@@ -596,6 +625,14 @@
       e.stopPropagation();
       showAt(growthPhotoLightboxEls, growthLightboxGallery.index + 1);
     });
+    cornerPrev.addEventListener("click", function (e) {
+      e.stopPropagation();
+      showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
+    });
+    cornerNext.addEventListener("click", function (e) {
+      e.stopPropagation();
+      showAt(growthPhotoLightboxEls, growthLightboxGallery.index + 1);
+    });
 
     dlg.addEventListener("keydown", function (e) {
       if (!growthPhotoLightboxEls || !growthLightboxCanNavigate()) return;
@@ -622,6 +659,7 @@
       if (!target || !target.closest) return false;
       if (target.closest("button")) return false;
       if (target.closest(".growth-photo-lightbox-area-row")) return false;
+      if (target.closest(".growth-photo-lightbox-corner-nav")) return false;
       return !!target.closest(".growth-photo-lightbox-inner");
     }
     function lbApplySwipeEnd(clientX, clientY) {
@@ -751,6 +789,9 @@
       caption: cap,
       prevBtn: prevBtn,
       nextBtn: nextBtn,
+      cornerNav: cornerNav,
+      cornerPrev: cornerPrev,
+      cornerNext: cornerNext,
       areaRow: areaRow,
       areaSelect: areaSelect,
       showAt: showAt,
