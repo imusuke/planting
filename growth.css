@@ -311,6 +311,93 @@ label.growth-photo-pick-label {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.growth-view-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+
+.growth-view-mode-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.growth-view-mode-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.growth-view-mode-option input {
+  accent-color: var(--green-soft, #2d6a4f);
+}
+
+.growth-timeline-lead {
+  margin: 0 0 12px;
+}
+
+.growth-plant-timeline {
+  margin-top: 4px;
+}
+
+.growth-plant-timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.growth-plant-timeline-item {
+  display: grid;
+  grid-template-columns: 6.75rem minmax(0, 1fr);
+  gap: 14px 20px;
+  align-items: start;
+}
+
+.growth-plant-timeline-date {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--green-soft);
+  padding-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.growth-plant-timeline-card-wrap .growth-card {
+  max-width: 28rem;
+}
+
+.growth-card--in-timeline .growth-card-meta {
+  display: none;
+}
+
+.growth-plant-timeline.growth-feed--thumb-sm .growth-card-img-wrap {
+  aspect-ratio: 1;
+}
+
+.growth-plant-timeline.growth-feed--thumb-lg .growth-card-img-wrap {
+  aspect-ratio: 16 / 10;
+}
+
+@media (max-width: 560px) {
+  .growth-plant-timeline-item {
+    grid-template-columns: 1fr;
+  }
+
+  .growth-plant-timeline-date {
+    padding-top: 0;
+  }
+}
+
 .growth-feed {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -607,6 +694,91 @@ button.growth-danger {
   }
 }
 
+/* 編集ページ growth-edit.html: 記録 / エリア / 植栽名タブ */
+.growth-edit-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 16px 24px 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.growth-edit-tab {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.growth-edit-tab[aria-selected="true"] {
+  border-color: rgba(45, 106, 79, 0.45);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 12px rgba(26, 46, 36, 0.08);
+}
+
+.growth-edit-tab:hover {
+  border-color: rgba(26, 46, 36, 0.22);
+}
+
+.growth-edit-tab:focus {
+  outline: none;
+}
+
+.growth-edit-tab:focus-visible {
+  outline: 2px solid var(--green-soft, #2d6a4f);
+  outline-offset: 2px;
+}
+
+.plants-catalog-heading-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.plants-catalog-heading-tabs .plants-catalog-heading-swap {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+main.growth-panel[data-growth-edit-tab="plants"] .plants-catalog-heading-swap--areas {
+  display: none;
+}
+
+main.growth-panel[data-growth-edit-tab="areas"] .plants-catalog-heading-swap--plants {
+  display: none;
+}
+
+main.growth-panel[data-growth-edit-tab="plants"] .plants-catalog-area-meta,
+main.growth-panel[data-growth-edit-tab="plants"] .plants-catalog-action--areas-only {
+  display: none !important;
+}
+
+main.growth-panel[data-growth-edit-tab="areas"] .plants-catalog-area-plants-wrap {
+  display: none !important;
+}
+
+main.growth-panel[data-growth-edit-tab="areas"] .plants-catalog-hint-swap--plants {
+  display: none;
+}
+
+main.growth-panel[data-growth-edit-tab="plants"] .plants-catalog-hint-swap--areas {
+  display: none;
+}
+
+main.growth-panel[data-growth-edit-tab="areas"] .plants-catalog-plants-tab-only {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   .growth-section {
     padding: 0 18px 22px;
@@ -614,5 +786,10 @@ button.growth-danger {
 
   .growth-toast {
     margin: 0 18px 14px;
+  }
+
+  .growth-edit-tablist {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
