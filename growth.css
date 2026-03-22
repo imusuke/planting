@@ -585,8 +585,8 @@ dialog.growth-photo-lightbox::backdrop {
   max-width: min(96vw, 1400px);
   max-height: 92dvh;
   cursor: default;
-  /* 横スワイプを JS で扱い、縦方向はブラウザの慣性スクロールと競合しにくくする */
-  touch-action: pan-y;
+  /* pan-y だと iOS 等で横スワイプがブラウザに取られ touchend まで届かないことがある → JS で扱う */
+  touch-action: none;
 }
 
 button.growth-photo-lightbox-nav {
@@ -656,8 +656,7 @@ button.growth-photo-lightbox-nav:focus-visible {
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-  /* inner と同様。img 既定の auto だと横スワイプがブラウザに取られ JS に届かないことがある */
-  touch-action: pan-y;
+  touch-action: none;
   -webkit-user-drag: none;
   user-select: none;
 }
@@ -669,7 +668,7 @@ button.growth-photo-lightbox-nav:focus-visible {
   font-size: 0.88rem;
   line-height: 1.45;
   color: rgba(244, 247, 245, 0.92);
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .growth-card-img-wrap--empty {

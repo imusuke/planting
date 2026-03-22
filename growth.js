@@ -301,11 +301,16 @@
       }
     });
 
-    /** タッチは img で touch-action:auto のとき横ジェスチャがブラウザに取られるため Pointer で統一 */
+    /**
+     * ライトボックスの左右スワイプ。
+     * iOS 等では Pointer だけでは pointercancel になりがちなので Touch を併用し、
+     * pointer はマウス／ペンのみ（タッチは touch* でのみ扱い二重発火を防ぐ）。
+     */
     var lbSwipePtrId = null;
+    var lbSwipeTouchId = null;
     var lbSwipeStartX = 0;
     var lbSwipeStartY = 0;
-    var LB_SWIPE_MIN = 40;
+    var LB_SWIPE_MIN = 32;
     function lbSwipeTargetOk(target) {
       if (!target || !target.closest) return false;
       if (target.closest("button")) return false;
@@ -316,7 +321,7 @@
       var dx = clientX - lbSwipeStartX;
       var dy = clientY - lbSwipeStartY;
       if (Math.abs(dx) < LB_SWIPE_MIN) return;
-      if (Math.abs(dx) < Math.abs(dy) * 1.1) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.05) return;
       var pk = growthPhotoLightboxEls;
       if (!pk) return;
       if (dx > 0) {
@@ -325,10 +330,67 @@
         showAt(pk, growthLightboxGallery.index + 1);
       }
     }
+    function lbFindTouch(touchList, id) {
+      for (var fi = 0; fi < touchList.length; fi++) {
+        if (touchList[fi].identifier === id) return touchList[fi];
+      }
+      return null;
+    }
+    inner.addEventListener(
+      "touchstart",
+      function (e) {
+        if (growthLightboxGallery.urls.length <= 1) return;
+        if (!lbSwipeTargetOk(e.target)) return;
+        if (e.touches.length !== 1) {
+          lbSwipeTouchId = null;
+          return;
+        }
+        var t0 = e.touches[0];
+        lbSwipeTouchId = t0.identifier;
+        lbSwipeStartX = t0.clientX;
+        lbSwipeStartY = t0.clientY;
+      },
+      { passive: true }
+    );
+    inner.addEventListener(
+      "touchmove",
+      function (e) {
+        if (lbSwipeTouchId === null) return;
+        var tm =
+          lbFindTouch(e.changedTouches, lbSwipeTouchId) ||
+          lbFindTouch(e.touches, lbSwipeTouchId);
+        if (!tm) return;
+        var mdx = tm.clientX - lbSwipeStartX;
+        var mdy = tm.clientY - lbSwipeStartY;
+        if (Math.abs(mdx) > 14 && Math.abs(mdx) > Math.abs(mdy) * 1.02) {
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+    inner.addEventListener(
+      "touchend",
+      function (e) {
+        if (lbSwipeTouchId === null) return;
+        var te = lbFindTouch(e.changedTouches, lbSwipeTouchId);
+        if (!te) return;
+        lbSwipeTouchId = null;
+        lbApplySwipeEnd(te.clientX, te.clientY);
+      },
+      { passive: true }
+    );
+    inner.addEventListener(
+      "touchcancel",
+      function () {
+        lbSwipeTouchId = null;
+      },
+      { passive: true }
+    );
     inner.addEventListener(
       "pointerdown",
       function (e) {
         if (growthLightboxGallery.urls.length <= 1) return;
+        if (e.pointerType === "touch") return;
         if (lbSwipePtrId !== null) return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
         if (!lbSwipeTargetOk(e.target)) return;
@@ -344,6 +406,7 @@
     inner.addEventListener(
       "pointerup",
       function (e) {
+        if (e.pointerType === "touch") return;
         if (lbSwipePtrId === null || e.pointerId !== lbSwipePtrId) return;
         try {
           inner.releasePointerCapture(e.pointerId);
@@ -356,11 +419,20 @@
     inner.addEventListener(
       "pointercancel",
       function (e) {
+        if (e.pointerType === "touch") return;
         if (e.pointerId !== lbSwipePtrId) return;
         try {
           inner.releasePointerCapture(e.pointerId);
         } catch (eRel2) {}
         lbSwipePtrId = null;
+      },
+      true
+    );
+    inner.addEventListener(
+      "lostpointercapture",
+      function (e) {
+        if (e.pointerType === "touch") return;
+        if (e.pointerId === lbSwipePtrId) lbSwipePtrId = null;
       },
       true
     );
