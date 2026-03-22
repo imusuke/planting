@@ -468,11 +468,34 @@ label.growth-photo-pick-label {
   line-height: 1.35;
 }
 
-.growth-card-plants {
+.growth-card-area {
   margin: 0;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
   color: var(--muted);
-  line-height: 1.55;
+  line-height: 1.45;
+}
+
+.growth-card-area-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1em;
+  height: 1.1em;
+  color: var(--green-soft);
+}
+
+.growth-card-area-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.growth-card-area-label {
+  min-width: 0;
 }
 
 .growth-card-note {

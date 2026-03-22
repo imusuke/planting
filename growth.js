@@ -1005,13 +1005,22 @@
 
     var title = document.createElement("h3");
     title.className = "growth-card-title";
-    title.textContent = r.areaLabel || "";
+    title.textContent = r.plants && r.plants.length ? r.plants.join("、") : "—";
     body.appendChild(title);
 
-    var pl = document.createElement("p");
-    pl.className = "growth-card-plants";
-    pl.textContent = r.plants && r.plants.length ? r.plants.join("、") : "—";
-    body.appendChild(pl);
+    var areaRow = document.createElement("p");
+    areaRow.className = "growth-card-area";
+    var areaIcon = document.createElement("span");
+    areaIcon.className = "growth-card-area-icon";
+    areaIcon.setAttribute("aria-hidden", "true");
+    areaIcon.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 21s-7-4.35-7-11a7 7 0 1 1 14 0c0 6.65-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+    var areaLabel = document.createElement("span");
+    areaLabel.className = "growth-card-area-label";
+    areaLabel.textContent = r.areaLabel || "—";
+    areaRow.appendChild(areaIcon);
+    areaRow.appendChild(areaLabel);
+    body.appendChild(areaRow);
 
     if (r.note) {
       var note = document.createElement("p");
