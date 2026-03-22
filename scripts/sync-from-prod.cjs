@@ -10,7 +10,7 @@
  * npm run sync:prod だけでも可。
  *
  * オプション:
- *   --plants-only … data/plants.json のみ
+ *   --plants-only … data/plants.json のみ（あわせて HTML 内 plants-embed も更新）
  *   --growth-only … data/growth-snapshot.json のみ
  */
 
@@ -67,6 +67,7 @@ function syncPlants() {
       fs.writeFileSync(plantsPath, JSON.stringify(out, null, 2), "utf8");
       console.log("書き出しました: " + plantsPath);
       console.log("エリア数: " + data.areas.length);
+      require("./update-plants-embed.cjs").run();
     });
 }
 
@@ -108,9 +109,11 @@ if (doGrowth) {
 chain
   .then(function () {
     console.log(
-      "\n次: git add data/plants.json data/growth-snapshot.json && git commit && git push"
+      "\n次: git add data/plants.json data/growth-snapshot.json index.html growth-edit.html plants.html && git commit && git push"
     );
-    console.log("（どちらか一方だけ更新した場合は add するファイルを減らしてください）");
+    console.log(
+      "（plants を同期した場合は plants-embed 入り HTML も add してください。片方だけのときは不要なファイルを外す）"
+    );
   })
   .catch(function (err) {
     console.error(err.message || String(err));
