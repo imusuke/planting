@@ -918,20 +918,40 @@
     var prev = el.filterPlant.value;
     var list = [];
     var emptyLabel = "（すべて）";
+    var areaId = el.filterArea ? el.filterArea.value : "";
+    var timeline = IS_VIEW && state.viewLayout === "timeline";
 
-    if (IS_VIEW && state.viewLayout === "timeline") {
+    if (timeline) {
       emptyLabel = "（植栽を選ぶ）";
+    }
+
+    if (areaId) {
+      var ar = state.areas.find(function (x) {
+        return x.id === areaId;
+      });
+      var catalog = ar && ar.plants ? ar.plants.slice() : [];
+      if (timeline) {
+        var m = {};
+        catalog.forEach(function (p) {
+          m[p] = true;
+        });
+        (state.lastGrowthRecords || []).forEach(function (r) {
+          if (r.areaId !== areaId) return;
+          (r.plants || []).forEach(function (p) {
+            var t = typeof p === "string" ? p.trim() : "";
+            if (t) m[t] = true;
+          });
+        });
+        list = Object.keys(m).sort(function (a, b) {
+          return a.localeCompare(b, "ja");
+        });
+      } else {
+        list = catalog;
+      }
+    } else if (timeline) {
       list = mergedPlantNameList(state.lastGrowthRecords);
     } else {
-      var areaId = el.filterArea ? el.filterArea.value : "";
-      if (areaId) {
-        var ar = state.areas.find(function (x) {
-          return x.id === areaId;
-        });
-        list = ar && ar.plants ? ar.plants.slice() : [];
-      } else {
-        list = allPlantNames();
-      }
+      list = allPlantNames();
     }
 
     el.filterPlant.innerHTML = "";
@@ -946,7 +966,11 @@
       opt.textContent = p;
       el.filterPlant.appendChild(opt);
     });
-    if (prev && list.indexOf(prev) !== -1) el.filterPlant.value = prev;
+    if (prev && list.indexOf(prev) !== -1) {
+      el.filterPlant.value = prev;
+    } else {
+      el.filterPlant.value = "";
+    }
   }
 
   function createGrowthCardArticle(r, opts) {
