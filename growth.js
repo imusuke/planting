@@ -187,10 +187,200 @@
     });
   }
 
+  function growthZoomCaptionForRecord(r) {
+    if (!r) return "";
+    var parts = [];
+    parts.push((r.recordedAt || "").slice(0, 10));
+    if (r.plants && r.plants.length) parts.push(r.plants.join("、"));
+    if (r.areaLabel) parts.push(r.areaLabel);
+    return parts.filter(Boolean).join(" · ");
+  }
+
+  function countGrowthRecordImages(r) {
+    var slots = growthImageSlots(r);
+    var n = 0;
+    for (var ci = 0; ci < slots.length; ci++) {
+      if (growthImageSrcFromSlot(slots[ci])) n++;
+    }
+    return n;
+  }
+
+  function flattenGrowthRecordsForLightbox(records) {
+    var urls = [];
+    var captions = [];
+    for (var ri = 0; ri < records.length; ri++) {
+      var rec = records[ri];
+      var capLine = growthZoomCaptionForRecord(rec);
+      var slots = growthImageSlots(rec);
+      for (var si = 0; si < slots.length; si++) {
+        var u = growthImageSrcFromSlot(slots[si]);
+        if (u) {
+          urls.push(u);
+          captions.push(capLine);
+        }
+      }
+    }
+    return { urls: urls, captions: captions };
+  }
+
+  function lightboxFlatIndexForRecordImage(sortedRecords, recordId, imgIndexInRecord) {
+    var rid = recordId != null ? String(recordId) : "";
+    var flat = 0;
+    for (var i = 0; i < sortedRecords.length; i++) {
+      var r = sortedRecords[i];
+      if (String(r.id || "") === rid) {
+        var nimg = countGrowthRecordImages(r);
+        var clamped = imgIndexInRecord;
+        if (clamped < 0) clamped = 0;
+        if (nimg && clamped >= nimg) clamped = nimg - 1;
+        return flat + clamped;
+      }
+      flat += countGrowthRecordImages(r);
+    }
+    return -1;
+  }
+
+  function getGrowthViewRecordsForLightbox() {
+    if (!IS_VIEW || !el.filterArea) return null;
+    var records = state.lastGrowthRecords || [];
+    var fa = el.filterArea.value || "";
+    var fp = el.filterPlant ? el.filterPlant.value || "" : "";
+    var filtered;
+    if (state.viewLayout === "timeline") {
+      if (!fp) return [];
+      filtered = records.filter(function (r) {
+        if (fa && r.areaId !== fa) return false;
+        return r.plants && r.plants.indexOf(fp) !== -1;
+      });
+    } else {
+      filtered = records.filter(function (r) {
+        if (fa && r.areaId !== fa) return false;
+        if (fp && (!r.plants || r.plants.indexOf(fp) === -1)) return false;
+        return true;
+      });
+    }
+    var sorted = filtered.slice();
+    sortFilteredGrowthRecords(sorted);
+    return sorted;
+  }
+
+  function lightboxFilterPlantChoiceCount() {
+    if (!el.filterPlant) return 0;
+    var opts = el.filterPlant.querySelectorAll("option");
+    var n = 0;
+    for (var oi = 0; oi < opts.length; oi++) {
+      if (opts[oi].value) n++;
+    }
+    return n;
+  }
+
+  function lightboxTimelineAdjacentPlant(delta) {
+    if (!el.filterPlant) return null;
+    var opts = el.filterPlant.querySelectorAll("option");
+    var vals = [];
+    for (var i = 0; i < opts.length; i++) {
+      if (opts[i].value) vals.push(opts[i].value);
+    }
+    var cur = el.filterPlant.value;
+    var ix = -1;
+    for (var j = 0; j < vals.length; j++) {
+      if (vals[j] === cur) {
+        ix = j;
+        break;
+      }
+    }
+    if (ix < 0) return null;
+    var ni = ix + delta;
+    if (ni < 0 || ni >= vals.length) return null;
+    return vals[ni];
+  }
+
   var growthPhotoLightboxEls = null;
   /** サムネイルのクリックがそのまま shell に届き、開いた直後に閉じるのを防ぐ */
   var growthLightboxOpenedAt = 0;
-  var growthLightboxGallery = { urls: [], index: 0, captionBase: "" };
+  var growthLightboxGallery = {
+    urls: [],
+    index: 0,
+    captionBase: "",
+    captions: null,
+    timelineCrossPlant: false,
+  };
+
+  function growthLightboxSyncCaption(pack) {
+    var g = growthLightboxGallery;
+    var capEl = pack && pack.caption;
+    if (!capEl) return;
+    var base = "";
+    if (g.captions && g.captions.length === g.urls.length && g.index >= 0 && g.index < g.captions.length) {
+      base = g.captions[g.index] || "";
+    } else {
+      base = g.captionBase || "";
+    }
+    if (g.urls.length > 1) {
+      capEl.textContent = base + (base ? " · " : "") + (g.index + 1) + " / " + g.urls.length;
+      capEl.hidden = false;
+    } else if (base) {
+      capEl.textContent = base;
+      capEl.hidden = false;
+    } else {
+      capEl.textContent = "";
+      capEl.hidden = true;
+    }
+  }
+
+  function growthLightboxUpdateChrome(pack) {
+    if (!pack) return;
+    var g = growthLightboxGallery;
+    var canNav = g.urls.length > 1 || g.timelineCrossPlant;
+    pack.prevBtn.hidden = !canNav;
+    pack.nextBtn.hidden = !canNav;
+    growthLightboxSyncCaption(pack);
+  }
+
+  function growthLightboxCanNavigate() {
+    var g = growthLightboxGallery;
+    return g.urls.length > 1 || g.timelineCrossPlant;
+  }
+
+  function lightboxTryGoNextPlant(pack) {
+    if (!IS_VIEW || state.viewLayout !== "timeline" || !el.filterPlant) return false;
+    var nextP = lightboxTimelineAdjacentPlant(1);
+    if (!nextP) return false;
+    el.filterPlant.value = nextP;
+    renderPlantTimeline(state.lastGrowthRecords);
+    var sorted = getGrowthViewRecordsForLightbox();
+    if (!sorted || !sorted.length) return false;
+    var flat = flattenGrowthRecordsForLightbox(sorted);
+    if (!flat.urls.length) return false;
+    growthLightboxGallery.urls = flat.urls;
+    growthLightboxGallery.captions = flat.captions;
+    growthLightboxGallery.timelineCrossPlant = lightboxFilterPlantChoiceCount() > 1;
+    growthLightboxGallery.captionBase = "";
+    growthLightboxGallery.index = 0;
+    pack.img.src = flat.urls[0];
+    growthLightboxUpdateChrome(pack);
+    return true;
+  }
+
+  function lightboxTryGoPrevPlant(pack) {
+    if (!IS_VIEW || state.viewLayout !== "timeline" || !el.filterPlant) return false;
+    var prevP = lightboxTimelineAdjacentPlant(-1);
+    if (!prevP) return false;
+    el.filterPlant.value = prevP;
+    renderPlantTimeline(state.lastGrowthRecords);
+    var sorted = getGrowthViewRecordsForLightbox();
+    if (!sorted || !sorted.length) return false;
+    var flat = flattenGrowthRecordsForLightbox(sorted);
+    if (!flat.urls.length) return false;
+    growthLightboxGallery.urls = flat.urls;
+    growthLightboxGallery.captions = flat.captions;
+    growthLightboxGallery.timelineCrossPlant = lightboxFilterPlantChoiceCount() > 1;
+    growthLightboxGallery.captionBase = "";
+    growthLightboxGallery.index = flat.urls.length - 1;
+    pack.img.src = flat.urls[growthLightboxGallery.index];
+    growthLightboxUpdateChrome(pack);
+    return true;
+  }
 
   function ensureGrowthPhotoLightbox() {
     if (growthPhotoLightboxEls) return growthPhotoLightboxEls;
@@ -242,32 +432,27 @@
     dlg.appendChild(shell);
     document.body.appendChild(dlg);
 
-    function syncCaption(pack) {
-      var g = growthLightboxGallery;
-      var base = g.captionBase || "";
-      if (g.urls.length > 1) {
-        pack.caption.textContent =
-          base + (base ? " · " : "") + (g.index + 1) + " / " + g.urls.length;
-        pack.caption.hidden = false;
-      } else if (base) {
-        pack.caption.textContent = base;
-        pack.caption.hidden = false;
-      } else {
-        pack.caption.textContent = "";
-        pack.caption.hidden = true;
-      }
-    }
-
     function showAt(pack, idx) {
       var g = growthLightboxGallery;
       if (!g.urls.length) return;
-      if (idx < 0) idx = g.urls.length - 1;
-      if (idx >= g.urls.length) idx = 0;
-      g.index = idx;
-      pack.img.src = g.urls[idx];
-      pack.prevBtn.hidden = g.urls.length <= 1;
-      pack.nextBtn.hidden = g.urls.length <= 1;
-      syncCaption(pack);
+      var tc = g.timelineCrossPlant && IS_VIEW && state.viewLayout === "timeline";
+      if (idx >= 0 && idx < g.urls.length) {
+        g.index = idx;
+        pack.img.src = g.urls[idx];
+        growthLightboxUpdateChrome(pack);
+        return;
+      }
+      if (idx < 0) {
+        if (tc && lightboxTryGoPrevPlant(pack)) return;
+        g.index = g.urls.length - 1;
+        pack.img.src = g.urls[g.index];
+        growthLightboxUpdateChrome(pack);
+        return;
+      }
+      if (tc && lightboxTryGoNextPlant(pack)) return;
+      g.index = 0;
+      pack.img.src = g.urls[g.index];
+      growthLightboxUpdateChrome(pack);
     }
 
     shell.addEventListener("click", function () {
@@ -291,7 +476,7 @@
     });
 
     dlg.addEventListener("keydown", function (e) {
-      if (!growthPhotoLightboxEls || growthLightboxGallery.urls.length <= 1) return;
+      if (!growthPhotoLightboxEls || !growthLightboxCanNavigate()) return;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
@@ -317,7 +502,7 @@
       return !!target.closest(".growth-photo-lightbox-inner");
     }
     function lbApplySwipeEnd(clientX, clientY) {
-      if (growthLightboxGallery.urls.length <= 1) return;
+      if (!growthLightboxCanNavigate()) return;
       var dx = clientX - lbSwipeStartX;
       var dy = clientY - lbSwipeStartY;
       if (Math.abs(dx) < LB_SWIPE_MIN) return;
@@ -336,10 +521,10 @@
       }
       return null;
     }
-    inner.addEventListener(
+    dlg.addEventListener(
       "touchstart",
       function (e) {
-        if (growthLightboxGallery.urls.length <= 1) return;
+        if (!growthLightboxCanNavigate()) return;
         if (!lbSwipeTargetOk(e.target)) return;
         if (e.touches.length !== 1) {
           lbSwipeTouchId = null;
@@ -350,9 +535,9 @@
         lbSwipeStartX = t0.clientX;
         lbSwipeStartY = t0.clientY;
       },
-      { passive: true }
+      { passive: true, capture: true }
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "touchmove",
       function (e) {
         if (lbSwipeTouchId === null) return;
@@ -366,9 +551,9 @@
           e.preventDefault();
         }
       },
-      { passive: false }
+      { passive: false, capture: true }
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "touchend",
       function (e) {
         if (lbSwipeTouchId === null) return;
@@ -377,19 +562,19 @@
         lbSwipeTouchId = null;
         lbApplySwipeEnd(te.clientX, te.clientY);
       },
-      { passive: true }
+      { passive: true, capture: true }
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "touchcancel",
       function () {
         lbSwipeTouchId = null;
       },
-      { passive: true }
+      { passive: true, capture: true }
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "pointerdown",
       function (e) {
-        if (growthLightboxGallery.urls.length <= 1) return;
+        if (!growthLightboxCanNavigate()) return;
         if (e.pointerType === "touch") return;
         if (lbSwipePtrId !== null) return;
         if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -403,7 +588,7 @@
       },
       true
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "pointerup",
       function (e) {
         if (e.pointerType === "touch") return;
@@ -416,7 +601,7 @@
       },
       true
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "pointercancel",
       function (e) {
         if (e.pointerType === "touch") return;
@@ -428,7 +613,7 @@
       },
       true
     );
-    inner.addEventListener(
+    dlg.addEventListener(
       "lostpointercapture",
       function (e) {
         if (e.pointerType === "touch") return;
@@ -444,12 +629,46 @@
       prevBtn: prevBtn,
       nextBtn: nextBtn,
       showAt: showAt,
-      syncCaption: syncCaption,
+      syncCaption: function (pack) {
+        growthLightboxSyncCaption(pack);
+      },
     };
     return growthPhotoLightboxEls;
   }
 
-  function openGrowthPhotoLightbox(urlsOrOne, startIndex, caption) {
+  function openGrowthViewLightbox(r, imgIndexInRecord, galleryUrls, zoomCaption) {
+    if (!IS_VIEW) {
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      return;
+    }
+    var sorted = getGrowthViewRecordsForLightbox();
+    if (!sorted || !sorted.length) {
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      return;
+    }
+    var flat = flattenGrowthRecordsForLightbox(sorted);
+    if (!flat.urls.length) {
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      return;
+    }
+    var start = lightboxFlatIndexForRecordImage(sorted, r.id, imgIndexInRecord);
+    if (start < 0) {
+      openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption);
+      return;
+    }
+    var tcp =
+      state.viewLayout === "timeline" &&
+      el.filterPlant &&
+      el.filterPlant.value &&
+      lightboxFilterPlantChoiceCount() > 1;
+    openGrowthPhotoLightbox(flat.urls, start, zoomCaption, {
+      captions: flat.captions,
+      timelineCrossPlant: tcp,
+    });
+  }
+
+  function openGrowthPhotoLightbox(urlsOrOne, startIndex, caption, options) {
+    options = options || {};
     var urls = Array.isArray(urlsOrOne)
       ? urlsOrOne.filter(Boolean)
       : urlsOrOne
@@ -463,6 +682,13 @@
     growthLightboxGallery.urls = urls;
     growthLightboxGallery.index = idx;
     growthLightboxGallery.captionBase = caption || "";
+    var oc = options.captions;
+    if (oc && oc.length === urls.length) {
+      growthLightboxGallery.captions = oc;
+    } else {
+      growthLightboxGallery.captions = null;
+    }
+    growthLightboxGallery.timelineCrossPlant = !!options.timelineCrossPlant;
 
     var pack = ensureGrowthPhotoLightbox();
     pack.img.referrerPolicy = "no-referrer";
@@ -1661,12 +1887,12 @@
       });
       imgEl.addEventListener("click", function (e) {
         e.preventDefault();
-        openGrowthPhotoLightbox(galleryUrls, imgIndex, zoomCaption);
+        openGrowthViewLightbox(r, imgIndex, galleryUrls, zoomCaption);
       });
       imgEl.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openGrowthPhotoLightbox(galleryUrls, imgIndex, zoomCaption);
+          openGrowthViewLightbox(r, imgIndex, galleryUrls, zoomCaption);
         }
       });
     }
