@@ -93,6 +93,13 @@ function syncGrowth() {
       var cleaned = records.map(function (r) {
         var c = Object.assign({}, r);
         delete c.localSnapshotImage;
+        if (c.images && Array.isArray(c.images)) {
+          c.images = c.images.map(function (im) {
+            var x = Object.assign({}, im);
+            delete x.localSnapshotImage;
+            return x;
+          });
+        }
         return c;
       });
       var writePayload = function (finalRecords) {

@@ -5,8 +5,9 @@ const { Readable } = require("stream");
 function safeGrowthPathname(p) {
   if (!p || typeof p !== "string" || p.length > 400) return null;
   if (p.indexOf("..") !== -1 || p.charAt(0) === "/") return null;
-  if (!/^growth\/[A-Za-z0-9_.-]+\.jpg$/i.test(p)) return null;
-  return p;
+  if (/^growth\/[A-Za-z0-9_.-]+\/[0-9]+\.jpg$/i.test(p)) return p;
+  if (/^growth\/[A-Za-z0-9_.-]+\.jpg$/i.test(p)) return p;
+  return null;
 }
 
 module.exports = async function handler(req, res) {

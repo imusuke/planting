@@ -17,6 +17,7 @@
   var API_PLANTS = "/api/plants";
   var MAX_IMAGE_WIDTH = 1024;
   var JPEG_QUALITY = 0.76;
+  var MAX_GROWTH_PHOTOS = 12;
 
   var state = {
     areas: [],
@@ -34,6 +35,10 @@
     pendingTimelinePlant: null,
     /** 閲覧ページ: "newest" | "oldest" — 記録一覧・植栽別タイムラインの並び */
     feedSortOrder: "newest",
+    /** 編集フォーム: { kind: "saved", slot } | { kind: "new", file } */
+    photoQueue: [],
+    /** 写真キューをユーザーが変更したか（保存時に imagesBase64 を送るか） */
+    photosTouched: false,
   };
 
   var el = {
@@ -46,8 +51,8 @@
     photoLibrary: null,
     photoStatus: null,
     photoClear: null,
-    photoExistingWrap: null,
-    photoExistingImg: null,
+    photoQueueEl: null,
+    photoQueueEmpty: null,
     submit: null,
     toast: null,
     filterArea: null,
@@ -105,9 +110,34 @@
     return h;
   }
 
-  function growthImageSrc(r) {
-    if (r.localSnapshotImage) {
-      var p = String(r.localSnapshotImage).trim();
+  function growthImageSlots(r) {
+    if (!r) return [];
+    if (r.images && Array.isArray(r.images) && r.images.length) {
+      return r.images.map(function (im) {
+        if (!im || typeof im !== "object") return {};
+        return {
+          imageUrl: im.imageUrl || null,
+          imagePathname: im.imagePathname || null,
+          localSnapshotImage: im.localSnapshotImage || null,
+        };
+      });
+    }
+    if (r.localSnapshotImage || r.imagePathname || r.imageUrl) {
+      return [
+        {
+          imageUrl: r.imageUrl || null,
+          imagePathname: r.imagePathname || null,
+          localSnapshotImage: r.localSnapshotImage || null,
+        },
+      ];
+    }
+    return [];
+  }
+
+  function growthImageSrcFromSlot(slot) {
+    if (!slot) return null;
+    if (slot.localSnapshotImage) {
+      var p = String(slot.localSnapshotImage).trim();
       if (/^https?:\/\//i.test(p)) {
         return p;
       }
@@ -117,10 +147,15 @@
         return p;
       }
     }
-    if (r.imagePathname) {
-      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
+    if (slot.imagePathname) {
+      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
     }
-    return r.imageUrl || null;
+    return slot.imageUrl || null;
+  }
+
+  function growthImageSrc(r) {
+    var slots = growthImageSlots(r);
+    return slots.length ? growthImageSrcFromSlot(slots[0]) : null;
   }
 
   /** 同一記録日でも安定して並ぶよう createdAt・id でタイブレーク */
@@ -155,6 +190,7 @@
   var growthPhotoLightboxEls = null;
   /** サムネイルのクリックがそのまま shell に届き、開いた直後に閉じるのを防ぐ */
   var growthLightboxOpenedAt = 0;
+  var growthLightboxGallery = { urls: [], index: 0, captionBase: "" };
 
   function ensureGrowthPhotoLightbox() {
     if (growthPhotoLightboxEls) return growthPhotoLightboxEls;
@@ -176,6 +212,20 @@
     closeBtn.setAttribute("aria-label", "閉じる");
     closeBtn.textContent = "閉じる";
 
+    var prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "growth-photo-lightbox-nav growth-photo-lightbox-prev";
+    prevBtn.setAttribute("aria-label", "前の写真");
+    prevBtn.textContent = "‹";
+    prevBtn.hidden = true;
+
+    var nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "growth-photo-lightbox-nav growth-photo-lightbox-next";
+    nextBtn.setAttribute("aria-label", "次の写真");
+    nextBtn.textContent = "›";
+    nextBtn.hidden = true;
+
     var bigImg = document.createElement("img");
     bigImg.className = "growth-photo-lightbox-img";
     bigImg.alt = "";
@@ -184,11 +234,41 @@
     cap.className = "growth-photo-lightbox-caption";
 
     inner.appendChild(closeBtn);
+    inner.appendChild(prevBtn);
+    inner.appendChild(nextBtn);
     inner.appendChild(bigImg);
     inner.appendChild(cap);
     shell.appendChild(inner);
     dlg.appendChild(shell);
     document.body.appendChild(dlg);
+
+    function syncCaption(pack) {
+      var g = growthLightboxGallery;
+      var base = g.captionBase || "";
+      if (g.urls.length > 1) {
+        pack.caption.textContent =
+          base + (base ? " · " : "") + (g.index + 1) + " / " + g.urls.length;
+        pack.caption.hidden = false;
+      } else if (base) {
+        pack.caption.textContent = base;
+        pack.caption.hidden = false;
+      } else {
+        pack.caption.textContent = "";
+        pack.caption.hidden = true;
+      }
+    }
+
+    function showAt(pack, idx) {
+      var g = growthLightboxGallery;
+      if (!g.urls.length) return;
+      if (idx < 0) idx = g.urls.length - 1;
+      if (idx >= g.urls.length) idx = 0;
+      g.index = idx;
+      pack.img.src = g.urls[idx];
+      pack.prevBtn.hidden = g.urls.length <= 1;
+      pack.nextBtn.hidden = g.urls.length <= 1;
+      syncCaption(pack);
+    }
 
     shell.addEventListener("click", function () {
       if (Date.now() - growthLightboxOpenedAt < 400) return;
@@ -201,23 +281,111 @@
       e.stopPropagation();
       if (typeof dlg.close === "function") dlg.close();
     });
+    prevBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
+    });
+    nextBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      showAt(growthPhotoLightboxEls, growthLightboxGallery.index + 1);
+    });
 
-    growthPhotoLightboxEls = { dialog: dlg, img: bigImg, caption: cap };
+    dlg.addEventListener("keydown", function (e) {
+      if (!growthPhotoLightboxEls || growthLightboxGallery.urls.length <= 1) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        showAt(growthPhotoLightboxEls, growthLightboxGallery.index + 1);
+      }
+    });
+
+    var lbSwipeTouchId = null;
+    var lbSwipeStartX = 0;
+    var lbSwipeStartY = 0;
+    inner.addEventListener(
+      "touchstart",
+      function (e) {
+        if (growthLightboxGallery.urls.length <= 1) return;
+        if (e.touches.length !== 1) {
+          lbSwipeTouchId = null;
+          return;
+        }
+        var t = e.touches[0];
+        lbSwipeTouchId = t.identifier;
+        lbSwipeStartX = t.clientX;
+        lbSwipeStartY = t.clientY;
+      },
+      { passive: true }
+    );
+    inner.addEventListener(
+      "touchend",
+      function (e) {
+        if (lbSwipeTouchId === null) return;
+        var t = null;
+        for (var si = 0; si < e.changedTouches.length; si++) {
+          if (e.changedTouches[si].identifier === lbSwipeTouchId) {
+            t = e.changedTouches[si];
+            break;
+          }
+        }
+        if (!t) return;
+        lbSwipeTouchId = null;
+        if (growthLightboxGallery.urls.length <= 1) return;
+        var dx = t.clientX - lbSwipeStartX;
+        var dy = t.clientY - lbSwipeStartY;
+        var minSwipe = 56;
+        if (Math.abs(dx) < minSwipe) return;
+        if (Math.abs(dx) < Math.abs(dy) * 1.15) return;
+        var pk = growthPhotoLightboxEls;
+        if (!pk) return;
+        if (dx > 0) {
+          showAt(pk, growthLightboxGallery.index - 1);
+        } else {
+          showAt(pk, growthLightboxGallery.index + 1);
+        }
+      },
+      { passive: true }
+    );
+    inner.addEventListener(
+      "touchcancel",
+      function () {
+        lbSwipeTouchId = null;
+      },
+      { passive: true }
+    );
+
+    growthPhotoLightboxEls = {
+      dialog: dlg,
+      img: bigImg,
+      caption: cap,
+      prevBtn: prevBtn,
+      nextBtn: nextBtn,
+      showAt: showAt,
+      syncCaption: syncCaption,
+    };
     return growthPhotoLightboxEls;
   }
 
-  function openGrowthPhotoLightbox(src, caption) {
-    if (!src) return;
+  function openGrowthPhotoLightbox(urlsOrOne, startIndex, caption) {
+    var urls = Array.isArray(urlsOrOne)
+      ? urlsOrOne.filter(Boolean)
+      : urlsOrOne
+        ? [urlsOrOne]
+        : [];
+    if (!urls.length) return;
+    var idx =
+      typeof startIndex === "number" && startIndex >= 0 && startIndex < urls.length
+        ? startIndex
+        : 0;
+    growthLightboxGallery.urls = urls;
+    growthLightboxGallery.index = idx;
+    growthLightboxGallery.captionBase = caption || "";
+
     var pack = ensureGrowthPhotoLightbox();
-    pack.img.src = src;
     pack.img.referrerPolicy = "no-referrer";
-    if (caption) {
-      pack.caption.textContent = caption;
-      pack.caption.hidden = false;
-    } else {
-      pack.caption.textContent = "";
-      pack.caption.hidden = true;
-    }
+    pack.showAt(pack, idx);
     var d = pack.dialog;
     function doOpen() {
       if (typeof d.showModal === "function") {
@@ -260,6 +428,22 @@
   function loadImageFile(file) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("画像を読み込めませんでした"));
+      };
+      img.src = url;
+    });
+  }
+
+  function loadImageFileFromBlob(blob) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(blob);
       var img = new Image();
       img.onload = function () {
         URL.revokeObjectURL(url);
@@ -351,81 +535,141 @@
     el.customPlant.value = extras.join("、");
   }
 
-  function getPhotoFile() {
-    if (el.photoCamera && el.photoCamera.files && el.photoCamera.files[0]) {
-      return el.photoCamera.files[0];
+  function appendFilesToPhotoQueue(fileList) {
+    if (!fileList || !fileList.length) return;
+    var n = 0;
+    for (var i = 0; i < fileList.length; i++) {
+      if (state.photoQueue.length >= MAX_GROWTH_PHOTOS) break;
+      var f = fileList[i];
+      if (!f || !f.type || f.type.indexOf("image/") !== 0) continue;
+      state.photoQueue.push({ kind: "new", file: f });
+      state.photosTouched = true;
+      n++;
     }
-    if (el.photoLibrary && el.photoLibrary.files && el.photoLibrary.files[0]) {
-      return el.photoLibrary.files[0];
+    if (n < fileList.length) {
+      showToast("写真は最大 " + MAX_GROWTH_PHOTOS + " 枚までです。", true);
     }
-    return null;
+    renderPhotoQueueUi();
   }
 
-  function refreshEditExistingPhotoPreview() {
-    if (!el.photoExistingWrap || !el.photoExistingImg) return;
-    if (getPhotoFile()) {
-      el.photoExistingWrap.hidden = true;
-      return;
+  function removePhotoQueueIndex(idx) {
+    if (idx < 0 || idx >= state.photoQueue.length) return;
+    state.photoQueue.splice(idx, 1);
+    state.photosTouched = true;
+    renderPhotoQueueUi();
+  }
+
+  function renderPhotoQueueUi() {
+    if (!el.photoQueueEl) return;
+    var oldImgs = el.photoQueueEl.querySelectorAll("img.growth-photo-queue-thumb");
+    for (var oi = 0; oi < oldImgs.length; oi++) {
+      var ou = oldImgs[oi].src || "";
+      if (ou.indexOf("blob:") === 0) {
+        try {
+          URL.revokeObjectURL(ou);
+        } catch (revErr) {}
+      }
     }
-    if (!state.editRecord) {
-      el.photoExistingWrap.hidden = true;
-      el.photoExistingImg.removeAttribute("src");
-      delete el.photoExistingImg.dataset.growthImgFallback;
-      return;
+    el.photoQueueEl.innerHTML = "";
+    if (el.photoQueueEmpty) {
+      el.photoQueueEmpty.hidden = state.photoQueue.length > 0;
     }
-    var src = growthImageSrc(state.editRecord);
-    if (!src) {
-      el.photoExistingWrap.hidden = true;
-      el.photoExistingImg.removeAttribute("src");
-      delete el.photoExistingImg.dataset.growthImgFallback;
-      return;
+    state.photoQueue.forEach(function (item, idx) {
+      var tile = document.createElement("div");
+      tile.className = "growth-photo-queue-item";
+      var thumb = document.createElement("img");
+      thumb.className = "growth-photo-queue-thumb";
+      thumb.alt = "";
+      if (item.kind === "new" && item.file) {
+        try {
+          thumb.src = URL.createObjectURL(item.file);
+        } catch (e1) {
+          thumb.removeAttribute("src");
+        }
+      } else if (item.kind === "saved" && item.slot) {
+        var ssrc = growthImageSrcFromSlot(item.slot);
+        if (ssrc) thumb.src = ssrc;
+        thumb.addEventListener("error", function onThumbErr() {
+          thumb.removeEventListener("error", onThumbErr);
+          if (thumb.dataset.growthThumbFb === "1") return;
+          var sl = item.slot;
+          if (!sl || !sl.localSnapshotImage) return;
+          var fb = sl.imageUrl || "";
+          if (!fb && sl.imagePathname) {
+            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
+          }
+          if (fb) {
+            thumb.dataset.growthThumbFb = "1";
+            thumb.src = fb;
+          }
+        });
+      }
+      var rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "growth-photo-queue-remove";
+      rm.setAttribute("aria-label", "この写真を一覧から外す");
+      rm.textContent = "削除";
+      rm.addEventListener("click", function () {
+        var at = state.photoQueue.indexOf(item);
+        if (at !== -1) removePhotoQueueIndex(at);
+      });
+      tile.appendChild(thumb);
+      tile.appendChild(rm);
+      el.photoQueueEl.appendChild(tile);
+    });
+
+    if (el.photoStatus) {
+      var newCount = 0;
+      state.photoQueue.forEach(function (it) {
+        if (it.kind === "new") newCount++;
+      });
+      if (newCount) {
+        el.photoStatus.textContent =
+          "新規に追加予定: " + newCount + " 枚（アルバム・カメラからさらに追加できます）";
+        el.photoStatus.hidden = false;
+      } else {
+        el.photoStatus.textContent = "";
+        el.photoStatus.hidden = true;
+      }
     }
-    delete el.photoExistingImg.dataset.growthImgFallback;
-    el.photoExistingImg.alt = "現在保存されている写真";
-    el.photoExistingImg.src = src;
-    el.photoExistingWrap.hidden = false;
+  }
+
+  function resetPhotoQueueFromRecord(r) {
+    state.photoQueue = growthImageSlots(r).map(function (slot) {
+      return { kind: "saved", slot: slot };
+    });
+    state.photosTouched = false;
+    renderPhotoQueueUi();
+  }
+
+  function clearPhotoQueueCompletely() {
+    state.photoQueue = [];
+    state.photosTouched = true;
+    renderPhotoQueueUi();
   }
 
   function updatePhotoStatusFromInputs() {
-    if (!el.photoStatus) return;
-    var f = getPhotoFile();
-    if (f) {
-      el.photoStatus.textContent = "選択中: " + (f.name || "画像");
-      el.photoStatus.hidden = false;
-    } else {
-      el.photoStatus.textContent = "";
-      el.photoStatus.hidden = true;
-    }
-    refreshEditExistingPhotoPreview();
+    renderPhotoQueueUi();
   }
 
   function clearPhotoInputs() {
     if (el.photoCamera) el.photoCamera.value = "";
     if (el.photoLibrary) el.photoLibrary.value = "";
-    updatePhotoStatusFromInputs();
+    renderPhotoQueueUi();
   }
 
   function onPhotoInputChange(source) {
     if (source === "camera") {
-      if (
-        el.photoCamera &&
-        el.photoCamera.files &&
-        el.photoCamera.files[0] &&
-        el.photoLibrary
-      ) {
-        el.photoLibrary.value = "";
+      if (el.photoCamera && el.photoCamera.files && el.photoCamera.files[0]) {
+        appendFilesToPhotoQueue(el.photoCamera.files);
       }
+      if (el.photoCamera) el.photoCamera.value = "";
     } else if (source === "library") {
-      if (
-        el.photoLibrary &&
-        el.photoLibrary.files &&
-        el.photoLibrary.files[0] &&
-        el.photoCamera
-      ) {
-        el.photoCamera.value = "";
+      if (el.photoLibrary && el.photoLibrary.files && el.photoLibrary.files.length) {
+        appendFilesToPhotoQueue(el.photoLibrary.files);
       }
+      if (el.photoLibrary) el.photoLibrary.value = "";
     }
-    updatePhotoStatusFromInputs();
   }
 
   function syncEditFormUI() {
@@ -443,12 +687,15 @@
 
   function clearEditMode() {
     state.editRecord = null;
+    state.photoQueue = [];
+    state.photosTouched = false;
     syncEditFormUI();
     if (!el.form || !el.area) return;
     el.form.reset();
     if (el.date) el.date.value = todayInputValue();
     renderPlantChecks(el.area.value);
-    updatePhotoStatusFromInputs();
+    clearPhotoInputs();
+    renderPhotoQueueUi();
   }
 
   function startEdit(r) {
@@ -459,6 +706,7 @@
       imageUrl: r.imageUrl || null,
       imagePathname: r.imagePathname || null,
       localSnapshotImage: r.localSnapshotImage || null,
+      images: r.images ? JSON.parse(JSON.stringify(r.images)) : null,
     };
     if (el.area) el.area.value = r.areaId || el.area.value || "";
     renderPlantChecks(el.area.value);
@@ -468,6 +716,7 @@
     var note = el.form.querySelector('[name="note"]');
     if (note) note.value = r.note || "";
     clearPhotoInputs();
+    resetPhotoQueueFromRecord(r);
     syncEditFormUI();
     requestAnimationFrame(function () {
       var t = document.getElementById("edit-record-section");
@@ -1196,46 +1445,75 @@
     var imgWrap = document.createElement("div");
     imgWrap.className = "growth-card-img-wrap";
 
-    var imgSrc = growthImageSrc(r);
-    if (imgSrc) {
-      var img = document.createElement("img");
-      img.src = imgSrc;
-      img.alt = "";
-      img.loading = "lazy";
-      img.referrerPolicy = "no-referrer";
-      img.addEventListener("error", function onGrowthImgErr() {
-        img.removeEventListener("error", onGrowthImgErr);
-        if (img.dataset.growthImgFallback === "1") return;
-        if (!r.localSnapshotImage) return;
-        var fb = r.imageUrl || "";
-        if (!fb && r.imagePathname) {
-          fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
+    var zoomCaptionParts = [];
+    zoomCaptionParts.push((r.recordedAt || "").slice(0, 10));
+    if (r.plants && r.plants.length) zoomCaptionParts.push(r.plants.join("、"));
+    if (r.areaLabel) zoomCaptionParts.push(r.areaLabel);
+    var zoomCaption = zoomCaptionParts.filter(Boolean).join(" · ");
+
+    var slots = growthImageSlots(r);
+    var galleryUrls = [];
+    for (var si = 0; si < slots.length; si++) {
+      var u0 = growthImageSrcFromSlot(slots[si]);
+      if (u0) galleryUrls.push(u0);
+    }
+
+    function bindGrowthThumb(imgEl, slot, imgIndex) {
+      imgEl.alt = "";
+      imgEl.loading = "lazy";
+      imgEl.referrerPolicy = "no-referrer";
+      imgEl.classList.add("growth-card-img--zoomable");
+      imgEl.setAttribute("role", "button");
+      imgEl.setAttribute("tabindex", "0");
+      imgEl.setAttribute(
+        "aria-label",
+        galleryUrls.length > 1 ? "写真を拡大表示（" + (imgIndex + 1) + "枚目）" : "写真を拡大表示"
+      );
+      imgEl.addEventListener("error", function onGrowthImgErr() {
+        imgEl.removeEventListener("error", onGrowthImgErr);
+        if (imgEl.dataset.growthImgFallback === "1") return;
+        if (!slot || !slot.localSnapshotImage) return;
+        var fb = slot.imageUrl || "";
+        if (!fb && slot.imagePathname) {
+          fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
         }
         if (fb) {
-          img.dataset.growthImgFallback = "1";
-          img.src = fb;
+          imgEl.dataset.growthImgFallback = "1";
+          imgEl.src = fb;
         }
       });
-      img.classList.add("growth-card-img--zoomable");
-      img.setAttribute("role", "button");
-      img.setAttribute("tabindex", "0");
-      img.setAttribute("aria-label", "写真を拡大表示");
-      var zoomCaptionParts = [];
-      zoomCaptionParts.push((r.recordedAt || "").slice(0, 10));
-      if (r.plants && r.plants.length) zoomCaptionParts.push(r.plants.join("、"));
-      if (r.areaLabel) zoomCaptionParts.push(r.areaLabel);
-      var zoomCaption = zoomCaptionParts.filter(Boolean).join(" · ");
-      img.addEventListener("click", function (e) {
+      imgEl.addEventListener("click", function (e) {
         e.preventDefault();
-        openGrowthPhotoLightbox(img.currentSrc || imgSrc, zoomCaption);
+        openGrowthPhotoLightbox(galleryUrls, imgIndex, zoomCaption);
       });
-      img.addEventListener("keydown", function (e) {
+      imgEl.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openGrowthPhotoLightbox(img.currentSrc || imgSrc, zoomCaption);
+          openGrowthPhotoLightbox(galleryUrls, imgIndex, zoomCaption);
         }
       });
-      imgWrap.appendChild(img);
+    }
+
+    if (galleryUrls.length === 1) {
+      var imgOne = document.createElement("img");
+      imgOne.src = galleryUrls[0];
+      bindGrowthThumb(imgOne, slots[0], 0);
+      imgWrap.appendChild(imgOne);
+    } else if (galleryUrls.length > 1) {
+      imgWrap.classList.add("growth-card-img-wrap--grid");
+      var grid = document.createElement("div");
+      grid.className = "growth-card-img-grid";
+      var urlIdx = 0;
+      for (var gi = 0; gi < slots.length; gi++) {
+        var srcG = growthImageSrcFromSlot(slots[gi]);
+        if (!srcG) continue;
+        var imG = document.createElement("img");
+        imG.src = srcG;
+        bindGrowthThumb(imG, slots[gi], urlIdx);
+        urlIdx++;
+        grid.appendChild(imG);
+      }
+      imgWrap.appendChild(grid);
     } else {
       imgWrap.classList.add("growth-card-img-wrap--empty");
       imgWrap.textContent = "写真なし";
@@ -1563,6 +1841,39 @@
       });
   }
 
+  function dataUrlToBase64Part(dataUrl) {
+    var comma = dataUrl.indexOf(",");
+    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  }
+
+  function buildImagesBase64Payload() {
+    var q = state.photoQueue;
+    if (!q.length) return Promise.resolve([]);
+    return Promise.all(
+      q.map(function (item) {
+        if (item.kind === "new") {
+          return loadImageFile(item.file)
+            .then(imageToJpegBlob)
+            .then(blobToDataURL)
+            .then(dataUrlToBase64Part);
+        }
+        var url = growthImageSrcFromSlot(item.slot);
+        if (!url) return Promise.resolve(null);
+        return fetch(url, { cache: "no-store" })
+          .then(function (res) {
+            if (!res.ok) throw new Error("既存写真の読み込みに失敗しました");
+            return res.blob();
+          })
+          .then(loadImageFileFromBlob)
+          .then(imageToJpegBlob)
+          .then(blobToDataURL)
+          .then(dataUrlToBase64Part);
+      })
+    ).then(function (parts) {
+      return parts.filter(Boolean);
+    });
+  }
+
   function onSubmit(e) {
     e.preventDefault();
     var editing = state.editRecord;
@@ -1587,14 +1898,6 @@
       return;
     }
 
-    var file = getPhotoFile();
-    var promise;
-    if (file) {
-      promise = loadImageFile(file).then(imageToJpegBlob);
-    } else {
-      promise = Promise.resolve(null);
-    }
-
     el.submit.disabled = true;
 
     var id = editing ? editing.id : uuid();
@@ -1602,27 +1905,34 @@
     var createdAt =
       editing && editing.createdAt ? editing.createdAt : new Date().toISOString();
 
-    promise
-      .then(function (blob) {
-        var payload = {
-          id: id,
-          recordedAt: recordedAt,
-          areaId: areaId,
-          areaLabel: area ? area.label : areaId,
-          plants: plants,
-          note: noteVal,
-          createdAt: createdAt,
-        };
-        if (blob) {
-          return blobToDataURL(blob).then(function (dataUrl) {
-            var comma = dataUrl.indexOf(",");
-            payload.imageBase64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-            payload.imageMime = "image/jpeg";
-            return payload;
-          });
-        }
+    var basePayload = {
+      id: id,
+      recordedAt: recordedAt,
+      areaId: areaId,
+      areaLabel: area ? area.label : areaId,
+      plants: plants,
+      note: noteVal,
+      createdAt: createdAt,
+    };
+
+    var attachImagesPromise;
+    if (!wasEdit && state.photoQueue.length > 0) {
+      attachImagesPromise = buildImagesBase64Payload().then(function (arr) {
+        var payload = Object.assign({}, basePayload);
+        payload.imagesBase64 = arr;
         return payload;
-      })
+      });
+    } else if (wasEdit && state.photosTouched) {
+      attachImagesPromise = buildImagesBase64Payload().then(function (arr) {
+        var payload = Object.assign({}, basePayload);
+        payload.imagesBase64 = arr;
+        return payload;
+      });
+    } else {
+      attachImagesPromise = Promise.resolve(basePayload);
+    }
+
+    attachImagesPromise
       .then(function (payload) {
         return fetch(API_GROWTH, {
           method: "POST",
@@ -1990,8 +2300,8 @@
     el.photoLibrary = $("field-photo-library");
     el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
-    el.photoExistingWrap = $("growth-photo-existing-wrap");
-    el.photoExistingImg = $("growth-photo-existing-thumb");
+    el.photoQueueEl = $("growth-photo-queue");
+    el.photoQueueEmpty = $("growth-photo-queue-empty");
     el.submit = $("growth-submit");
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
@@ -2121,25 +2431,12 @@
 
     if (el.photoClear) {
       el.photoClear.addEventListener("click", function () {
+        clearPhotoQueueCompletely();
         clearPhotoInputs();
       });
     }
 
-    if (el.photoExistingImg) {
-      el.photoExistingImg.addEventListener("error", function onEditExistingImgErr() {
-        var er = state.editRecord;
-        if (!er || el.photoExistingImg.dataset.growthImgFallback === "1") return;
-        if (!er.localSnapshotImage) return;
-        var fb = er.imageUrl || "";
-        if (!fb && er.imagePathname) {
-          fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(er.imagePathname);
-        }
-        if (fb) {
-          el.photoExistingImg.dataset.growthImgFallback = "1";
-          el.photoExistingImg.src = fb;
-        }
-      });
-    }
+    renderPhotoQueueUi();
 
     if (el.exportBtn) el.exportBtn.addEventListener("click", onExport);
   }

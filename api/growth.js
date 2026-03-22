@@ -149,6 +149,41 @@ function isParsedJsonObject(body) {
   );
 }
 
+function normalizeRecordImages(record) {
+  if (!record) return [];
+  if (record.images && Array.isArray(record.images) && record.images.length) {
+    return record.images.map(function (im) {
+      return {
+        imageUrl: im && im.imageUrl ? im.imageUrl : null,
+        imagePathname: im && im.imagePathname ? im.imagePathname : null,
+      };
+    });
+  }
+  if (record.imageUrl || record.imagePathname) {
+    return [
+      {
+        imageUrl: record.imageUrl || null,
+        imagePathname: record.imagePathname || null,
+      },
+    ];
+  }
+  return [];
+}
+
+async function deleteAllRecordImages(record, token) {
+  if (!token || !record) return;
+  var list = normalizeRecordImages(record);
+  for (var d = 0; d < list.length; d++) {
+    if (list[d].imageUrl) {
+      try {
+        await del(list[d].imageUrl, { token: token });
+      } catch (e) {
+        console.error("blob del", e);
+      }
+    }
+  }
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -169,7 +204,7 @@ async function readJsonBody(req) {
   }
   try {
     var buf = await getRawBody(req, {
-      limit: "10mb",
+      limit: "32mb",
     });
     return JSON.parse(buf.toString("utf8"));
   } catch (e) {
@@ -207,38 +242,73 @@ module.exports = async function handler(req, res) {
       return r.id === body.id;
     });
     var existing = idx0 >= 0 ? records[idx0] : null;
-    var imageUrl = existing && existing.imageUrl ? existing.imageUrl : null;
-    var imagePathname =
-      existing && existing.imagePathname ? existing.imagePathname : null;
+    var token = process.env.BLOB_READ_WRITE_TOKEN;
 
-    if (body.imageBase64) {
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    var imagesOut = null;
+
+    if (body.imagesBase64 !== undefined && body.imagesBase64 !== null) {
+      if (!token) {
         return res.status(503).json({ error: "blob_unavailable" });
       }
-      if (imageUrl && process.env.BLOB_READ_WRITE_TOKEN) {
-        try {
-          await del(imageUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
-        } catch (e) {
-          console.error("blob del before replace", e);
-        }
+      var arr = Array.isArray(body.imagesBase64) ? body.imagesBase64 : [];
+      if (arr.length > 20) {
+        return res.status(400).json({ error: "too_many_images" });
       }
-      try {
-        var buf = Buffer.from(body.imageBase64, "base64");
-        if (!buf.length) {
+      await deleteAllRecordImages(existing, token);
+      imagesOut = [];
+      var access = blobPutAccess();
+      for (var ii = 0; ii < arr.length; ii++) {
+        var b64 = arr[ii];
+        if (typeof b64 !== "string" || !b64.length) {
           return res.status(400).json({ error: "invalid_image_data" });
         }
-        var access = blobPutAccess();
-        var uploaded = await put("growth/" + body.id + ".jpg", buf, {
-          access: access,
-          token: process.env.BLOB_READ_WRITE_TOKEN,
+        try {
+          var bufM = Buffer.from(b64, "base64");
+          if (!bufM.length) {
+            return res.status(400).json({ error: "invalid_image_data" });
+          }
+          var blobPath = "growth/" + body.id + "/" + ii + ".jpg";
+          var up = await put(blobPath, bufM, {
+            access: access,
+            token: token,
+            contentType: "image/jpeg",
+            addRandomSuffix: false,
+            allowOverwrite: true,
+          });
+          imagesOut.push({
+            imageUrl: up.url,
+            imagePathname: access === "private" ? up.pathname : null,
+          });
+        } catch (blobErr) {
+          return jsonError(res, 502, "blob_put_failed", blobErr);
+        }
+      }
+    } else if (body.imageBase64) {
+      if (!token) {
+        return res.status(503).json({ error: "blob_unavailable" });
+      }
+      await deleteAllRecordImages(existing, token);
+      try {
+        var buf1 = Buffer.from(body.imageBase64, "base64");
+        if (!buf1.length) {
+          return res.status(400).json({ error: "invalid_image_data" });
+        }
+        var access1 = blobPutAccess();
+        var uploaded1 = await put("growth/" + body.id + "/0.jpg", buf1, {
+          access: access1,
+          token: token,
           contentType: body.imageMime || "image/jpeg",
           addRandomSuffix: false,
           allowOverwrite: true,
         });
-        imageUrl = uploaded.url;
-        imagePathname = access === "private" ? uploaded.pathname : null;
-      } catch (blobErr) {
-        return jsonError(res, 502, "blob_put_failed", blobErr);
+        imagesOut = [
+          {
+            imageUrl: uploaded1.url,
+            imagePathname: access1 === "private" ? uploaded1.pathname : null,
+          },
+        ];
+      } catch (blobErr2) {
+        return jsonError(res, 502, "blob_put_failed", blobErr2);
       }
     }
 
@@ -247,6 +317,17 @@ module.exports = async function handler(req, res) {
         ? existing.createdAt
         : body.createdAt || new Date().toISOString();
 
+    var finalImages;
+    if (imagesOut !== null) {
+      finalImages = imagesOut;
+    } else {
+      finalImages = existing
+        ? normalizeRecordImages(existing).map(function (x) {
+            return { imageUrl: x.imageUrl, imagePathname: x.imagePathname };
+          })
+        : [];
+    }
+
     var record = {
       id: body.id,
       recordedAt: body.recordedAt,
@@ -254,8 +335,9 @@ module.exports = async function handler(req, res) {
       areaLabel: body.areaLabel,
       plants: Array.isArray(body.plants) ? body.plants : [],
       note: body.note || "",
-      imageUrl: imageUrl,
-      imagePathname: imagePathname,
+      images: finalImages,
+      imageUrl: finalImages[0] ? finalImages[0].imageUrl : null,
+      imagePathname: finalImages[0] ? finalImages[0].imagePathname : null,
       createdAt: createdAtStored,
     };
     if (existing) {
@@ -306,13 +388,7 @@ module.exports = async function handler(req, res) {
     if (!found) {
       return res.status(404).json({ error: "not_found" });
     }
-    if (found.imageUrl && process.env.BLOB_READ_WRITE_TOKEN) {
-      try {
-        await del(found.imageUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
-      } catch (e) {
-        console.error("blob del", e);
-      }
-    }
+    await deleteAllRecordImages(found, process.env.BLOB_READ_WRITE_TOKEN);
     var next = list.filter(function (r) {
       return r.id !== id;
     });

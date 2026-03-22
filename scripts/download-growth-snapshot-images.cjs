@@ -76,18 +76,23 @@ function httpGetBuffer(urlString, redirectsLeft) {
   });
 }
 
-function imageUrlForRecord(baseUrl, rec) {
-  if (rec.imagePathname && String(rec.imagePathname).trim()) {
+function imageUrlForSlot(baseUrl, slot) {
+  if (!slot || typeof slot !== "object") return null;
+  if (slot.imagePathname && String(slot.imagePathname).trim()) {
     return (
       baseUrl.replace(/\/+$/, "") +
       "/api/growth-image?pathname=" +
-      encodeURIComponent(rec.imagePathname)
+      encodeURIComponent(slot.imagePathname)
     );
   }
-  if (rec.imageUrl && String(rec.imageUrl).trim()) {
-    return String(rec.imageUrl).trim();
+  if (slot.imageUrl && String(slot.imageUrl).trim()) {
+    return String(slot.imageUrl).trim();
   }
   return null;
+}
+
+function imageUrlForRecord(baseUrl, rec) {
+  return imageUrlForSlot(baseUrl, rec);
 }
 
 function safeImageFileName(id) {
@@ -97,6 +102,30 @@ function safeImageFileName(id) {
   var s = t.replace(/[^a-zA-Z0-9_.-]/g, "_");
   if (!s || s.length > 128) return null;
   return s + ".jpg";
+}
+
+function safeImageFileNameIndexed(id, index) {
+  var base = safeImageFileName(id);
+  if (!base) return null;
+  var dot = base.lastIndexOf(".");
+  var stem = dot >= 0 ? base.slice(0, dot) : base;
+  var ext = dot >= 0 ? base.slice(dot) : ".jpg";
+  return stem + "-" + index + ext;
+}
+
+function snapshotSlotsForRecord(rec) {
+  if (rec.images && Array.isArray(rec.images) && rec.images.length) {
+    return rec.images.slice();
+  }
+  if (rec.imagePathname || rec.imageUrl) {
+    return [
+      {
+        imagePathname: rec.imagePathname,
+        imageUrl: rec.imageUrl,
+      },
+    ];
+  }
+  return [];
 }
 
 /**
@@ -133,33 +162,63 @@ function downloadSnapshotImages(baseUrl, records) {
     var rec = records[i];
     i++;
     var id = rec.id;
-    var fileName = safeImageFileName(id);
     var copy = Object.assign({}, rec);
     delete copy.localSnapshotImage;
 
-    var src = imageUrlForRecord(base, rec);
-    if (!src || !fileName) {
+    var slots = snapshotSlotsForRecord(rec);
+    if (!slots.length) {
       out.push(copy);
       return next();
     }
 
-    return httpGetBuffer(src)
-      .then(function (buf) {
-        if (!buf || buf.length < 100) {
-          throw new Error("empty or tiny body");
+    var newImages = [];
+    var si = 0;
+
+    function afterSlots() {
+      if (newImages.length) {
+        copy.images = newImages;
+        if (newImages[0] && newImages[0].localSnapshotImage) {
+          copy.localSnapshotImage = newImages[0].localSnapshotImage;
         }
-        var dest = path.join(imgDir, fileName);
-        fs.writeFileSync(dest, buf);
-        copy.localSnapshotImage = REL_PREFIX + fileName;
-        console.log("画像: " + fileName + " (" + buf.length + " bytes)");
-        out.push(copy);
-        return next();
-      })
-      .catch(function (err) {
-        console.warn("画像スキップ " + id + ": " + (err.message || err));
-        out.push(copy);
-        return next();
-      });
+      }
+      out.push(copy);
+      return next();
+    }
+
+    function nextSlot() {
+      if (si >= slots.length) {
+        return Promise.resolve().then(afterSlots);
+      }
+      var slot = Object.assign({}, slots[si]);
+      var idx = si;
+      si++;
+      var src = imageUrlForSlot(base, slot);
+      var fileName = safeImageFileNameIndexed(id, idx);
+      if (!src || !fileName) {
+        newImages.push(slot);
+        return nextSlot();
+      }
+
+      return httpGetBuffer(src)
+        .then(function (buf) {
+          if (!buf || buf.length < 100) {
+            throw new Error("empty or tiny body");
+          }
+          var dest = path.join(imgDir, fileName);
+          fs.writeFileSync(dest, buf);
+          slot.localSnapshotImage = REL_PREFIX + fileName;
+          console.log("画像: " + fileName + " (" + buf.length + " bytes)");
+          newImages.push(slot);
+          return nextSlot();
+        })
+        .catch(function (err) {
+          console.warn("画像スキップ " + id + "[" + idx + "]: " + (err.message || err));
+          newImages.push(slot);
+          return nextSlot();
+        });
+    }
+
+    return nextSlot();
   }
 
   return next().then(function () {

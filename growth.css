@@ -221,37 +221,56 @@ label.growth-secondary:focus-visible {
   margin: 0 0 10px;
 }
 
-.growth-photo-existing-wrap {
-  margin: 0 0 14px;
-  display: grid;
-  gap: 8px;
+.growth-photo-queue-wrap {
+  margin: 0 0 12px;
 }
 
-.growth-photo-existing-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--green-soft, #74c69d);
+.growth-photo-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 8px;
 }
 
-.growth-photo-existing-frame {
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 12px;
+.growth-photo-queue-empty {
+  margin: 0 0 8px;
+}
+
+.growth-photo-queue-item {
+  position: relative;
+  width: 88px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   overflow: hidden;
   background: rgba(26, 46, 36, 0.06);
 }
 
-img.growth-photo-existing-thumb {
+img.growth-photo-queue-thumb {
   display: block;
-  width: auto;
-  max-width: min(100%, 280px);
-  max-height: 200px;
-  height: auto;
-  object-fit: contain;
-  vertical-align: middle;
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+}
+
+button.growth-photo-queue-remove {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(20, 30, 24, 0.82);
+  color: #f4f7f5;
+  cursor: pointer;
+}
+
+button.growth-photo-queue-remove:hover,
+button.growth-photo-queue-remove:focus-visible {
+  background: rgba(40, 55, 45, 0.92);
+  outline: none;
 }
 
 .growth-photo-block {
@@ -472,6 +491,26 @@ label.growth-photo-pick-label {
   display: block;
 }
 
+.growth-card-img-wrap--grid {
+  aspect-ratio: 4 / 3;
+}
+
+.growth-card-img-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.growth-card-img-grid img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+
 .growth-card-img-wrap img.growth-card-img--zoomable {
   cursor: zoom-in;
 }
@@ -519,6 +558,43 @@ dialog.growth-photo-lightbox::backdrop {
   max-width: min(96vw, 1400px);
   max-height: 92dvh;
   cursor: default;
+  /* 横スワイプを JS で扱い、縦方向はブラウザの慣性スクロールと競合しにくくする */
+  touch-action: pan-y;
+}
+
+button.growth-photo-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 72px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(20, 30, 24, 0.65);
+  color: #f4f7f5;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.growth-photo-lightbox-prev {
+  left: 8px;
+}
+
+button.growth-photo-lightbox-next {
+  right: 8px;
+}
+
+button.growth-photo-lightbox-nav:hover,
+button.growth-photo-lightbox-nav:focus-visible {
+  background: rgba(40, 55, 45, 0.88);
+  outline: none;
 }
 
 .growth-photo-lightbox-close {
