@@ -101,7 +101,15 @@
 
   function growthImageSrc(r) {
     if (r.localSnapshotImage) {
-      return r.localSnapshotImage;
+      var p = String(r.localSnapshotImage).trim();
+      if (/^https?:\/\//i.test(p)) {
+        return p;
+      }
+      try {
+        return new URL(p, window.location.href).href;
+      } catch (e1) {
+        return p;
+      }
     }
     if (r.imagePathname) {
       return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
@@ -993,6 +1001,19 @@
       img.alt = "";
       img.loading = "lazy";
       img.referrerPolicy = "no-referrer";
+      img.addEventListener("error", function onGrowthImgErr() {
+        img.removeEventListener("error", onGrowthImgErr);
+        if (img.dataset.growthImgFallback === "1") return;
+        if (!r.localSnapshotImage) return;
+        var fb = r.imageUrl || "";
+        if (!fb && r.imagePathname) {
+          fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(r.imagePathname);
+        }
+        if (fb) {
+          img.dataset.growthImgFallback = "1";
+          img.src = fb;
+        }
+      });
       imgWrap.appendChild(img);
     } else {
       imgWrap.classList.add("growth-card-img-wrap--empty");
@@ -1194,17 +1215,45 @@
 
   function loadGrowthSnapshot() {
     if (!IS_VIEW) return Promise.resolve(null);
+
+    function snapshotFromBoot() {
+      var b = window.__PLANTING_GROWTH_SNAPSHOT__;
+      if (b && Array.isArray(b.records)) {
+        return b;
+      }
+      return null;
+    }
+
+    if (location.protocol === "file:") {
+      var fromFile = snapshotFromBoot();
+      if (fromFile) {
+        return Promise.resolve(fromFile);
+      }
+      return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
+        .then(function (res) {
+          if (!res.ok) return null;
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.records)) return null;
+          return data;
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+
     return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
       .then(function (res) {
-        if (!res.ok) return null;
-        return res.json();
+        if (res.ok) return res.json();
+        return null;
       })
       .then(function (data) {
-        if (!data || !Array.isArray(data.records)) return null;
-        return data;
+        if (data && Array.isArray(data.records)) return data;
+        return snapshotFromBoot();
       })
       .catch(function () {
-        return null;
+        return snapshotFromBoot();
       });
   }
 
@@ -1213,7 +1262,7 @@
       if (snap && snap.records && snap.records.length) {
         updateCloudStatus(
           apiFailMessage +
-            " 代わりに data/growth-snapshot.json を表示しています（git pull で共有できます）。写真は記録内の URL から読み込みます。スナップショット更新は npm run sync:prod（README 参照）。"
+            " 代わりに data/growth-snapshot.json（file:// では growth-snapshot.boot.js）を表示しています。写真は data/growth-images または URL から読み込みます。更新は npm run sync:prod（README 参照）。"
         );
         renderViewMain(snap.records);
       } else {

@@ -108,11 +108,13 @@ function syncGrowth() {
       };
       if (noImagesFlag) {
         writePayload(cleaned);
+        require("./write-growth-snapshot-boot.cjs").run();
         return;
       }
       console.log("写真を data/growth-images に取得中…");
       return downloadImages(base, cleaned).then(function (withImages) {
         writePayload(withImages);
+        require("./write-growth-snapshot-boot.cjs").run();
       });
     });
 }
@@ -132,7 +134,7 @@ if (doGrowth) {
 chain
   .then(function () {
     console.log(
-      "\n次: git add data/plants.json data/growth-snapshot.json data/growth-images index.html growth-edit.html plants.html && git commit && git push"
+      "\n次: git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html && git commit && git push"
     );
     console.log(
       "（plants を同期した場合は plants-embed 入り HTML も add してください。片方だけのときは不要なファイルを外す）"

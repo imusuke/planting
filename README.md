@@ -53,3 +53,5 @@
 5. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、一覧取得と保存ができるか確認します。
 
 ローカルで API を試す場合は `npm install` のあと `vercel dev`（Vercel CLI）を使うと `/api/growth` にアクセスできます。`file://` で HTML を開いただけでは API は使えません。
+
+**`file://` でトップを開いてスナップショットを見る:** ブラウザは `fetch` で `data/growth-snapshot.json` を読めないことが多いため、`index.html` は先に **`data/growth-snapshot.boot.js`** を読み込みます（`npm run sync:prod` または `npm run build:snapshot-boot` で JSON から生成）。写真は **`data/growth-images/`** を **`new URL(..., ページのURL)`** で参照します。一覧が空のときは `growth-snapshot.boot.js` が未生成・古い可能性があります。確実に動かすなら **`npx --yes serve .`** で `planting` フォルダを http 経由で開く方法もあります。

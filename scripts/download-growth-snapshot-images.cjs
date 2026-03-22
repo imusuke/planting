@@ -194,5 +194,6 @@ if (require.main === module) {
     raw.exportedAt = new Date().toISOString();
     fs.writeFileSync(growthPath, JSON.stringify(raw, null, 2), "utf8");
     console.log("更新しました: " + growthPath);
+    require("./write-growth-snapshot-boot.cjs").run();
   });
 }
