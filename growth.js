@@ -71,9 +71,6 @@
     growthTabPanelMaster: null,
     viewModeGridRadio: null,
     viewModeTimelineRadio: null,
-    filterPlantWrap: null,
-    timelinePlantWrap: null,
-    timelinePlantSelect: null,
     plantTimeline: null,
   };
 
@@ -918,19 +915,30 @@
 
   function updateFilterPlantOptions() {
     if (!el.filterPlant) return;
-    var areaId = el.filterArea ? el.filterArea.value : "";
     var prev = el.filterPlant.value;
-    el.filterPlant.innerHTML = '<option value="">（すべて）</option>';
-
     var list = [];
-    if (areaId) {
-      var ar = state.areas.find(function (x) {
-        return x.id === areaId;
-      });
-      list = ar && ar.plants ? ar.plants.slice() : [];
+    var emptyLabel = "（すべて）";
+
+    if (IS_VIEW && state.viewLayout === "timeline") {
+      emptyLabel = "（植栽を選ぶ）";
+      list = mergedPlantNameList(state.lastGrowthRecords);
     } else {
-      list = allPlantNames();
+      var areaId = el.filterArea ? el.filterArea.value : "";
+      if (areaId) {
+        var ar = state.areas.find(function (x) {
+          return x.id === areaId;
+        });
+        list = ar && ar.plants ? ar.plants.slice() : [];
+      } else {
+        list = allPlantNames();
+      }
     }
+
+    el.filterPlant.innerHTML = "";
+    var opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = emptyLabel;
+    el.filterPlant.appendChild(opt0);
 
     list.forEach(function (p) {
       var opt = document.createElement("option");
@@ -1026,27 +1034,13 @@
     });
   }
 
-  function updateTimelinePlantOptions(records) {
-    if (!el.timelinePlantSelect) return;
-    var prev = el.timelinePlantSelect.value;
-    var names = mergedPlantNameList(records);
-    el.timelinePlantSelect.innerHTML = '<option value="">（植栽を選ぶ）</option>';
-    names.forEach(function (p) {
-      var opt = document.createElement("option");
-      opt.value = p;
-      opt.textContent = p;
-      el.timelinePlantSelect.appendChild(opt);
-    });
-    if (prev && names.indexOf(prev) !== -1) el.timelinePlantSelect.value = prev;
-  }
-
   function applyPendingTimelinePlant() {
-    if (!state.pendingTimelinePlant || !el.timelinePlantSelect) return;
+    if (!state.pendingTimelinePlant || !el.filterPlant) return;
     var want = state.pendingTimelinePlant;
-    var opts = el.timelinePlantSelect.querySelectorAll("option");
+    var opts = el.filterPlant.querySelectorAll("option");
     for (var i = 0; i < opts.length; i++) {
       if (opts[i].value === want) {
-        el.timelinePlantSelect.value = want;
+        el.filterPlant.value = want;
         break;
       }
     }
@@ -1056,8 +1050,6 @@
   function syncViewModeUi() {
     if (!IS_VIEW) return;
     var tl = state.viewLayout === "timeline";
-    if (el.filterPlantWrap) el.filterPlantWrap.hidden = tl;
-    if (el.timelinePlantWrap) el.timelinePlantWrap.hidden = !tl;
     if (el.feed) el.feed.hidden = tl;
     if (el.plantTimeline) el.plantTimeline.hidden = !tl;
     var lead = $("growth-timeline-lead");
@@ -1068,7 +1060,7 @@
     if (!el.plantTimeline) return;
     el.plantTimeline.innerHTML = "";
 
-    var plant = el.timelinePlantSelect ? el.timelinePlantSelect.value : "";
+    var plant = el.filterPlant ? el.filterPlant.value : "";
     var fa = el.filterArea ? el.filterArea.value : "";
 
     if (!plant) {
@@ -1119,7 +1111,7 @@
   function renderViewMain(records) {
     if (!IS_VIEW) return;
     state.lastGrowthRecords = records || [];
-    updateTimelinePlantOptions(state.lastGrowthRecords);
+    updateFilterPlantOptions();
     applyPendingTimelinePlant();
     syncViewModeUi();
     if (state.viewLayout === "timeline") {
@@ -1428,9 +1420,6 @@
     el.thumbSize = $("growth-thumb-size");
     el.viewModeGridRadio = $("growth-view-mode-grid");
     el.viewModeTimelineRadio = $("growth-view-mode-timeline");
-    el.filterPlantWrap = $("growth-filter-plant-wrap");
-    el.timelinePlantWrap = $("growth-timeline-plant-wrap");
-    el.timelinePlantSelect = $("timeline-plant-select");
     el.plantTimeline = $("growth-plant-timeline");
 
     if (!el.feed) return;
@@ -1470,12 +1459,6 @@
       el.viewModeTimelineRadio.addEventListener("change", onViewModeChange);
     }
 
-    if (el.timelinePlantSelect) {
-      el.timelinePlantSelect.addEventListener("change", function () {
-        renderPlantTimeline(state.lastGrowthRecords);
-      });
-    }
-
     if (el.thumbSize) {
       var saved = localStorage.getItem(LS_THUMB_SIZE) || "md";
       if (saved === "sm" || saved === "md" || saved === "lg") {
@@ -1507,7 +1490,7 @@
 
     if (el.filterArea) {
       el.filterArea.addEventListener("change", function () {
-        if (el.filterPlant) el.filterPlant.value = "";
+        if (el.filterPlant && state.viewLayout === "grid") el.filterPlant.value = "";
         updateFilterPlantOptions();
         if (state.viewLayout === "timeline") {
           renderPlantTimeline(state.lastGrowthRecords);
@@ -1519,7 +1502,11 @@
 
     if (el.filterPlant) {
       el.filterPlant.addEventListener("change", function () {
-        if (state.viewLayout === "grid") refreshFeed();
+        if (state.viewLayout === "timeline") {
+          renderPlantTimeline(state.lastGrowthRecords);
+        } else {
+          refreshFeed();
+        }
       });
     }
 

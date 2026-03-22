@@ -12,12 +12,12 @@
 </head>
 <body>
   <main class="panel growth-panel">
-    <div class="top top-row growth-top-nav">
-      <a href="./plants.html">植栽一覧</a>
-      <a href="../imusasa-hub/index.html" data-hub-link data-hub-fallback="../imusasa-hub/index.html"
-        >リンク集へ戻る</a>
-      <a href="./index.html" class="growth-nav-secondary">トップ（閲覧）へ</a>
-    </div>
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li><a href="./index.html">成長記録</a></li>
+        <li aria-current="page">記録の追加・編集</li>
+      </ol>
+    </nav>
 
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 

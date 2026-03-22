@@ -1,13 +1,7 @@
 /* 成長記録（閲覧 index.html / 編集 growth-edit.html） */
 
-.growth-top-nav {
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-}
-
-a.growth-nav-cta {
-  font-weight: 700;
+main.growth-panel .growth-nav-top {
+  max-width: 100%;
 }
 
 a.growth-card-edit-link {

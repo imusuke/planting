@@ -59,6 +59,80 @@ main.panel {
   align-items: center;
 }
 
+/* パンくず（植栽メモ各ページ） */
+.growth-nav-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.growth-breadcrumb {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.growth-breadcrumb li {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.growth-breadcrumb li:not(:last-child)::after {
+  content: "›";
+  margin: 0 8px;
+  color: var(--muted);
+  font-weight: 600;
+  speak: never;
+}
+
+.growth-breadcrumb a {
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+}
+
+.growth-breadcrumb a:hover,
+.growth-breadcrumb a:focus-visible {
+  text-decoration: underline;
+}
+
+.growth-breadcrumb [aria-current="page"] {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.growth-nav-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+
+.growth-nav-extra a {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+}
+
+.growth-nav-extra a:hover,
+.growth-nav-extra a:focus-visible {
+  text-decoration: underline;
+}
+
+.growth-nav-extra a.growth-nav-cta {
+  font-weight: 700;
+}
+
 header.page-header {
   padding: 8px 24px 20px;
 }

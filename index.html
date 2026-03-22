@@ -12,12 +12,15 @@
 </head>
 <body>
   <main class="panel growth-panel">
-    <div class="top top-row growth-top-nav">
-      <a href="./plants.html">植栽一覧</a>
-      <a href="../imusasa-hub/index.html" data-hub-link data-hub-fallback="../imusasa-hub/index.html"
-        >リンク集へ戻る</a>
-      <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
-    </div>
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li aria-current="page">成長記録</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./plants.html">植栽一覧</a>
+        <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
+      </div>
+    </nav>
 
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
@@ -60,13 +63,9 @@
           エリア
           <select id="filter-area"></select>
         </label>
-        <label id="growth-filter-plant-wrap">
-          植栽（一覧用）
-          <select id="filter-plant"></select>
-        </label>
-        <label id="growth-timeline-plant-wrap" hidden>
-          時系列の植栽
-          <select id="timeline-plant-select" aria-label="時系列で見る植栽"></select>
+        <label>
+          植栽
+          <select id="filter-plant" aria-label="記録の絞り込み・時系列で見る植栽"></select>
         </label>
         <label>
           サムネイル
