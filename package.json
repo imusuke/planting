@@ -1,6 +1,14 @@
 {
   "name": "planting",
   "private": true,
+  "scripts": {
+    "sync:prod": "node scripts/sync-from-prod.cjs",
+    "sync:plants": "node scripts/sync-from-prod.cjs --plants-only",
+    "sync:growth": "node scripts/sync-from-prod.cjs --growth-only"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@vercel/blob": "^2.3.1",
     "@vercel/kv": "^3.0.0",

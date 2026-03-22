@@ -11,6 +11,8 @@
   var LS_THUMB_SIZE = "growthThumbSize";
   var API_GROWTH = "/api/growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
+  /** 閲覧ページ: API 失敗時に試すリポジトリ内スナップショット（npm run sync:prod で更新） */
+  var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
   var API_PLANTS = "/api/plants";
   var MAX_IMAGE_WIDTH = 1024;
   var JPEG_QUALITY = 0.76;
@@ -1187,26 +1189,67 @@
     });
   }
 
+  function loadGrowthSnapshot() {
+    if (!IS_VIEW) return Promise.resolve(null);
+    return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.records)) return null;
+        return data;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function tryRenderViewFromSnapshot(apiFailMessage) {
+    return loadGrowthSnapshot().then(function (snap) {
+      if (snap && snap.records && snap.records.length) {
+        updateCloudStatus(
+          apiFailMessage +
+            " 代わりに data/growth-snapshot.json を表示しています（git pull で共有できます）。写真は記録内の URL から読み込みます。スナップショット更新は npm run sync:prod（README 参照）。"
+        );
+        renderViewMain(snap.records);
+      } else {
+        updateCloudStatus(apiFailMessage);
+        renderViewMain([]);
+      }
+    });
+  }
+
   function refreshFeed() {
     updateCloudStatus("一覧を取得中…");
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
         if (res.status === 404) {
-          updateCloudStatus("サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。");
-          if (IS_VIEW) renderViewMain([]);
-          else if (el.feed) renderFeed([]);
+          if (IS_VIEW) {
+            return tryRenderViewFromSnapshot(
+              "サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。"
+            );
+          }
+          updateCloudStatus(
+            "サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。"
+          );
+          if (el.feed) renderFeed([]);
           return null;
         }
         if (!res.ok) {
+          if (IS_VIEW) {
+            return tryRenderViewFromSnapshot(
+              "一覧の取得に失敗しました（" + res.status + "）。"
+            );
+          }
           updateCloudStatus("一覧の取得に失敗しました（" + res.status + "）。");
-          if (IS_VIEW) renderViewMain([]);
-          else if (el.feed) renderFeed([]);
+          if (el.feed) renderFeed([]);
           return null;
         }
         return res.json();
       })
       .then(function (data) {
-        if (!data) return;
+        if (data === null || data === undefined) return;
         if (IS_VIEW) {
           updateCloudStatus(
             "記録と写真を表示できています。追加・編集・削除は「記録を追加・編集」から行ってください。"
@@ -1220,9 +1263,11 @@
         else if (el.feed) renderFeed(data.records || []);
       })
       .catch(function () {
+        if (IS_VIEW) {
+          return tryRenderViewFromSnapshot("ネットワークエラーで一覧を取得できませんでした。");
+        }
         updateCloudStatus("ネットワークエラーで一覧を取得できませんでした。");
-        if (IS_VIEW) renderViewMain([]);
-        else if (el.feed) renderFeed([]);
+        if (el.feed) renderFeed([]);
       });
   }
 
