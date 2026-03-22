@@ -117,6 +117,88 @@
     return r.imageUrl || null;
   }
 
+  var growthPhotoLightboxEls = null;
+  /** サムネイルのクリックがそのまま shell に届き、開いた直後に閉じるのを防ぐ */
+  var growthLightboxOpenedAt = 0;
+
+  function ensureGrowthPhotoLightbox() {
+    if (growthPhotoLightboxEls) return growthPhotoLightboxEls;
+    var dlg = document.createElement("dialog");
+    dlg.id = "growth-photo-lightbox";
+    dlg.className = "growth-photo-lightbox";
+    dlg.setAttribute("aria-modal", "true");
+    dlg.setAttribute("aria-label", "写真の拡大表示");
+
+    var shell = document.createElement("div");
+    shell.className = "growth-photo-lightbox-shell";
+
+    var inner = document.createElement("div");
+    inner.className = "growth-photo-lightbox-inner";
+
+    var closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "growth-photo-lightbox-close";
+    closeBtn.setAttribute("aria-label", "閉じる");
+    closeBtn.textContent = "閉じる";
+
+    var bigImg = document.createElement("img");
+    bigImg.className = "growth-photo-lightbox-img";
+    bigImg.alt = "";
+
+    var cap = document.createElement("p");
+    cap.className = "growth-photo-lightbox-caption";
+
+    inner.appendChild(closeBtn);
+    inner.appendChild(bigImg);
+    inner.appendChild(cap);
+    shell.appendChild(inner);
+    dlg.appendChild(shell);
+    document.body.appendChild(dlg);
+
+    shell.addEventListener("click", function () {
+      if (Date.now() - growthLightboxOpenedAt < 400) return;
+      if (typeof dlg.close === "function") dlg.close();
+    });
+    inner.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+    closeBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (typeof dlg.close === "function") dlg.close();
+    });
+
+    growthPhotoLightboxEls = { dialog: dlg, img: bigImg, caption: cap };
+    return growthPhotoLightboxEls;
+  }
+
+  function openGrowthPhotoLightbox(src, caption) {
+    if (!src) return;
+    var pack = ensureGrowthPhotoLightbox();
+    pack.img.src = src;
+    pack.img.referrerPolicy = "no-referrer";
+    if (caption) {
+      pack.caption.textContent = caption;
+      pack.caption.hidden = false;
+    } else {
+      pack.caption.textContent = "";
+      pack.caption.hidden = true;
+    }
+    var d = pack.dialog;
+    function doOpen() {
+      if (typeof d.showModal === "function") {
+        try {
+          d.showModal();
+          growthLightboxOpenedAt = Date.now();
+        } catch (e1) {
+          d.setAttribute("open", "");
+        }
+      } else {
+        d.setAttribute("open", "");
+      }
+    }
+    setTimeout(doOpen, 0);
+  }
+
   function apiErrorMessage(res, fallbackPrefix) {
     return res.text().then(function (text) {
       var detail = "";
@@ -1012,6 +1094,25 @@
         if (fb) {
           img.dataset.growthImgFallback = "1";
           img.src = fb;
+        }
+      });
+      img.classList.add("growth-card-img--zoomable");
+      img.setAttribute("role", "button");
+      img.setAttribute("tabindex", "0");
+      img.setAttribute("aria-label", "写真を拡大表示");
+      var zoomCaptionParts = [];
+      zoomCaptionParts.push((r.recordedAt || "").slice(0, 10));
+      if (r.plants && r.plants.length) zoomCaptionParts.push(r.plants.join("、"));
+      if (r.areaLabel) zoomCaptionParts.push(r.areaLabel);
+      var zoomCaption = zoomCaptionParts.filter(Boolean).join(" · ");
+      img.addEventListener("click", function (e) {
+        e.preventDefault();
+        openGrowthPhotoLightbox(img.currentSrc || imgSrc, zoomCaption);
+      });
+      img.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openGrowthPhotoLightbox(img.currentSrc || imgSrc, zoomCaption);
         }
       });
       imgWrap.appendChild(img);

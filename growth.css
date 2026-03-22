@@ -439,6 +439,98 @@ label.growth-photo-pick-label {
   display: block;
 }
 
+.growth-card-img-wrap img.growth-card-img--zoomable {
+  cursor: zoom-in;
+}
+
+.growth-card-img-wrap img.growth-card-img--zoomable:focus-visible {
+  outline: 2px solid var(--green, #2d6a4f);
+  outline-offset: 2px;
+}
+
+dialog.growth-photo-lightbox {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+
+dialog.growth-photo-lightbox::backdrop {
+  background: rgba(12, 18, 14, 0.88);
+}
+
+.growth-photo-lightbox-shell {
+  min-height: 100dvh;
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  cursor: zoom-out;
+  /* showModal 時は ::backdrop もあるが、open のみのフォールバック時も暗くする */
+  background: rgba(12, 18, 14, 0.88);
+}
+
+.growth-photo-lightbox-inner {
+  position: relative;
+  max-width: min(96vw, 1400px);
+  max-height: 92dvh;
+  cursor: default;
+}
+
+.growth-photo-lightbox-close {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(20, 30, 24, 0.92);
+  color: #f4f7f5;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.growth-photo-lightbox-close:hover,
+.growth-photo-lightbox-close:focus-visible {
+  background: rgba(35, 50, 40, 0.95);
+  outline: none;
+}
+
+.growth-photo-lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: min(85dvh, 1200px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.growth-photo-lightbox-caption {
+  margin: 12px 0 0;
+  padding: 0 8px;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: rgba(244, 247, 245, 0.92);
+}
+
 .growth-card-img-wrap--empty {
   display: grid;
   place-items: center;
