@@ -83,9 +83,14 @@
           </select>
         </label>
       </div>
-      <p class="growth-hint growth-timeline-lead" id="growth-timeline-lead" hidden>
-        選んだ植栽が含まれる記録だけを表示します。記録日の並びは上の「<strong>並び順</strong>」で<strong>新しい順</strong>／<strong>古い順</strong>を選べます。エリアの絞り込みも使えます。
-      </p>
+      <div class="growth-timeline-lead-wrap" id="growth-timeline-lead" hidden>
+        <button type="button" id="growth-back-to-grid-btn" class="growth-secondary growth-timeline-back-btn">
+          記録一覧に戻る
+        </button>
+        <p class="growth-hint growth-timeline-lead-text">
+          選んだ植栽が含まれる記録だけを表示します。記録日の並びは上の「<strong>並び順</strong>」で<strong>新しい順</strong>／<strong>古い順</strong>を選べます。エリアの絞り込みも使えます。
+        </p>
+      </div>
       <div id="growth-feed" class="growth-feed"></div>
       <div id="growth-plant-timeline" class="growth-plant-timeline" hidden></div>
     </section>

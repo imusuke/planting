@@ -301,59 +301,68 @@
       }
     });
 
-    var lbSwipeTouchId = null;
+    /** タッチは img で touch-action:auto のとき横ジェスチャがブラウザに取られるため Pointer で統一 */
+    var lbSwipePtrId = null;
     var lbSwipeStartX = 0;
     var lbSwipeStartY = 0;
+    var LB_SWIPE_MIN = 40;
+    function lbSwipeTargetOk(target) {
+      if (!target || !target.closest) return false;
+      if (target.closest("button")) return false;
+      return !!target.closest(".growth-photo-lightbox-inner");
+    }
+    function lbApplySwipeEnd(clientX, clientY) {
+      if (growthLightboxGallery.urls.length <= 1) return;
+      var dx = clientX - lbSwipeStartX;
+      var dy = clientY - lbSwipeStartY;
+      if (Math.abs(dx) < LB_SWIPE_MIN) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.1) return;
+      var pk = growthPhotoLightboxEls;
+      if (!pk) return;
+      if (dx > 0) {
+        showAt(pk, growthLightboxGallery.index - 1);
+      } else {
+        showAt(pk, growthLightboxGallery.index + 1);
+      }
+    }
     inner.addEventListener(
-      "touchstart",
+      "pointerdown",
       function (e) {
         if (growthLightboxGallery.urls.length <= 1) return;
-        if (e.touches.length !== 1) {
-          lbSwipeTouchId = null;
-          return;
-        }
-        var t = e.touches[0];
-        lbSwipeTouchId = t.identifier;
-        lbSwipeStartX = t.clientX;
-        lbSwipeStartY = t.clientY;
+        if (lbSwipePtrId !== null) return;
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        if (!lbSwipeTargetOk(e.target)) return;
+        lbSwipePtrId = e.pointerId;
+        lbSwipeStartX = e.clientX;
+        lbSwipeStartY = e.clientY;
+        try {
+          inner.setPointerCapture(e.pointerId);
+        } catch (eCap) {}
       },
-      { passive: true }
+      true
     );
     inner.addEventListener(
-      "touchend",
+      "pointerup",
       function (e) {
-        if (lbSwipeTouchId === null) return;
-        var t = null;
-        for (var si = 0; si < e.changedTouches.length; si++) {
-          if (e.changedTouches[si].identifier === lbSwipeTouchId) {
-            t = e.changedTouches[si];
-            break;
-          }
-        }
-        if (!t) return;
-        lbSwipeTouchId = null;
-        if (growthLightboxGallery.urls.length <= 1) return;
-        var dx = t.clientX - lbSwipeStartX;
-        var dy = t.clientY - lbSwipeStartY;
-        var minSwipe = 56;
-        if (Math.abs(dx) < minSwipe) return;
-        if (Math.abs(dx) < Math.abs(dy) * 1.15) return;
-        var pk = growthPhotoLightboxEls;
-        if (!pk) return;
-        if (dx > 0) {
-          showAt(pk, growthLightboxGallery.index - 1);
-        } else {
-          showAt(pk, growthLightboxGallery.index + 1);
-        }
+        if (lbSwipePtrId === null || e.pointerId !== lbSwipePtrId) return;
+        try {
+          inner.releasePointerCapture(e.pointerId);
+        } catch (eRel) {}
+        lbSwipePtrId = null;
+        lbApplySwipeEnd(e.clientX, e.clientY);
       },
-      { passive: true }
+      true
     );
     inner.addEventListener(
-      "touchcancel",
-      function () {
-        lbSwipeTouchId = null;
+      "pointercancel",
+      function (e) {
+        if (e.pointerId !== lbSwipePtrId) return;
+        try {
+          inner.releasePointerCapture(e.pointerId);
+        } catch (eRel2) {}
+        lbSwipePtrId = null;
       },
-      { passive: true }
+      true
     );
 
     growthPhotoLightboxEls = {
@@ -1299,6 +1308,92 @@
     }
   }
 
+  /**
+   * 閲覧ページ: 現在の location.search から表示モード・絞り込みを同期（戻る／進む・ボタン用）。
+   * view パラメータが無い・grid のときは記録一覧表示にする。
+   */
+  function applyGrowthViewFromLocationSearch() {
+    if (!IS_VIEW || !el.filterArea) return;
+    var params = new URLSearchParams(window.location.search);
+    var view = params.get("view");
+    if (view === "timeline") {
+      state.viewLayout = "timeline";
+      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = true;
+      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = false;
+    } else {
+      state.viewLayout = "grid";
+      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = true;
+      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = false;
+    }
+    try {
+      localStorage.setItem("growthViewLayout", state.viewLayout);
+    } catch (eLs) {}
+
+    var areaId = params.get("area");
+    if (
+      areaId &&
+      state.areas.some(function (a) {
+        return a.id === areaId;
+      })
+    ) {
+      el.filterArea.value = areaId;
+    } else {
+      el.filterArea.value = "";
+    }
+
+    updateFilterPlantOptions();
+
+    var plantName = params.get("plant");
+    if (plantName) {
+      try {
+        plantName = decodeURIComponent(plantName);
+      } catch (eDec) {}
+    }
+
+    state.pendingTimelinePlant = null;
+    if (state.viewLayout === "timeline") {
+      if (plantName) {
+        state.pendingTimelinePlant = plantName;
+        applyPendingTimelinePlant();
+      } else if (el.filterPlant) {
+        el.filterPlant.value = "";
+      }
+    } else if (el.filterPlant) {
+      if (plantName) {
+        var opts2 = el.filterPlant.querySelectorAll("option");
+        var matched = false;
+        for (var pi = 0; pi < opts2.length; pi++) {
+          if (opts2[pi].value === plantName) {
+            el.filterPlant.value = plantName;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) el.filterPlant.value = "";
+      } else {
+        el.filterPlant.value = "";
+      }
+    }
+
+    syncViewModeUi();
+    renderViewMain(state.lastGrowthRecords);
+    applyThumbFeedClass();
+  }
+
+  function goGrowthViewGridInPlace() {
+    if (!IS_VIEW) return;
+    try {
+      var u = new URL(window.location.href);
+      u.searchParams.delete("view");
+      u.searchParams.delete("plant");
+      history.replaceState(null, "", u.pathname + u.search + u.hash);
+    } catch (eU) {}
+    applyGrowthViewFromLocationSearch();
+    requestAnimationFrame(function () {
+      if (el.feed) el.feed.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   function fetchRecordByIdAndEdit(id) {
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
@@ -1435,6 +1530,16 @@
       );
     }
     return "./plant.html?plant=" + encodeURIComponent(name);
+  }
+
+  /** 閲覧トップで植栽別・時系列に切り替える URL（plant は記録上の表記と一致させる） */
+  function growthTimelineBrowseHref(plantName, areaId) {
+    var q = new URLSearchParams();
+    q.set("view", "timeline");
+    q.set("plant", plantName);
+    var aid = areaId && String(areaId).trim();
+    if (aid) q.set("area", aid);
+    return "./index.html?" + q.toString();
   }
 
   function createGrowthCardArticle(r, opts) {
@@ -1580,6 +1685,31 @@
 
     var actions = document.createElement("div");
     actions.className = "growth-card-actions";
+    if (IS_VIEW && !inTimeline) {
+      var tlNames = [];
+      var tlSeen = {};
+      (r.plants || []).forEach(function (p) {
+        var tn = typeof p === "string" ? p.trim() : String(p || "").trim();
+        if (!tn || tlSeen[tn]) return;
+        tlSeen[tn] = true;
+        tlNames.push(tn);
+      });
+      for (var tli = 0; tli < tlNames.length; tli++) {
+        var tln = tlNames[tli];
+        var tlLink = document.createElement("a");
+        tlLink.className = "growth-card-timeline-link";
+        tlLink.href = growthTimelineBrowseHref(tln, r.areaId);
+        tlLink.setAttribute("data-growth-timeline-plant", tln);
+        if (r.areaId) tlLink.setAttribute("data-growth-timeline-area", String(r.areaId));
+        tlLink.setAttribute(
+          "aria-label",
+          tln + "の成長記録を植栽別・時系列で見る"
+        );
+        tlLink.textContent =
+          tlNames.length === 1 ? "時系列で見る" : "時系列（" + tln + "）";
+        actions.appendChild(tlLink);
+      }
+    }
     var editLink = document.createElement("a");
     editLink.className = "growth-edit growth-card-edit-link";
     editLink.href = "./growth-edit.html?id=" + encodeURIComponent(r.id);
@@ -2203,6 +2333,65 @@
           renderPlantTimeline(state.lastGrowthRecords);
         } else {
           refreshFeed();
+        }
+      });
+    }
+
+    var viewMain = document.querySelector("main.growth-panel");
+    if (viewMain) {
+      viewMain.addEventListener("click", function (e) {
+        var a = e.target.closest("a.growth-card-timeline-link");
+        if (!a || !a.getAttribute("data-growth-timeline-plant")) return;
+        if (e.defaultPrevented) return;
+        if (e.button !== 0) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var plantPick = a.getAttribute("data-growth-timeline-plant");
+        if (!plantPick) return;
+        var areaPick = a.getAttribute("data-growth-timeline-area") || "";
+        e.preventDefault();
+        state.viewLayout = "timeline";
+        try {
+          localStorage.setItem("growthViewLayout", "timeline");
+        } catch (xSt) {}
+        if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = true;
+        if (el.viewModeGridRadio) el.viewModeGridRadio.checked = false;
+        if (areaPick && el.filterArea) {
+          var okA = state.areas.some(function (ar) {
+            return ar.id === areaPick;
+          });
+          if (okA) el.filterArea.value = areaPick;
+        }
+        updateFilterPlantOptions();
+        if (el.filterPlant) el.filterPlant.value = plantPick;
+        syncViewModeUi();
+        renderViewMain(state.lastGrowthRecords);
+        try {
+          var u = new URL(window.location.href);
+          u.searchParams.set("view", "timeline");
+          u.searchParams.set("plant", plantPick);
+          if (areaPick) u.searchParams.set("area", areaPick);
+          else u.searchParams.delete("area");
+          history.pushState({ growthTimelineFromCard: true }, "", u.pathname + u.search + u.hash);
+        } catch (xUrl) {}
+        requestAnimationFrame(function () {
+          var tlEl = el.plantTimeline || document.getElementById("growth-plant-timeline");
+          if (tlEl) tlEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+    }
+
+    window.addEventListener("popstate", function () {
+      if (!IS_VIEW || !el.filterArea) return;
+      applyGrowthViewFromLocationSearch();
+    });
+
+    el.backToGridBtn = $("growth-back-to-grid-btn");
+    if (el.backToGridBtn) {
+      el.backToGridBtn.addEventListener("click", function () {
+        if (window.history.state && window.history.state.growthTimelineFromCard) {
+          history.back();
+        } else {
+          goGrowthViewGridInPlace();
         }
       });
     }

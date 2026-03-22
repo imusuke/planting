@@ -22,6 +22,25 @@ a.growth-card-edit-link:focus-visible {
   outline: none;
 }
 
+a.growth-card-timeline-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(45, 106, 79, 0.28);
+  background: rgba(45, 106, 79, 0.08);
+  color: var(--green);
+  text-decoration: none;
+  text-align: center;
+}
+
+a.growth-card-timeline-link:hover,
+a.growth-card-timeline-link:focus-visible {
+  border-color: rgba(45, 106, 79, 0.5);
+  background: rgba(45, 106, 79, 0.12);
+  outline: none;
+}
+
 main.growth-panel {
   max-width: 920px;
 }
@@ -386,8 +405,16 @@ label.growth-photo-pick-label {
   accent-color: var(--green-soft, #2d6a4f);
 }
 
-.growth-timeline-lead {
+.growth-timeline-lead-wrap {
   margin: 0 0 12px;
+}
+
+.growth-timeline-back-btn {
+  margin-bottom: 10px;
+}
+
+.growth-timeline-lead-text {
+  margin: 0;
 }
 
 .growth-plant-timeline {
@@ -629,6 +656,10 @@ button.growth-photo-lightbox-nav:focus-visible {
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  /* inner と同様。img 既定の auto だと横スワイプがブラウザに取られ JS に届かないことがある */
+  touch-action: pan-y;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .growth-photo-lightbox-caption {
@@ -638,6 +669,7 @@ button.growth-photo-lightbox-nav:focus-visible {
   font-size: 0.88rem;
   line-height: 1.45;
   color: rgba(244, 247, 245, 0.92);
+  touch-action: pan-y;
 }
 
 .growth-card-img-wrap--empty {
