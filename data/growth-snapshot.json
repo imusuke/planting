@@ -1,8 +1,50 @@
 {
   "version": 2,
   "source": "snapshot",
-  "exportedAt": "2026-03-22T11:37:03.623Z",
+  "exportedAt": "2026-03-23T12:23:36.094Z",
   "records": [
+    {
+      "id": "827d749a-68c7-41de-a3dc-a2cb33c359ad",
+      "recordedAt": "2026-03-23T12:00:00.000Z",
+      "areaId": "parking",
+      "areaLabel": "駐車場脇",
+      "plants": [
+        "アジュガ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/827d749a-68c7-41de-a3dc-a2cb33c359ad/0.jpg",
+          "imagePathname": "growth/827d749a-68c7-41de-a3dc-a2cb33c359ad/0.jpg",
+          "localSnapshotImage": "./data/growth-images/827d749a-68c7-41de-a3dc-a2cb33c359ad-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/827d749a-68c7-41de-a3dc-a2cb33c359ad/0.jpg",
+      "imagePathname": "growth/827d749a-68c7-41de-a3dc-a2cb33c359ad/0.jpg",
+      "createdAt": "2026-03-23T09:15:14.902Z",
+      "localSnapshotImage": "./data/growth-images/827d749a-68c7-41de-a3dc-a2cb33c359ad-0.jpg"
+    },
+    {
+      "id": "fbc2da00-bae5-4456-9919-466127e18a81",
+      "recordedAt": "2026-03-23T12:00:00.000Z",
+      "areaId": "parking",
+      "areaLabel": "駐車場脇",
+      "plants": [
+        "アジュガ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/fbc2da00-bae5-4456-9919-466127e18a81/0.jpg",
+          "imagePathname": "growth/fbc2da00-bae5-4456-9919-466127e18a81/0.jpg",
+          "localSnapshotImage": "./data/growth-images/fbc2da00-bae5-4456-9919-466127e18a81-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/fbc2da00-bae5-4456-9919-466127e18a81/0.jpg",
+      "imagePathname": "growth/fbc2da00-bae5-4456-9919-466127e18a81/0.jpg",
+      "createdAt": "2026-03-23T09:15:30.143Z",
+      "localSnapshotImage": "./data/growth-images/fbc2da00-bae5-4456-9919-466127e18a81-0.jpg"
+    },
     {
       "id": "469a3c97-0f50-4dd9-a791-96f4b3f9fab7",
       "recordedAt": "2026-03-22T12:00:00.000Z",
