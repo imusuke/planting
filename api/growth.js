@@ -156,6 +156,7 @@ function normalizeRecordImages(record) {
       return {
         imageUrl: im && im.imageUrl ? im.imageUrl : null,
         imagePathname: im && im.imagePathname ? im.imagePathname : null,
+        memo: im && typeof im.memo === "string" ? im.memo : "",
       };
     });
   }
@@ -164,10 +165,22 @@ function normalizeRecordImages(record) {
       {
         imageUrl: record.imageUrl || null,
         imagePathname: record.imagePathname || null,
+        memo: "",
       },
     ];
   }
   return [];
+}
+
+function applyImageMemos(images, memos) {
+  if (!Array.isArray(images) || !images.length) return images || [];
+  if (!Array.isArray(memos) || !memos.length) return images;
+  return images.map(function (img, i) {
+    if (memos[i] === undefined) return img;
+    var o = Object.assign({}, img);
+    o.memo = String(memos[i] != null ? memos[i] : "").slice(0, 5000);
+    return o;
+  });
 }
 
 async function deleteAllRecordImages(record, token) {
@@ -257,6 +270,7 @@ module.exports = async function handler(req, res) {
       await deleteAllRecordImages(existing, token);
       imagesOut = [];
       var access = blobPutAccess();
+      var memosUpload = Array.isArray(body.imageMemos) ? body.imageMemos : [];
       for (var ii = 0; ii < arr.length; ii++) {
         var b64 = arr[ii];
         if (typeof b64 !== "string" || !b64.length) {
@@ -275,9 +289,14 @@ module.exports = async function handler(req, res) {
             addRandomSuffix: false,
             allowOverwrite: true,
           });
+          var memoOne =
+            memosUpload[ii] != null
+              ? String(memosUpload[ii]).slice(0, 5000)
+              : "";
           imagesOut.push({
             imageUrl: up.url,
             imagePathname: access === "private" ? up.pathname : null,
+            memo: memoOne,
           });
         } catch (blobErr) {
           return jsonError(res, 502, "blob_put_failed", blobErr);
@@ -301,10 +320,14 @@ module.exports = async function handler(req, res) {
           addRandomSuffix: false,
           allowOverwrite: true,
         });
+        var memosLegacy = Array.isArray(body.imageMemos) ? body.imageMemos : [];
+        var memo0 =
+          memosLegacy[0] != null ? String(memosLegacy[0]).slice(0, 5000) : "";
         imagesOut = [
           {
             imageUrl: uploaded1.url,
             imagePathname: access1 === "private" ? uploaded1.pathname : null,
+            memo: memo0,
           },
         ];
       } catch (blobErr2) {
@@ -323,10 +346,16 @@ module.exports = async function handler(req, res) {
     } else {
       finalImages = existing
         ? normalizeRecordImages(existing).map(function (x) {
-            return { imageUrl: x.imageUrl, imagePathname: x.imagePathname };
+            return {
+              imageUrl: x.imageUrl,
+              imagePathname: x.imagePathname,
+              memo: typeof x.memo === "string" ? x.memo : "",
+            };
           })
         : [];
     }
+
+    finalImages = applyImageMemos(finalImages, body.imageMemos);
 
     var record = {
       id: body.id,

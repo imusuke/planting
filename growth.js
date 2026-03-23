@@ -119,6 +119,7 @@
           imageUrl: im.imageUrl || null,
           imagePathname: im.imagePathname || null,
           localSnapshotImage: im.localSnapshotImage || null,
+          memo: typeof im.memo === "string" ? im.memo : "",
         };
       });
     }
@@ -128,6 +129,7 @@
           imageUrl: r.imageUrl || null,
           imagePathname: r.imagePathname || null,
           localSnapshotImage: r.localSnapshotImage || null,
+          memo: "",
         },
       ];
     }
@@ -210,6 +212,24 @@
     return parts.filter(Boolean).join(" · ");
   }
 
+  /** ライトボックス用：各写真スロットごとのキャプション（写真単位メモを付与） */
+  function growthZoomCaptionsForRecordImages(r) {
+    var base = growthZoomCaptionForRecord(r);
+    var slots = growthImageSlots(r);
+    var out = [];
+    for (var si = 0; si < slots.length; si++) {
+      var u = growthImageSrcFromSlot(slots[si]);
+      if (!u) continue;
+      var m = slots[si] && slots[si].memo && String(slots[si].memo).trim();
+      if (m) {
+        out.push(base + (base ? " · " : "") + "写真メモ: " + m);
+      } else {
+        out.push(base);
+      }
+    }
+    return out;
+  }
+
   function countGrowthRecordImages(r) {
     var slots = growthImageSlots(r);
     var n = 0;
@@ -230,7 +250,12 @@
         var u = growthImageSrcFromSlot(slots[si]);
         if (u) {
           urls.push(u);
-          captions.push(capLine);
+          var pm = slots[si] && slots[si].memo && String(slots[si].memo).trim();
+          if (pm) {
+            captions.push(capLine + (capLine ? " · " : "") + "写真メモ: " + pm);
+          } else {
+            captions.push(capLine);
+          }
         }
       }
     }
@@ -803,7 +828,11 @@
   }
 
   function openGrowthViewLightbox(r, imgIndexInRecord, galleryUrls, zoomCaption) {
+    var perCaps = growthZoomCaptionsForRecordImages(r);
     var anchorOpt = { anchorRecordId: r.id };
+    if (perCaps.length === galleryUrls.length) {
+      anchorOpt.captions = perCaps;
+    }
     if (!IS_VIEW) {
       openGrowthPhotoLightbox(galleryUrls, imgIndexInRecord, zoomCaption, anchorOpt);
       return;
@@ -1062,7 +1091,7 @@
       if (state.photoQueue.length >= MAX_GROWTH_PHOTOS) break;
       var f = fileList[i];
       if (!growthFileLooksLikeImage(f)) continue;
-      state.photoQueue.push({ kind: "new", file: f });
+      state.photoQueue.push({ kind: "new", file: f, memo: "" });
       state.photosTouched = true;
       n++;
     }
@@ -1097,6 +1126,10 @@
     state.photoQueue.forEach(function (item, idx) {
       var tile = document.createElement("div");
       tile.className = "growth-photo-queue-item";
+      var row = document.createElement("div");
+      row.className = "growth-photo-queue-item-row";
+      var thumbWrap = document.createElement("div");
+      thumbWrap.className = "growth-photo-queue-thumb-wrap";
       var thumb = document.createElement("img");
       thumb.className = "growth-photo-queue-thumb";
       thumb.alt = "";
@@ -1133,8 +1166,20 @@
         var at = state.photoQueue.indexOf(item);
         if (at !== -1) removePhotoQueueIndex(at);
       });
-      tile.appendChild(thumb);
-      tile.appendChild(rm);
+      thumbWrap.appendChild(thumb);
+      thumbWrap.appendChild(rm);
+      var memoTa = document.createElement("textarea");
+      memoTa.className = "growth-photo-memo";
+      memoTa.setAttribute("aria-label", "写真" + (idx + 1) + "枚目のメモ");
+      memoTa.rows = 2;
+      memoTa.placeholder = "この写真用のメモ（任意）";
+      memoTa.value = item.memo != null ? item.memo : "";
+      memoTa.addEventListener("input", function () {
+        item.memo = memoTa.value;
+      });
+      row.appendChild(thumbWrap);
+      row.appendChild(memoTa);
+      tile.appendChild(row);
       el.photoQueueEl.appendChild(tile);
     });
 
@@ -1156,7 +1201,8 @@
 
   function resetPhotoQueueFromRecord(r) {
     state.photoQueue = growthImageSlots(r).map(function (slot) {
-      return { kind: "saved", slot: slot };
+      var m = typeof slot.memo === "string" ? slot.memo : "";
+      return { kind: "saved", slot: slot, memo: m };
     });
     state.photosTouched = false;
     renderPhotoQueueUi();
@@ -2552,21 +2598,33 @@
       createdAt: createdAt,
     };
 
+    function imageMemosPayload() {
+      return state.photoQueue.map(function (it) {
+        return it.memo != null ? String(it.memo) : "";
+      });
+    }
+
     var attachImagesPromise;
     if (!wasEdit && state.photoQueue.length > 0) {
       attachImagesPromise = buildImagesBase64Payload().then(function (arr) {
         var payload = Object.assign({}, basePayload);
         payload.imagesBase64 = arr;
+        payload.imageMemos = imageMemosPayload();
         return payload;
       });
     } else if (wasEdit && state.photosTouched) {
       attachImagesPromise = buildImagesBase64Payload().then(function (arr) {
         var payload = Object.assign({}, basePayload);
         payload.imagesBase64 = arr;
+        payload.imageMemos = imageMemosPayload();
         return payload;
       });
     } else {
-      attachImagesPromise = Promise.resolve(basePayload);
+      var baseOnly = Object.assign({}, basePayload);
+      if (state.photoQueue.length > 0) {
+        baseOnly.imageMemos = imageMemosPayload();
+      }
+      attachImagesPromise = Promise.resolve(baseOnly);
     }
 
     attachImagesPromise
