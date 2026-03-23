@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * 植栽マスタ・plant-details・plant.html 埋め込み・成長記録の植栽名の整合を点検する。
+ * 植栽マスタ・plant-details・area-details・各 HTML 埋め込み・成長記録の植栽名の整合を点検する。
  *   node scripts/audit-data.cjs
  */
 
@@ -12,12 +12,16 @@ var util = require("util");
 var root = path.join(__dirname, "..");
 var plantsPath = path.join(root, "data", "plants.json");
 var detailsPath = path.join(root, "data", "plant-details.json");
+var areaDetailsPath = path.join(root, "data", "area-details.json");
 var plantHtmlPath = path.join(root, "plant.html");
+var areaHtmlPath = path.join(root, "area.html");
 var snapPath = path.join(root, "data", "growth-snapshot.json");
 
 var plants = JSON.parse(fs.readFileSync(plantsPath, "utf8"));
 var det = JSON.parse(fs.readFileSync(detailsPath, "utf8"));
+var areaDet = JSON.parse(fs.readFileSync(areaDetailsPath, "utf8"));
 var html = fs.readFileSync(plantHtmlPath, "utf8");
+var areaHtml = fs.readFileSync(areaHtmlPath, "utf8");
 
 var issues = [];
 
@@ -86,6 +90,63 @@ if (emb && Array.isArray(emb.entries)) {
   });
 }
 
+var masterAreaIds = {};
+(plants.areas || []).forEach(function (a) {
+  if (a && a.id) masterAreaIds[a.id] = true;
+});
+
+var areaSeen = {};
+(areaDet.entries || []).forEach(function (e, i) {
+  if (!e || !e.areaId) {
+    issues.push("area-details entries[" + i + "] missing areaId");
+    return;
+  }
+  if (!String(e.summary || "").trim()) {
+    issues.push("empty area-details summary: " + e.areaId);
+  }
+  if (!String(e.body || "").trim()) {
+    issues.push("empty area-details body: " + e.areaId);
+  }
+  if (areaSeen[e.areaId]) issues.push("duplicate area-details entry: " + e.areaId);
+  areaSeen[e.areaId] = true;
+  if (!masterAreaIds[e.areaId]) {
+    issues.push('area-details: unknown areaId "' + e.areaId + '" (not in plants.json)');
+  }
+});
+
+Object.keys(masterAreaIds).forEach(function (id) {
+  if (!areaSeen[id]) issues.push("area-details: missing entry for area " + id);
+});
+
+var areaStartMark = 'id="area-details-embed">';
+var areaStart = areaHtml.indexOf(areaStartMark);
+var areaEnd = areaHtml.indexOf("</script>", areaStart);
+var areaEmb = null;
+if (areaStart >= 0 && areaEnd > areaStart) {
+  var areaJsonStr = areaHtml.slice(areaStart + areaStartMark.length, areaEnd).trim();
+  try {
+    areaEmb = JSON.parse(areaJsonStr);
+  } catch (err2) {
+    issues.push("area.html area-details-embed JSON parse error: " + err2.message);
+  }
+} else {
+  issues.push("area.html: area-details-embed script block not found");
+}
+
+if (areaEmb && Array.isArray(areaEmb.entries) && areaDet && Array.isArray(areaDet.entries)) {
+  if (areaEmb.entries.length !== areaDet.entries.length) {
+    issues.push(
+      "area embed entry count " +
+        areaEmb.entries.length +
+        " != area-details.json " +
+        areaDet.entries.length
+    );
+  }
+  if (!util.isDeepStrictEqual(areaEmb, areaDet)) {
+    issues.push("area.html: area-details-embed が data/area-details.json と一致しません（npm run embed:plants を実行）");
+  }
+}
+
 if (fs.existsSync(snapPath)) {
   var snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
   var recs = snap.records || [];
@@ -116,7 +177,7 @@ if (fs.existsSync(snapPath)) {
 }
 
 var plantsPayload = { areas: plants.areas };
-["index.html", "growth-edit.html", "plants.html", "plant.html"].forEach(function (f) {
+["index.html", "growth-edit.html", "plants.html", "plant.html", "area.html"].forEach(function (f) {
   var fp = path.join(root, f);
   if (!fs.existsSync(fp)) {
     issues.push("missing file: " + f);
@@ -150,5 +211,5 @@ if (issues.length) {
 }
 
 console.log(
-  "点検 OK: 植栽マスタと plant-details は整合、詳細の空欄なし、plant.html の plant-details 埋め込み一致、各 HTML の plants-embed が plants.json と一致、成長記録の植栽名はマスタ外なし。"
+  "点検 OK: 植栽マスタと plant-details / area-details は整合、plant.html・area.html の詳細埋め込み一致、各 HTML の plants-embed が plants.json と一致、成長記録の植栽名はマスタ外なし。"
 );

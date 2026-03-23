@@ -10,7 +10,12 @@
     areas.forEach(function (area) {
       var tr = document.createElement("tr");
       var tdArea = document.createElement("td");
-      tdArea.textContent = area.label;
+      var areaPage = document.createElement("a");
+      areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
+      areaPage.className = "plant-area-link";
+      areaPage.textContent = area.label;
+      areaPage.setAttribute("title", area.label + "のエリア詳細（全体の写真・メモ）");
+      tdArea.appendChild(areaPage);
 
       var tdPlants = document.createElement("td");
       tdPlants.className = "plant-table-plants";

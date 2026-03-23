@@ -5,9 +5,11 @@
 ## 公開サイト向け
 
 - **`index.html`** … サイトの**トップ**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
-- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。植栽名から **記録の追加・編集**（`growth-edit.html?area=…&plant=…`）、**詳細**から **`plant.html`** へ進めます。
-- **`plant.html`** + **`plant.js`** … **各植栽の説明ページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。本文は **`data/plant-details.json`** の `entries`（`areaId`・`name`・`summary`・`body`）から表示します。マスタに無い名前・エリアの組み合わせはエラーになります。
+- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**（エリア全体の写真・メモ）、植栽名から **記録の追加・編集**（`growth-edit.html?area=…&plant=…`）、**詳細**から **`plant.html`** へ進めます。
+- **`plant.html`** + **`plant.js`** … **各植栽の説明ページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。本文は **`data/plant-details.json`** の `entries`（`areaId`・`name`・`summary`・`body`）から表示します。マスタに無い名前・エリアの組み合わせはエラーになります。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。
+- **`area.html`** + **`area.js`** … **エリア単位のページ**（複数植栽がまとまっているゾーン全体）。URL は `area.html?area=（エリアid）`。文章・段落は **`data/area-details.json`**（`areaId`・`summary`・`body`・任意の `images[]`）。**成長記録**でそのエリアに紐づいた写真も一覧表示します。
 - **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
+- **`data/area-details.json`** … エリアごとの全体メモ・任意の画像（`images[].imageUrl` / `localSnapshotImage` / `caption` など）。マスタの各 `areaId` に 1 エントリずつあると運用しやすいです。
 - **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
 - **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
@@ -33,14 +35,14 @@
 2. 本番の**ベース URL**（`https://…`、末尾 `/` なし）を付けて、**GET `/api/plants` と GET `/api/growth`** をまとめて取り込む（**トークン不要**）:
    - **`npm run sync:prod -- https://あなたのサイト.vercel.app`**
    - または環境変数 **`PLANTING_BASE_URL`** または **`GROWTH_SNAPSHOT_URL`** に同じ URL を設定して `npm run sync:prod`
-3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html` / `plant.html`**（**`plants-embed`** 自動更新）を `git add` → `commit` → `push` する。
+3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html` / `plant.html` / `area.html`**（**`plants-embed`** および **`plant-details-embed` / `area-details-embed`** の自動更新）を `git add` → `commit` → `push` する。
 4. 他の環境では **`git pull`** で同じ `data/` と画像が揃います。スナップショットの各記録には **`localSnapshotImage`**（例: `./data/growth-images/{id}.jpg`）が付き、閲覧時は **ローカルファイルを優先**して表示します（オフラインや API 失敗時のフォールバック向け）。
 
 **個別に取り込む場合:** `npm run sync:plants -- <URL>`（マスタのみ・**plants-embed 付き HTML も更新**）、`npm run sync:growth -- <URL>`（成長記録＋**写真ダウンロード**）。**JSON だけ欲しいとき:** `npm run sync:growth -- <URL> --no-images`
 
 **いまある `growth-snapshot.json` にだけ写真を足す:** `npm run sync:images -- <URL>`
 
-**手元だけ `plants.json` を直したとき:** `npm run embed:plants` で 3 つの HTML の `plants-embed` を揃えられます。
+**手元だけ `plants.json` を直したとき:** `npm run embed:plants` で各 HTML の `plants-embed` を揃えられます（`plant-details-embed` / `area-details-embed` も更新されます）。
 
 **抜け漏れ点検（マスタ・詳細・HTML 埋め込み・成長記録の植栽名）:** `npm run audit:data`
 

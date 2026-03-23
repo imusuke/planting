@@ -518,6 +518,69 @@ a.plant-detail-link:focus-visible {
   font-size: 0.98rem !important;
 }
 
+a.plant-detail-area-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(74, 99, 86, 0.45);
+}
+
+a.plant-detail-area-link:hover,
+a.plant-detail-area-link:focus-visible {
+  color: var(--green);
+  border-bottom-color: rgba(45, 106, 79, 0.55);
+  outline: none;
+}
+
+a.plant-area-link {
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+}
+
+a.plant-area-link:hover,
+a.plant-area-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.area-detail-plants {
+  margin: 1.75rem 0 0;
+  padding: 1.25rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.area-detail-plants-heading {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--green-soft, #2d6a4f);
+}
+
+.area-detail-plants-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.area-detail-plants-actions {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.area-detail-plants-empty {
+  list-style: none;
+  margin-left: -1.25rem;
+  color: var(--muted);
+}
+
+.area-detail-static-photos.plant-detail-photos {
+  border-bottom: none;
+  padding-bottom: 0.35rem;
+}
+
 .plant-detail-article {
   padding: 0 24px 36px;
   max-width: 42rem;

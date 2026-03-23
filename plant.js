@@ -344,7 +344,13 @@
     if (crumbEl) crumbEl.textContent = plantName;
     if (areaLineEl) {
       areaLineEl.hidden = false;
-      areaLineEl.textContent = "エリア: " + (area.label || area.id);
+      areaLineEl.innerHTML = "";
+      var areaLink = document.createElement("a");
+      areaLink.href = "./area.html?area=" + encodeURIComponent(area.id);
+      areaLink.className = "plant-detail-area-link";
+      areaLink.textContent = "エリア: " + (area.label || area.id);
+      areaLink.setAttribute("title", "このエリア全体の詳細ページへ");
+      areaLineEl.appendChild(areaLink);
     }
 
     if (entry && entry.summary) {

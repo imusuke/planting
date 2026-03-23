@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>植栽メモ — エリアの詳細</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="panel">
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li><a href="./index.html">成長記録</a></li>
+        <li><a href="./plants.html">植栽一覧</a></li>
+        <li aria-current="page" id="area-detail-breadcrumb-current">エリアの詳細</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./growth-edit.html">記録の追加・編集</a>
+      </div>
+    </nav>
+
+    <header class="page-header plant-detail-header">
+      <p class="eyebrow">Planting · Area</p>
+      <h1 id="area-detail-title">エリアの詳細</h1>
+    </header>
+
+    <article class="plant-detail-article" id="area-detail-root" aria-live="polite">
+      <p class="plant-detail-loading">読み込み中…</p>
+    </article>
+  </main>
+  <script type="application/json" id="plants-embed">
+  {
+  "areas": [
+    {
+      "id": "entrance",
+      "label": "玄関前",
+      "plants": [
+        "ノリウツギ",
+        "カシワバアジサイ（柏葉紫陽花）",
+        "ユーカリ",
+        "ムスカリ（ブドウヒヤシンス）",
+        "レウコトエ・アクシラリス（セイヨウイワナンテン）",
+        "スイートアリッサム（庭薺/ニワナズナ）",
+        "コデマリ（小手毬）？",
+        "ラベンダー（イングリッシュ系？）",
+        "ネモフィラ",
+        "スイートアリッサム",
+        "シルバータイム",
+        "ヒューケラ（ツボサンゴ）",
+        "ハツユキカズラ（初雪カズラ）"
+      ]
+    },
+    {
+      "id": "parking",
+      "label": "駐車場脇",
+      "plants": [
+        "シルバープリペット",
+        "シダ",
+        "アジュガ",
+        "クリスマスローズ（ヘレボルス）"
+      ]
+    },
+    {
+      "id": "deck",
+      "label": "ウッドデッキ",
+      "plants": [
+        "落葉ヤマボウシ（日本固有種）",
+        "ミモザ・アカシア",
+        "コルジリネ（コルジリネ・オーストラリス）",
+        "ウエストリンギア（オーストラリアンローズマリー）",
+        "キャットミント シックスヒルズ ジャイアント",
+        "ネペタ チューベローサ",
+        "ユーフォルビア・アスコットレインボー",
+        "エレモフィラ・ニベア",
+        "グレヴィレア・プーリンダ・ロイヤルマントル",
+        "リューカデンドロン",
+        "グレヴィレア・バイレヤナ",
+        "オリーブの木",
+        "ヒューケラ（ツボサンゴ）"
+      ]
+    },
+    {
+      "id": "corner",
+      "label": "角庭",
+      "plants": [
+        "アナベル",
+        "ローズマリー",
+        "ヤマアジサイ",
+        "サルビア スペルバ　ボルドー　ディープブルー",
+        "オリヅルラン（折鶴蘭）",
+        "ノースポール（クリサンセマム・パルドラム）"
+      ]
+    },
+    {
+      "id": "indoor",
+      "label": "室内",
+      "plants": [
+        "ドラセナ・コンシンナ",
+        "フィカス・ウンベラータ",
+        "ゴムの木",
+        "ペペロミア・カペラータ",
+        "ホヤ・カルノーサ　クリムゾン・クイーン",
+        "サンスベリア（サンセベリア）　ローレンティ（Laurentii）"
+      ]
+    },
+    {
+      "id": "yatsu-hatake",
+      "label": "谷津畑",
+      "plants": [
+        "アジサイ",
+        "ソラマメ",
+        "スナップエンドウ",
+        "畑全体"
+      ]
+    }
+  ]
+}
+  </script>
+  <script type="application/json" id="area-details-embed">
+  {
+  "version": 1,
+  "entries": [
+    {
+      "areaId": "entrance",
+      "summary": "玄関前の花壇・通路脇など、建物の正面にまとまっているゾーンです。",
+      "body": "複数の低木・多年草・一年草が混在しています。季節ごとに主役が変わるので、全体のバランスや通路幅との兼ね合いをメモしておくと手入れの優先度が決めやすくなります。\n\n全体写真や、区画のメモ（日当たり・水はけ・来客時の見え方など）はここに残せます。",
+      "images": []
+    },
+    {
+      "areaId": "parking",
+      "summary": "駐車スペースの脇・境界に沿ったライン植栽です。",
+      "body": "車の出入りや排熱・風の通り方を意識したメモがあると、植物の見え方の変化を追いやすくなります。\n\nエリア全体の景観や、剪定・除草のタイミングのメモを書いてください。",
+      "images": []
+    },
+    {
+      "areaId": "deck",
+      "summary": "ウッドデッキ周辺の鉢植え・地植えが集まるゾーンです。",
+      "body": "日照と風通し、デッキからの見え方をまとめて記録できます。夏場の乾燥対策や、冬の霜よけのメモもここに。",
+      "images": []
+    },
+    {
+      "areaId": "corner",
+      "summary": "建物の角に当たる小さな庭・花壇エリアです。",
+      "body": "日陰・半日陰の変化や、隣地との境界まわりの手入れメモに向いています。",
+      "images": []
+    },
+    {
+      "areaId": "indoor",
+      "summary": "室内で管理している観葉植物などのまとまりです。",
+      "body": "窓際の日射・加湿・換気の方針や、株ごとの置き場所のメモをエリア全体として残せます。",
+      "images": []
+    },
+    {
+      "areaId": "yatsu-hatake",
+      "summary": "谷津畑エリアの畑・花壇をまとめて指すゾーンです。",
+      "body": "区画全体の土づくり・輪作・灌水の方針や、季節の全景写真を残すのに使えます。",
+      "images": []
+    }
+  ]
+}
+  </script>
+  <script>
+    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
+  </script>
+  <script src="./hub-link.js" defer></script>
+  <script src="./area.js" defer></script>
+</body>
+</html>
