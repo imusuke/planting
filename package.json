@@ -7,6 +7,7 @@
     "sync:growth": "node scripts/sync-from-prod.cjs --growth-only",
     "embed:plants": "node scripts/update-plants-embed.cjs",
     "check:details": "node scripts/check-plant-details.cjs",
+    "audit:data": "node scripts/audit-data.cjs",
     "sync:images": "node scripts/download-growth-snapshot-images.cjs",
     "build:snapshot-boot": "node scripts/write-growth-snapshot-boot.cjs"
   },

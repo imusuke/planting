@@ -42,6 +42,8 @@
 
 **手元だけ `plants.json` を直したとき:** `npm run embed:plants` で 3 つの HTML の `plants-embed` を揃えられます。
 
+**抜け漏れ点検（マスタ・詳細・HTML 埋め込み・成長記録の植栽名）:** `npm run audit:data`
+
 **注意:** 同期は手動（または CI）まで古いままです。写真を Git に含めると **リポジトリが大きくなります**。画像取得で `self-signed certificate in certificate chain` などになる場合は、社内プロキシの影響のことがあります。**同期用に限り**環境変数 `PLANTING_SYNC_INSECURE_TLS=1` を付けて再実行すると TLS 検証を省略します（**普段のブラウザ運用では使わないでください**）。PowerShell 例: `$env:PLANTING_SYNC_INSECURE_TLS='1'; npm run sync:prod -- https://…`
 
 ### GitHub Actions で本番 → リポジトリを自動同期
