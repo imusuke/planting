@@ -17,6 +17,13 @@ function safeAreaDetailsPathname(p) {
   return null;
 }
 
+function safeAreaGrowthPathname(p) {
+  if (!p || typeof p !== "string" || p.length > 400) return null;
+  if (p.indexOf("..") !== -1 || p.charAt(0) === "/") return null;
+  if (/^area-growth\/[A-Za-z0-9_.-]+\/[0-9]+\.jpg$/i.test(p)) return p;
+  return null;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -28,7 +35,8 @@ module.exports = async function handler(req, res) {
   }
 
   var q = req.query && (req.query.pathname || req.query.p);
-  var pathname = safeGrowthPathname(q) || safeAreaDetailsPathname(q);
+  var pathname =
+    safeGrowthPathname(q) || safeAreaDetailsPathname(q) || safeAreaGrowthPathname(q);
   if (!pathname) {
     return res.status(400).json({ error: "invalid_pathname" });
   }

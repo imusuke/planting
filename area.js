@@ -3,6 +3,7 @@
 
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_GROWTH = "/api/growth";
+  var API_AREA_GROWTH = "/api/area-growth";
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
 
   var root = document.getElementById("area-detail-root");
@@ -98,9 +99,27 @@
     return slot.imageUrl || null;
   }
 
-  function loadGrowthRecordsList() {
+  function loadAreaGrowthRecordsList() {
+    return fetch(API_AREA_GROWTH, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("area growth bad");
+        return res.json();
+      })
+      .then(function (data) {
+        return Array.isArray(data.records) ? data.records : [];
+      })
+      .catch(function () {
+        return [];
+      });
+  }
+
+  function loadPlantGrowthRecordsList() {
     return fetch(API_GROWTH, {
       headers: { Accept: "application/json" },
+      cache: "no-store",
     })
       .then(function (res) {
         if (!res.ok) throw new Error("growth bad");
@@ -279,20 +298,20 @@
     return section;
   }
 
-  function renderGrowthPhotosSection(areaLabel, areaId, records) {
+  function renderPhotoRecordsSection(areaLabel, areaId, records, options) {
+    var opts = options || {};
     var section = document.createElement("section");
     section.className = "plant-detail-photos";
     var h = document.createElement("h2");
     h.className = "plant-detail-photos-heading";
-    h.textContent = "このエリアの成長記録の写真";
+    h.textContent = opts.heading || "写真";
     section.appendChild(h);
 
     var items = collectPhotosForArea(records, areaId);
     if (items.length === 0) {
       var empty = document.createElement("p");
       empty.className = "plant-detail-photos-empty";
-      empty.textContent =
-        "このエリアに紐づく記録写真はまだありません。成長記録でエリアを選んで写真を追加すると、ここに表示されます。";
+      empty.textContent = opts.emptyText || "まだ写真がありません。";
       section.appendChild(empty);
       return section;
     }
@@ -341,13 +360,47 @@
     var more = document.createElement("p");
     more.className = "plant-detail-photos-more";
     var a = document.createElement("a");
-    a.href = "./index.html?view=timeline&area=" + encodeURIComponent(areaId);
+    a.href = opts.ctaHref || "./area-edit.html?area=" + encodeURIComponent(areaId);
     a.className = "plant-detail-link";
-    a.textContent = "成長記録でエリア別・時系列を開く";
+    a.textContent = opts.ctaText || "写真を追加する";
     more.appendChild(a);
     section.appendChild(more);
 
     return section;
+  }
+
+  function renderPhotoSourceSwitch(onSelect) {
+    var wrap = document.createElement("div");
+    wrap.className = "area-photo-switch";
+    var btnArea = document.createElement("button");
+    var btnPlant = document.createElement("button");
+    btnArea.type = "button";
+    btnPlant.type = "button";
+    btnArea.className = "area-photo-switch-btn is-active";
+    btnPlant.className = "area-photo-switch-btn";
+    btnArea.textContent = "エリア写真";
+    btnPlant.textContent = "植栽写真";
+    btnArea.setAttribute("aria-pressed", "true");
+    btnPlant.setAttribute("aria-pressed", "false");
+
+    function select(which) {
+      var isArea = which === "area";
+      btnArea.className = "area-photo-switch-btn" + (isArea ? " is-active" : "");
+      btnPlant.className = "area-photo-switch-btn" + (!isArea ? " is-active" : "");
+      btnArea.setAttribute("aria-pressed", isArea ? "true" : "false");
+      btnPlant.setAttribute("aria-pressed", !isArea ? "true" : "false");
+      onSelect(which);
+    }
+
+    btnArea.addEventListener("click", function () {
+      select("area");
+    });
+    btnPlant.addEventListener("click", function () {
+      select("plant");
+    });
+    wrap.appendChild(btnArea);
+    wrap.appendChild(btnPlant);
+    return wrap;
   }
 
   function clearRoot() {
@@ -425,7 +478,7 @@
     return section;
   }
 
-  function renderPage(area, entry, growthRecords) {
+  function renderPage(area, entry, areaGrowthRecords, plantGrowthRecords) {
     clearRoot();
     var label = area.label || area.id;
     document.title = label + "（エリア） — 植栽メモ";
@@ -443,10 +496,41 @@
       root.appendChild(sum);
     }
 
-    root.appendChild(
+    var areaPhotoGroup = document.createElement("div");
+    areaPhotoGroup.className = "area-photo-group area-photo-group-area";
+    areaPhotoGroup.appendChild(
       renderStaticAreaPhotosSection(label, entry && entry.images ? entry.images : [])
     );
-    root.appendChild(renderGrowthPhotosSection(label, area.id, growthRecords || []));
+    areaPhotoGroup.appendChild(
+      renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
+        heading: "エリア写真の時系列",
+        emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
+        ctaText: "エリア写真を追加する",
+        ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
+      })
+    );
+
+    var plantPhotoGroup = document.createElement("div");
+    plantPhotoGroup.className = "area-photo-group area-photo-group-plant";
+    plantPhotoGroup.hidden = true;
+    plantPhotoGroup.appendChild(
+      renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
+        heading: "植栽写真の時系列",
+        emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
+        ctaText: "植栽写真を追加する",
+        ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
+      })
+    );
+
+    root.appendChild(
+      renderPhotoSourceSwitch(function (which) {
+        var showArea = which !== "plant";
+        areaPhotoGroup.hidden = !showArea;
+        plantPhotoGroup.hidden = showArea;
+      })
+    );
+    root.appendChild(areaPhotoGroup);
+    root.appendChild(plantPhotoGroup);
 
     var bodyWrap = document.createElement("div");
     bodyWrap.className = "plant-detail-body";
@@ -468,8 +552,8 @@
     actions.className = "plant-detail-actions";
     var aRecord = document.createElement("a");
     aRecord.className = "plant-detail-cta";
-    aRecord.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-    aRecord.textContent = "このエリアで成長記録を追加（植栽は記録画面で選択）";
+    aRecord.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
+    aRecord.textContent = "このエリアの写真記録を追加する";
     actions.appendChild(aRecord);
     root.appendChild(actions);
   }
@@ -484,11 +568,17 @@
     return;
   }
 
-  Promise.all([loadPlantsData(), loadAreaDetailsData(), loadGrowthRecordsList()])
+  Promise.all([
+    loadPlantsData(),
+    loadAreaDetailsData(),
+    loadAreaGrowthRecordsList(),
+    loadPlantGrowthRecordsList(),
+  ])
     .then(function (results) {
       var plantsData = results[0];
       var detailEntries = results[1];
-      var growthRecords = results[2] || [];
+      var areaGrowthRecords = results[2] || [];
+      var plantGrowthRecords = results[3] || [];
       var areas = plantsData.areas || [];
       var area = areas.find(function (a) {
         return a && a.id === areaId;
@@ -498,7 +588,7 @@
         return;
       }
       var entry = findAreaEntry(detailEntries, areaId);
-      renderPage(area, entry, growthRecords);
+      renderPage(area, entry, areaGrowthRecords, plantGrowthRecords);
     })
     .catch(function () {
       renderError("データを読み込めませんでした。data/plants.json またはネットワークを確認してください。");

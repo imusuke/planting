@@ -17,6 +17,9 @@
   var API_PLANTS = "/api/plants";
   var MAX_IMAGE_WIDTH = 1024;
   var JPEG_QUALITY = 0.76;
+  var MIN_JPEG_QUALITY = 0.45;
+  var MAX_BYTES_PER_IMAGE = 280 * 1024;
+  var MAX_TOTAL_UPLOAD_BYTES = 3800 * 1024;
   var MAX_GROWTH_PHOTOS = 12;
 
   var state = {
@@ -998,33 +1001,55 @@
       throw new Error("画像サイズが無効です");
     }
 
-    var scale = w > MAX_IMAGE_WIDTH ? MAX_IMAGE_WIDTH / w : 1;
-    var cw = Math.round(w * scale);
-    var ch = Math.round(h * scale);
-
     var canvas = document.createElement("canvas");
-    canvas.width = cw;
-    canvas.height = ch;
-    var ctx = canvas.getContext("2d");
-    ctx.drawImage(imgOrBitmap, 0, 0, cw, ch);
-    if (growthIsImageBitmap(imgOrBitmap) && typeof imgOrBitmap.close === "function") {
-      try {
-        imgOrBitmap.close();
-      } catch (c2) {}
-    }
+    var closeSource = function () {
+      if (growthIsImageBitmap(imgOrBitmap) && typeof imgOrBitmap.close === "function") {
+        try {
+          imgOrBitmap.close();
+        } catch (c2) {}
+      }
+    };
+    var toJpegBlob = function (quality) {
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(
+          function (blob) {
+            if (!blob) {
+              reject(new Error("画像の変換に失敗しました"));
+              return;
+            }
+            resolve(blob);
+          },
+          "image/jpeg",
+          quality
+        );
+      });
+    };
 
-    return new Promise(function (resolve, reject) {
-      canvas.toBlob(
-        function (blob) {
-          if (!blob) {
-            reject(new Error("画像の変換に失敗しました"));
-            return;
-          }
-          resolve(blob);
-        },
-        "image/jpeg",
-        JPEG_QUALITY
-      );
+    var scale = w > MAX_IMAGE_WIDTH ? MAX_IMAGE_WIDTH / w : 1;
+    var quality = JPEG_QUALITY;
+
+    var encodeStep = function () {
+      var cw = Math.max(1, Math.round(w * scale));
+      var ch = Math.max(1, Math.round(h * scale));
+      canvas.width = cw;
+      canvas.height = ch;
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(imgOrBitmap, 0, 0, cw, ch);
+      return toJpegBlob(quality).then(function (blob) {
+        if (blob.size <= MAX_BYTES_PER_IMAGE || (scale <= 0.35 && quality <= MIN_JPEG_QUALITY)) {
+          return blob;
+        }
+        if (quality > MIN_JPEG_QUALITY) {
+          quality = Math.max(MIN_JPEG_QUALITY, quality - 0.08);
+        } else {
+          scale = scale * 0.86;
+        }
+        return encodeStep();
+      });
+    };
+
+    return encodeStep().finally(function () {
+      closeSource();
     });
   }
 
@@ -2553,7 +2578,18 @@
           .then(dataUrlToBase64Part);
       })
     ).then(function (parts) {
-      return parts.filter(Boolean);
+      var nonNull = parts.filter(Boolean);
+      var totalBytes = 0;
+      for (var i = 0; i < nonNull.length; i++) {
+        var b64 = nonNull[i];
+        totalBytes += Math.floor((b64.length * 3) / 4);
+      }
+      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+        throw new Error(
+          "写真の合計サイズが大きすぎます。枚数を減らすか、画像を小さくして再試行してください。"
+        );
+      }
+      return nonNull;
     });
   }
 

@@ -3,6 +3,7 @@
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var API_AREA_DETAILS = "/api/area-details";
+  var API_AREA_GROWTH = "/api/area-growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_PLANTS = "/api/plants";
   var MAX_IMAGE_WIDTH = 1024;
@@ -234,18 +235,8 @@
     };
   }
 
-  function resetPhotoQueueFromEntry(entry) {
+  function resetPhotoQueue() {
     state.photoQueue = [];
-    var imgs = entry && Array.isArray(entry.images) ? entry.images : [];
-    for (var i = 0; i < imgs.length; i++) {
-      var im = imgs[i];
-      var cap = typeof im.caption === "string" ? im.caption : "";
-      state.photoQueue.push({
-        kind: "saved",
-        slot: slotFromAreaImage(im),
-        memo: cap,
-      });
-    }
     state.photosTouched = false;
     renderPhotoQueueUi();
   }
@@ -310,29 +301,12 @@
       var thumb = document.createElement("img");
       thumb.className = "growth-photo-queue-thumb";
       thumb.alt = "";
-      if (item.kind === "new" && item.file) {
+      if (item.file) {
         try {
           thumb.src = URL.createObjectURL(item.file);
         } catch (e1) {
           thumb.removeAttribute("src");
         }
-      } else if (item.kind === "saved" && item.slot) {
-        var ssrc = growthImageSrcFromSlot(item.slot);
-        if (ssrc) thumb.src = ssrc;
-        thumb.addEventListener("error", function onThumbErr() {
-          thumb.removeEventListener("error", onThumbErr);
-          if (thumb.dataset.thumbFb === "1") return;
-          var sl = item.slot;
-          if (!sl || !sl.localSnapshotImage) return;
-          var fb = sl.imageUrl || "";
-          if (!fb && sl.imagePathname) {
-            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
-          }
-          if (fb) {
-            thumb.dataset.thumbFb = "1";
-            thumb.src = fb;
-          }
-        });
       }
       var rm = document.createElement("button");
       rm.type = "button";
@@ -366,27 +340,12 @@
     if (!q.length) return Promise.resolve([]);
     return Promise.all(
       q.map(function (item) {
-        if (item.kind === "new") {
-          return loadImageFile(item.file)
-            .then(imageToJpegBlob)
-            .then(blobToDataURL)
-            .then(dataUrlToBase64Part);
-        }
-        var url = growthImageSrcFromSlot(item.slot);
-        if (!url) return Promise.resolve(null);
-        return fetch(url, { cache: "no-store" })
-          .then(function (res) {
-            if (!res.ok) throw new Error("既存写真の読み込みに失敗しました");
-            return res.blob();
-          })
-          .then(loadImageFileFromBlob)
+        return loadImageFile(item.file)
           .then(imageToJpegBlob)
           .then(blobToDataURL)
           .then(dataUrlToBase64Part);
       })
-    ).then(function (parts) {
-      return parts.filter(Boolean);
-    });
+    );
   }
 
   function imageMemosPayload() {
@@ -396,10 +355,7 @@
   }
 
   function hasNewFiles() {
-    for (var i = 0; i < state.photoQueue.length; i++) {
-      if (state.photoQueue[i].kind === "new") return true;
-    }
-    return false;
+    return state.photoQueue.length > 0;
   }
 
   function apiErrorMessage(res, fallbackPrefix) {
@@ -428,7 +384,17 @@
     }
     if (el.summary) el.summary.value = entry.summary || "";
     if (el.body) el.body.value = entry.body || "";
-    resetPhotoQueueFromEntry(entry);
+    resetPhotoQueue();
+    if (el.recordNote) el.recordNote.value = "";
+    if (el.recordDate) el.recordDate.value = new Date().toISOString().slice(0, 10);
+  }
+
+  function areaLabelById(areaId) {
+    for (var i = 0; i < state.areas.length; i++) {
+      var a = state.areas[i];
+      if (a && a.id === areaId) return a.label || areaId;
+    }
+    return areaId;
   }
 
   function onAreaChange() {
@@ -449,30 +415,27 @@
 
     var summary = el.summary ? el.summary.value.trim() : "";
     var body = el.body ? el.body.value.trim() : "";
+    var recordedAt = el.recordDate ? String(el.recordDate.value || "").trim() : "";
+    var recordNote = el.recordNote ? el.recordNote.value.trim() : "";
+    var areaLabel = areaLabelById(areaId);
 
-    var payload = {
+    var detailPayload = {
       areaId: areaId,
       summary: summary,
       body: body,
     };
 
-    var doPost = function (extra) {
-      var p = Object.assign({}, payload, extra || {});
+    var postAreaDetails = function () {
       return fetch(API_AREA_DETAILS, {
         method: "POST",
         headers: cloudHeaders(true),
-        body: JSON.stringify(p),
+        body: JSON.stringify(detailPayload),
       }).then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。成長記録と同じアップロード用トークンを入力してください。");
+          throw new Error("トークンが違います。");
         }
         if (res.status === 503) {
-          return apiErrorMessage(res, "サーバー側の設定").then(function (msg) {
-            throw new Error(msg);
-          });
-        }
-        if (res.status === 502) {
-          return apiErrorMessage(res, "写真の保存に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "サーバー側の保存設定").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -485,21 +448,46 @@
       });
     };
 
-    var chain;
-    if (state.photosTouched || hasNewFiles()) {
-      chain = buildImagesBase64Payload().then(function (arr) {
-        return doPost({
-          imagesBase64: arr,
-          imageCaptions: imageMemosPayload(),
+    var postAreaGrowth = function () {
+      if (!recordedAt) {
+        return Promise.reject(new Error("記録日を入力してください。"));
+      }
+      if (!hasNewFiles() && !recordNote) {
+        return Promise.resolve(null);
+      }
+      return buildImagesBase64Payload().then(function (arr) {
+        return fetch(API_AREA_GROWTH, {
+          method: "POST",
+          headers: cloudHeaders(true),
+          body: JSON.stringify({
+            areaId: areaId,
+            areaLabel: areaLabel,
+            recordedAt: recordedAt,
+            note: recordNote,
+            imagesBase64: arr,
+            imageMemos: imageMemosPayload(),
+          }),
+        }).then(function (res) {
+          if (res.status === 401) {
+            throw new Error("トークンが違います。");
+          }
+          if (res.status === 503 || res.status === 502) {
+            return apiErrorMessage(res, "写真付きの記録保存").then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          if (!res.ok) {
+            return apiErrorMessage(res, "エリア記録の保存").then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          return res.json();
         });
       });
-    } else {
-      chain = doPost({
-        imageCaptions: imageMemosPayload(),
-      });
-    }
+    };
 
-    chain
+    postAreaDetails()
+      .then(postAreaGrowth)
       .then(function () {
         showToast("保存しました");
         return loadAreaDetailsMerged();
@@ -535,6 +523,8 @@
     el.cloudTokenSave = $("area-edit-cloud-token-save");
     el.form = $("area-edit-form");
     el.area = $("area-edit-area");
+    el.recordDate = $("area-edit-record-date");
+    el.recordNote = $("area-edit-record-note");
     el.summary = $("area-edit-summary");
     el.body = $("area-edit-body");
     el.photoLibrary = $("area-edit-photo-library");
@@ -581,6 +571,9 @@
     }
     if (el.form) {
       el.form.addEventListener("submit", onSubmit);
+    }
+    if (el.recordDate && !el.recordDate.value) {
+      el.recordDate.value = new Date().toISOString().slice(0, 10);
     }
 
     Promise.all([loadPlantsData(), loadAreaDetailsMerged()])
