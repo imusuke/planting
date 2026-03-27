@@ -2821,7 +2821,66 @@
     if (el.thumbSize && el.thumbSize.value !== v) el.thumbSize.value = v;
   }
 
+  function simplifyViewHomeLayout() {
+    if (!IS_VIEW) return;
+    var main = document.querySelector("main.growth-panel");
+    if (!main) return;
+
+    var header = main.querySelector("header.page-header");
+    if (header && !main.querySelector(".home-quick")) {
+      var quick = document.createElement("section");
+      quick.className = "growth-section home-quick";
+      quick.setAttribute("aria-labelledby", "home-quick-heading");
+      quick.innerHTML =
+        '<h2 id="home-quick-heading">Quick Start</h2>' +
+        '<div class="home-quick-grid">' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Step 1</span><h2>記録を追加</h2><p>写真とメモを追加します。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">Step 2</span><h2>植物一覧を見る</h2><p>植物・エリアの情報を確認します。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./area-edit.html"><span class="card-label">Step 3</span><h2>エリアを管理</h2><p>エリア情報を編集します。</p><span class="open">Open</span></a>' +
+        "</div>";
+      if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
+      else main.appendChild(quick);
+    }
+
+    var listSection = main.querySelector('section[aria-labelledby="list-heading"]');
+    if (listSection) {
+      var mode = listSection.querySelector(".growth-view-mode");
+      var filters = listSection.querySelector(".growth-filters");
+      if (mode && filters && !mode.closest("details.home-advanced-controls")) {
+        var details = document.createElement("details");
+        details.className = "home-advanced-controls";
+        var summary = document.createElement("summary");
+        summary.textContent = "表示設定・絞り込み";
+        details.appendChild(summary);
+        listSection.insertBefore(details, mode);
+        details.appendChild(mode);
+        details.appendChild(filters);
+      }
+    }
+
+    var backupSection = main.querySelector('section[aria-labelledby="backup-heading"]');
+    if (backupSection && !backupSection.querySelector("details.home-advanced-controls")) {
+      var heading = backupSection.querySelector("#backup-heading");
+      var hint = backupSection.querySelector(".growth-hint");
+      var row = backupSection.querySelector(".growth-backup-row");
+      var box = document.createElement("details");
+      box.className = "home-advanced-controls";
+      var sum = document.createElement("summary");
+      sum.id = "backup-heading";
+      sum.textContent = "バックアップ";
+      box.appendChild(sum);
+      if (hint) box.appendChild(hint);
+      if (row) box.appendChild(row);
+      backupSection.innerHTML = "";
+      backupSection.appendChild(box);
+      if (heading && heading.parentNode) {
+        heading.parentNode.removeChild(heading);
+      }
+    }
+  }
+
   function initViewPage() {
+    simplifyViewHomeLayout();
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
     el.filterPlant = $("filter-plant");

@@ -722,6 +722,42 @@ img.plant-detail-photo-img {
   color: #855500;
 }
 
+.home-simple-header .lead {
+  max-width: 100%;
+}
+
+.home-quick .card {
+  min-height: 140px;
+}
+
+.home-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.home-advanced-controls {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.home-advanced-controls > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink);
+  list-style: none;
+}
+
+.home-advanced-controls > summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-advanced-controls[open] > summary {
+  margin-bottom: 10px;
+}
+
 .plant-detail-body {
   margin: 0;
 }

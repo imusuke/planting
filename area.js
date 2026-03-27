@@ -379,7 +379,7 @@
           var importBtn = document.createElement("button");
           importBtn.type = "button";
           importBtn.className = "area-photo-import-btn";
-          importBtn.textContent = "エリア写真へ追加";
+          importBtn.textContent = "エリア写真へ移動";
           importBtn.addEventListener("click", function () {
             opts.onImportPhoto(it, importBtn);
           });
@@ -570,7 +570,8 @@
         return;
       }
       if (buttonEl) buttonEl.disabled = true;
-      setPhotoStatus("取り込み中...", false);
+      var createdAreaRecord = null;
+      setPhotoStatus("移動中...", false);
       fetch(API_AREA_GROWTH, {
         method: "POST",
         headers: cloudHeadersForAreaWrite(),
@@ -594,20 +595,84 @@
                 return {};
               })
               .then(function (j) {
-                throw new Error(j.error || ("取り込みに失敗しました (HTTP " + res.status + ")"));
+                throw new Error(j.error || ("移動に失敗しました (HTTP " + res.status + ")"));
               });
           }
           return res.json();
         })
+        .then(function (payload) {
+          createdAreaRecord = payload && payload.record ? payload.record : null;
+          return removeMovedPhotoFromPlantRecord(item);
+        })
         .then(function () {
-          setPhotoStatus("植栽写真をエリア写真へ追加しました。ページを再読み込みすると反映されます。", false);
+          if (createdAreaRecord && Array.isArray(areaGrowthRecords)) {
+            areaGrowthRecords.unshift(createdAreaRecord);
+          }
+          setPhotoStatus("植栽写真をエリア写真へ移動しました。表示反映のため再読み込みします。", false);
+          setTimeout(function () {
+            window.location.reload();
+          }, 250);
         })
         .catch(function (err) {
-          setPhotoStatus(err && err.message ? err.message : "取り込みに失敗しました。", true);
+          setPhotoStatus(err && err.message ? err.message : "移動に失敗しました。", true);
         })
         .finally(function () {
           if (buttonEl) buttonEl.disabled = false;
         });
+    }
+
+    function removeMovedPhotoFromPlantRecord(item) {
+      var recId = item && item.recordId ? String(item.recordId) : "";
+      if (!recId) return Promise.resolve();
+      var rec = (plantGrowthRecords || []).find(function (r) {
+        return r && String(r.id) === recId;
+      });
+      if (!rec) return Promise.resolve();
+      var imgs = growthImageSlots(rec);
+      var keep = [];
+      for (var i = 0; i < imgs.length; i++) {
+        if (i === item.slotIndex) continue;
+        keep.push(imgs[i]);
+      }
+      var noteText = String(rec.note || "");
+      if (!keep.length && !noteText.trim()) {
+        return fetch(API_GROWTH + "?id=" + encodeURIComponent(recId), {
+          method: "DELETE",
+          headers: cloudHeadersForAreaWrite(),
+        }).then(function (res) {
+          if (!res.ok) {
+            throw new Error("移動後の植栽写真削除に失敗しました。");
+          }
+        });
+      }
+      var srcImages = keep.map(function (im) {
+        return {
+          imagePathname: im && im.imagePathname ? im.imagePathname : null,
+          imageUrl: im && im.imageUrl ? im.imageUrl : null,
+        };
+      });
+      var memos = keep.map(function (im) {
+        return String((im && im.memo) || "");
+      });
+      return fetch(API_GROWTH, {
+        method: "POST",
+        headers: cloudHeadersForAreaWrite(),
+        body: JSON.stringify({
+          id: recId,
+          recordedAt: rec.recordedAt || "",
+          areaId: rec.areaId || area.id,
+          areaLabel: rec.areaLabel || area.label || area.id,
+          plants: Array.isArray(rec.plants) ? rec.plants : [],
+          note: noteText,
+          createdAt: rec.createdAt || new Date().toISOString(),
+          sourceImages: srcImages,
+          imageMemos: memos,
+        }),
+      }).then(function (res) {
+        if (!res.ok) {
+          throw new Error("移動後の植栽写真更新に失敗しました。");
+        }
+      });
     }
 
     function chooseTargetPlantName() {
