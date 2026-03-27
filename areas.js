@@ -21,6 +21,19 @@
     }
   }
 
+  function hardcodedFallback() {
+    return {
+      areas: [
+        { id: "entrance", label: "entrance", plants: [] },
+        { id: "parking", label: "parking", plants: [] },
+        { id: "deck", label: "deck", plants: [] },
+        { id: "corner", label: "corner", plants: [] },
+        { id: "indoor", label: "indoor", plants: [] },
+        { id: "yatsu-hatake", label: "yatsu-hatake", plants: [] },
+      ],
+    };
+  }
+
   function renderAreas(data) {
     root.innerHTML = "";
     var areas = data && Array.isArray(data.areas) ? data.areas : [];
@@ -68,7 +81,7 @@
     .catch(function () {
       var embedded = readEmbeddedPlants();
       if (embedded && Array.isArray(embedded.areas)) return embedded;
-      throw new Error("no embedded data");
+      return hardcodedFallback();
     })
     .then(renderAreas)
     .catch(function () {
