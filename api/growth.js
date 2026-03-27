@@ -1,4 +1,4 @@
-const { put, del } = require("@vercel/blob");
+const { put, del, get } = require("@vercel/blob");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
 
@@ -197,6 +197,36 @@ async function deleteAllRecordImages(record, token) {
   }
 }
 
+function guessBlobAccessFromUrl(url) {
+  var u = String(url || "");
+  if (u.indexOf(".public.blob.vercel-storage.com") !== -1) return "public";
+  return "private";
+}
+
+async function readSourceImageBuffer(src, token) {
+  var pathname = src && src.imagePathname ? String(src.imagePathname).trim() : "";
+  var url = src && src.imageUrl ? String(src.imageUrl).trim() : "";
+  var target = pathname || url;
+  if (!target) {
+    throw new Error("missing_source_image");
+  }
+  var access = pathname ? "private" : guessBlobAccessFromUrl(url);
+  var got = await get(target, {
+    access: access,
+    token: token,
+    useCache: false,
+  });
+  if (!got || got.statusCode !== 200 || !got.stream) {
+    throw new Error("source_image_not_found");
+  }
+  var ab = await new Response(got.stream).arrayBuffer();
+  var buf = Buffer.from(ab);
+  if (!buf.length) {
+    throw new Error("source_image_empty");
+  }
+  return buf;
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -332,6 +362,41 @@ module.exports = async function handler(req, res) {
         ];
       } catch (blobErr2) {
         return jsonError(res, 502, "blob_put_failed", blobErr2);
+      }
+    } else if (Array.isArray(body.sourceImages)) {
+      if (!token) {
+        return res.status(503).json({ error: "blob_unavailable" });
+      }
+      var srcArr = body.sourceImages.slice();
+      if (srcArr.length > 20) {
+        return res.status(400).json({ error: "too_many_images" });
+      }
+      await deleteAllRecordImages(existing, token);
+      imagesOut = [];
+      var memosSrc = Array.isArray(body.imageMemos) ? body.imageMemos : [];
+      for (var si = 0; si < srcArr.length; si++) {
+        try {
+          var srcBuf = await readSourceImageBuffer(srcArr[si], token);
+          var blobPath2 = "growth/" + body.id + "/" + si + ".jpg";
+          var up2 = await put(blobPath2, srcBuf, {
+            access: blobPutAccess(),
+            token: token,
+            contentType: "image/jpeg",
+            addRandomSuffix: false,
+            allowOverwrite: true,
+          });
+          var memoTwo =
+            memosSrc[si] != null
+              ? String(memosSrc[si]).slice(0, 5000)
+              : "";
+          imagesOut.push({
+            imageUrl: up2.url,
+            imagePathname: blobPutAccess() === "private" ? up2.pathname : null,
+            memo: memoTwo,
+          });
+        } catch (srcErr) {
+          return jsonError(res, 502, "source_copy_failed", srcErr);
+        }
       }
     }
 

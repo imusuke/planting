@@ -701,6 +701,27 @@ img.plant-detail-photo-img {
   display: none !important;
 }
 
+.area-photo-import-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--green);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.area-photo-import-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.area-photo-move-btn {
+  color: #855500;
+}
+
 .plant-detail-body {
   margin: 0;
 }
