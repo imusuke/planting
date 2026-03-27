@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>植栽メモ — サイトマップ</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="panel">
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li><a href="./index.html">成長記録</a></li>
+        <li aria-current="page">サイトマップ</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./plants.html">植栽一覧</a>
+        <a href="./area-edit.html">エリアを編集</a>
+        <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
+      </div>
+    </nav>
+
+    <header class="page-header">
+      <p class="eyebrow">Site map</p>
+      <h1>サイトマップ</h1>
+      <p class="lead">
+        このサイトの主要ページと、各エリア・各植栽への入り口をまとめて確認できます。
+      </p>
+    </header>
+
+    <section class="sitemap-summary" aria-labelledby="sitemap-summary-heading">
+      <h2 id="sitemap-summary-heading">主要ページ</h2>
+      <div class="sitemap-grid">
+        <a class="card sitemap-card sitemap-card--home" href="./index.html">
+          <span class="card-label">Top</span>
+          <h3>成長記録</h3>
+          <p>記録一覧と植栽別・時系列を見る入り口です。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card sitemap-card sitemap-card--plants" href="./plants.html">
+          <span class="card-label">Plants</span>
+          <h3>植栽一覧</h3>
+          <p>エリアごとの植栽を一覧し、詳細へ進みます。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card sitemap-card sitemap-card--entry" href="./growth-edit.html">
+          <span class="card-label">Entry</span>
+          <h3>記録の追加・編集</h3>
+          <p>写真とメモを登録する入力画面です。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card sitemap-card sitemap-card--area" href="./area-edit.html">
+          <span class="card-label">Area</span>
+          <h3>エリア管理</h3>
+          <p>エリアの説明、写真、メモを編集するページです。</p>
+          <span class="open">開く</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="sitemap-section" aria-labelledby="sitemap-structure-heading">
+      <h2 id="sitemap-structure-heading">ページ構成</h2>
+      <div class="sitemap-tree-shell">
+        <ul class="sitemap-tree sitemap-tree--root">
+          <li>
+            <div class="sitemap-node sitemap-node--root">
+              <div class="sitemap-node-title">
+                <a href="./index.html">成長記録トップ</a>
+                <span class="sitemap-node-label">root</span>
+              </div>
+              <p>記録一覧と植栽別・時系列の閲覧を切り替える中心ページです。</p>
+            </div>
+            <ul class="sitemap-tree">
+              <li>
+                <div class="sitemap-node">
+                  <div class="sitemap-node-title">
+                    <a href="./plants.html">植栽一覧</a>
+                    <span class="sitemap-node-label">browse</span>
+                  </div>
+                  <p>エリアごとの植栽から、時系列や詳細へ進めます。</p>
+                </div>
+              </li>
+              <li>
+                <div class="sitemap-node">
+                  <div class="sitemap-node-title">
+                    <a href="./growth-edit.html">記録の追加・編集</a>
+                    <span class="sitemap-node-label">edit</span>
+                  </div>
+                  <p>写真・日付・メモを登録して成長記録を作ります。</p>
+                </div>
+              </li>
+              <li>
+                <div class="sitemap-node">
+                  <div class="sitemap-node-title">
+                    <a href="./area-edit.html">エリア管理</a>
+                    <span class="sitemap-node-label">edit</span>
+                  </div>
+                  <p>エリアの説明や写真をまとめて整理します。</p>
+                </div>
+              </li>
+              <li>
+                <div class="sitemap-node sitemap-node--current">
+                  <div class="sitemap-node-title">
+                    <span>サイトマップ</span>
+                    <span class="sitemap-node-label">guide</span>
+                  </div>
+                  <p>ページのつながりをひと目で確認できます。</p>
+                </div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sitemap-section" aria-labelledby="sitemap-areas-heading">
+      <div class="sitemap-section-head">
+        <h2 id="sitemap-areas-heading">エリアと植栽のツリー</h2>
+        <p id="sitemap-status" class="growth-hint sitemap-status" aria-live="polite">読み込み中...</p>
+      </div>
+      <div id="sitemap-area-tree" class="sitemap-area-tree"></div>
+    </section>
+  </main>
+  <script type="application/json" id="plants-embed">
+{
+  "areas": [
+    {
+      "id": "entrance",
+      "label": "玄関前",
+      "plants": [
+        "ノリウツギ",
+        "カシワバアジサイ（柏葉紫陽花）",
+        "ユーカリ",
+        "ムスカリ（ブドウヒヤシンス）",
+        "レウコトエ・アクシラリス（セイヨウイワナンテン）",
+        "スイートアリッサム（庭薺/ニワナズナ）",
+        "コデマリ（小手毬）？",
+        "ラベンダー（イングリッシュ系？）",
+        "ネモフィラ",
+        "スイートアリッサム",
+        "シルバータイム",
+        "ヒューケラ（ツボサンゴ）",
+        "ハツユキカズラ（初雪カズラ）"
+      ]
+    },
+    {
+      "id": "parking",
+      "label": "駐車場脇",
+      "plants": [
+        "シルバープリペット",
+        "シダ",
+        "アジュガ",
+        "クリスマスローズ（ヘレボルス）"
+      ]
+    },
+    {
+      "id": "deck",
+      "label": "ウッドデッキ",
+      "plants": [
+        "落葉ヤマボウシ（日本固有種）",
+        "ミモザ・アカシア",
+        "コルジリネ（コルジリネ・オーストラリス）",
+        "ウエストリンギア（オーストラリアンローズマリー）",
+        "キャットミント シックスヒルズ ジャイアント",
+        "ネペタ チューベローサ",
+        "ユーフォルビア・アスコットレインボー",
+        "エレモフィラ・ニベア",
+        "グレヴィレア・プーリンダ・ロイヤルマントル",
+        "リューカデンドロン",
+        "グレヴィレア・バイレヤナ",
+        "オリーブの木",
+        "ヒューケラ（ツボサンゴ）"
+      ]
+    },
+    {
+      "id": "corner",
+      "label": "角庭",
+      "plants": [
+        "アナベル",
+        "ローズマリー",
+        "ヤマアジサイ",
+        "サルビア スペルバ　ボルドー　ディープブルー",
+        "オリヅルラン（折鶴蘭）",
+        "ノースポール（クリサンセマム・パルドラム）"
+      ]
+    },
+    {
+      "id": "indoor",
+      "label": "室内",
+      "plants": [
+        "ドラセナ・コンシンナ",
+        "フィカス・ウンベラータ",
+        "ゴムの木",
+        "ペペロミア・カペラータ",
+        "ホヤ・カルノーサ　クリムゾン・クイーン",
+        "サンスベリア（サンセベリア）　ローレンティ（Laurentii）"
+      ]
+    },
+    {
+      "id": "yatsu-hatake",
+      "label": "谷津畑",
+      "plants": [
+        "アジサイ",
+        "ソラマメ",
+        "スナップエンドウ",
+        "畑全体"
+      ]
+    }
+  ]
+}
+  </script>
+  <script src="./sitemap.js" defer></script>
+</body>
+</html>

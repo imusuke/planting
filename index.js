@@ -1,162 +1,184 @@
-﻿(function () {
+(function () {
   "use strict";
 
-  var LS_CLOUD_TOKEN = "growthCloudToken";
+  var API_PLANTS = "/api/plants";
+  var API_GROWTH = "/api/growth";
+  var API_GROWTH_IMAGE = "/api/growth-image";
+  var PLANTS_JSON = "data/plants.json";
+  var GROWTH_SNAPSHOT_JSON = "data/growth-snapshot.json";
+
   var tbody = document.getElementById("plant-table-body");
   if (!tbody) return;
 
-  var latestAreas = [];
-
-  function readToken() {
-    try {
-      return localStorage.getItem(LS_CLOUD_TOKEN) || "";
-    } catch (e) {
-      return "";
-    }
-  }
-
-  function cloudHeaders() {
-    var h = { Accept: "application/json", "Content-Type": "application/json" };
-    var t = readToken();
-    if (t) h["x-growth-token"] = t;
-    return h;
-  }
-
-  function ensureToken() {
-    var token = readToken();
-    if (token) return token;
-    var entered = window.prompt("削除にはトークンが必要です。トークンを入力してください。", "");
-    if (!entered) return "";
-    token = String(entered).trim();
-    if (!token) return "";
-    try {
-      localStorage.setItem(LS_CLOUD_TOKEN, token);
-    } catch (e) {}
-    return token;
-  }
-
-  function saveAreasCatalog(areas) {
-    return fetch("/api/plants", {
-      method: "PUT",
-      headers: cloudHeaders(),
-      body: JSON.stringify({
-        areas: areas,
-        renames: [],
-        areaIdMigrations: [],
-      }),
-    }).then(function (res) {
-      if (res.status === 401) {
-        throw new Error("トークンが無効です。再入力してください。");
-      }
-      if (!res.ok) {
-        return res
-          .json()
-          .catch(function () {
-            return {};
-          })
-          .then(function (j) {
-            throw new Error(j.error || ("保存に失敗しました (HTTP " + res.status + ")"));
-          });
-      }
+  function loadJson(path) {
+    return fetch(path, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("bad status");
       return res.json();
     });
   }
 
-  function removePlantFromArea(areaId, plantName, buttonEl) {
-    if (!areaId || !plantName) return;
-    if (!window.confirm("「" + plantName + "」を一覧から削除しますか？")) return;
-    if (!ensureToken()) return;
+  function readEmbeddedPlants() {
+    var el = document.getElementById("plants-embed");
+    if (!el || !el.textContent || !el.textContent.trim()) {
+      return null;
+    }
+    try {
+      return JSON.parse(el.textContent.trim());
+    } catch (e) {
+      return null;
+    }
+  }
 
-    if (buttonEl) buttonEl.disabled = true;
-    var nextAreas = (latestAreas || []).map(function (a) {
-      if (!a || a.id !== areaId) return a;
-      return Object.assign({}, a, {
-        plants: (a.plants || []).filter(function (p) {
-          return p !== plantName;
-        }),
+  function normalizePlantName(name) {
+    return String(name || "").trim();
+  }
+
+  function growthImageSlots(record) {
+    if (!record || typeof record !== "object") return [];
+    if (Array.isArray(record.images) && record.images.length) {
+      return record.images.filter(Boolean);
+    }
+
+    var single = {
+      imageUrl: record.imageUrl || null,
+      imagePathname: record.imagePathname || null,
+      localSnapshotImage: record.localSnapshotImage || null,
+    };
+    if (single.imageUrl || single.imagePathname || single.localSnapshotImage) {
+      return [single];
+    }
+    return [];
+  }
+
+  function growthImageSrcFromSlot(slot) {
+    if (!slot || typeof slot !== "object") return "";
+    if (slot.localSnapshotImage) return slot.localSnapshotImage;
+    if (slot.imagePathname) {
+      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+    }
+    if (slot.imageUrl) return slot.imageUrl;
+    return "";
+  }
+
+  function compareGrowthRecords(a, b) {
+    var aTime = Date.parse((a && (a.recordedAt || a.createdAt)) || "") || 0;
+    var bTime = Date.parse((b && (b.recordedAt || b.createdAt)) || "") || 0;
+    if (aTime !== bTime) return bTime - aTime;
+    return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
+  }
+
+  function buildLatestPlantPhotoMap(records) {
+    var map = Object.create(null);
+    if (!Array.isArray(records) || !records.length) return map;
+
+    records.slice().sort(compareGrowthRecords).forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slot = growthImageSlots(record)[0];
+      var src = growthImageSrcFromSlot(slot);
+      if (!src) return;
+
+      var plants = Array.isArray(record.plants) ? record.plants : [];
+      plants.forEach(function (plantName) {
+        var normalized = normalizePlantName(plantName);
+        if (!normalized) return;
+        var key = areaId + "::" + normalized;
+        if (!map[key]) {
+          map[key] = {
+            src: src,
+            alt: normalized + " の最新写真",
+          };
+        }
       });
     });
 
-    saveAreasCatalog(nextAreas)
-      .then(function () {
-        latestAreas = nextAreas;
-        renderTable({ areas: nextAreas });
-      })
-      .catch(function (err) {
-        window.alert(err && err.message ? err.message : "削除に失敗しました。");
-      })
-      .finally(function () {
-        if (buttonEl) buttonEl.disabled = false;
-      });
+    return map;
   }
 
-  function renderTable(data) {
+  function createEmptyRow(message, className) {
+    var tr = document.createElement("tr");
+    var td = document.createElement("td");
+    td.colSpan = 2;
+    td.className = className;
+    td.textContent = message;
+    tr.appendChild(td);
+    return tr;
+  }
+
+  function renderTable(data, photoMap) {
     tbody.innerHTML = "";
-    var areas = data.areas || [];
+
+    var areas = data && Array.isArray(data.areas) ? data.areas : [];
+    if (!areas.length) {
+      tbody.appendChild(createEmptyRow("植栽一覧がまだありません。", "plant-load-error"));
+      return;
+    }
+
     areas.forEach(function (area) {
       var tr = document.createElement("tr");
+
       var tdArea = document.createElement("td");
       var areaPage = document.createElement("a");
       areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
       areaPage.className = "plant-area-link";
       areaPage.textContent = area.label;
+      areaPage.setAttribute("title", area.label + " のエリア詳細を開く");
       tdArea.appendChild(areaPage);
 
       var tdPlants = document.createElement("td");
       tdPlants.className = "plant-table-plants";
 
-      if (!area.plants || area.plants.length === 0) {
+      if (!Array.isArray(area.plants) || area.plants.length === 0) {
         var empty = document.createElement("span");
         empty.className = "plant-empty";
-        empty.textContent = "（未登録）";
+        empty.textContent = "植栽なし";
         tdPlants.appendChild(empty);
       } else {
-        area.plants.forEach(function (p, i) {
-          if (i > 0) {
+        area.plants.forEach(function (plantName, index) {
+          if (index > 0) {
             var sep = document.createElement("span");
             sep.className = "plant-sep";
-            sep.textContent = " ・ ";
+            sep.textContent = "、";
             tdPlants.appendChild(sep);
           }
 
           var group = document.createElement("span");
           group.className = "plant-table-name-group";
 
-          var a = document.createElement("a");
-          a.className = "plant-record-link";
-          a.href =
-            "growth-edit.html?area=" +
+          var link = document.createElement("a");
+          link.className = "plant-record-link plant-record-link--with-thumb";
+          link.href =
+            "index.html?view=timeline&area=" +
             encodeURIComponent(area.id) +
             "&plant=" +
-            encodeURIComponent(p);
-          a.textContent = p;
-          group.appendChild(a);
+            encodeURIComponent(plantName);
+          link.setAttribute("title", plantName + " の成長記録（時系列）を開く");
 
-          var wrapDetail = document.createElement("span");
-          wrapDetail.className = "plant-table-detail-wrap";
-          wrapDetail.appendChild(document.createTextNode(" "));
+          var name = document.createElement("span");
+          name.className = "plant-record-name";
+          name.textContent = plantName;
+          link.appendChild(name);
 
-          var d = document.createElement("a");
-          d.className = "plant-detail-link";
-          d.href =
-            "plant.html?area=" +
-            encodeURIComponent(area.id) +
-            "&plant=" +
-            encodeURIComponent(p);
-          d.textContent = "詳細";
-          wrapDetail.appendChild(d);
+          var photo = photoMap[String(area.id || "").trim() + "::" + normalizePlantName(plantName)];
+          if (photo && photo.src) {
+            var thumb = document.createElement("span");
+            thumb.className = "plant-record-thumb";
 
-          wrapDetail.appendChild(document.createTextNode(" "));
-          var del = document.createElement("button");
-          del.type = "button";
-          del.className = "plant-delete-btn";
-          del.textContent = "削除";
-          del.addEventListener("click", function () {
-            removePlantFromArea(area.id, p, del);
-          });
-          wrapDetail.appendChild(del);
+            var img = document.createElement("img");
+            img.className = "plant-record-thumb-img";
+            img.src = photo.src;
+            img.alt = photo.alt;
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.referrerPolicy = "no-referrer";
+            img.addEventListener("error", function () {
+              thumb.remove();
+            });
 
-          group.appendChild(wrapDetail);
+            thumb.appendChild(img);
+            link.appendChild(thumb);
+          }
+
+          group.appendChild(link);
           tdPlants.appendChild(group);
         });
       }
@@ -167,48 +189,58 @@
     });
   }
 
-  function readEmbeddedPlants() {
-    var el = document.getElementById("plants-embed");
-    if (!el || !el.textContent.trim()) return null;
-    try {
-      return JSON.parse(el.textContent.trim());
-    } catch (e) {
-      return null;
-    }
+  function loadPlantsData() {
+    return loadJson(API_PLANTS)
+      .then(function (data) {
+        if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
+        return { areas: data.areas };
+      })
+      .catch(function () {
+        return loadJson(PLANTS_JSON).then(function (data) {
+          if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
+          return data;
+        });
+      })
+      .catch(function () {
+        var embedded = readEmbeddedPlants();
+        if (embedded && Array.isArray(embedded.areas)) return embedded;
+        throw new Error("no plant data");
+      });
   }
 
-  fetch("/api/plants", { cache: "no-store" })
-    .then(function (res) {
-      if (!res.ok) throw new Error("api plants");
-      return res.json();
-    })
-    .then(function (data) {
-      if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
-      return { areas: data.areas };
-    })
-    .catch(function () {
-      return fetch("data/plants.json", { cache: "no-store" }).then(function (res) {
-        if (!res.ok) throw new Error("bad status");
-        return res.json();
+  function loadGrowthRecords() {
+    return loadJson(API_GROWTH)
+      .then(function (data) {
+        if (data && Array.isArray(data.records)) return data.records;
+        if (Array.isArray(data)) return data;
+        throw new Error("bad shape");
+      })
+      .catch(function () {
+        return loadJson(GROWTH_SNAPSHOT_JSON).then(function (data) {
+          if (data && Array.isArray(data.records)) return data.records;
+          throw new Error("bad snapshot");
+        });
+      })
+      .catch(function () {
+        var snap = window.__PLANTING_GROWTH_SNAPSHOT__;
+        if (snap && Array.isArray(snap.records)) return snap.records;
+        return [];
       });
-    })
-    .catch(function () {
-      var embedded = readEmbeddedPlants();
-      if (embedded) return embedded;
-      throw new Error("no data");
-    })
-    .then(function (data) {
-      latestAreas = Array.isArray(data.areas) ? data.areas.slice() : [];
-      renderTable(data);
+  }
+
+  Promise.all([loadPlantsData(), loadGrowthRecords()])
+    .then(function (results) {
+      var plantsData = results[0];
+      var growthRecords = results[1];
+      renderTable(plantsData, buildLatestPlantPhotoMap(growthRecords));
     })
     .catch(function () {
       tbody.innerHTML = "";
-      var tr = document.createElement("tr");
-      var td = document.createElement("td");
-      td.colSpan = 2;
-      td.className = "plant-load-error";
-      td.textContent = "一覧データを読み込めませんでした。";
-      tr.appendChild(td);
-      tbody.appendChild(tr);
+      tbody.appendChild(
+        createEmptyRow(
+          "植栽一覧の読み込みに失敗しました。data/plants.json と埋め込みデータを確認してください。",
+          "plant-load-error"
+        )
+      );
     });
 })();

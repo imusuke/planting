@@ -17,6 +17,7 @@
         <li aria-current="page">植栽一覧</li>
       </ol>
       <div class="growth-nav-extra">
+        <a href="./sitemap.html">サイトマップ</a>
         <a href="./area-edit.html">エリアを編集</a>
         <a href="./growth-edit.html">記録の追加・編集</a>
       </div>
@@ -26,7 +27,7 @@
       <p class="eyebrow">Planting</p>
       <h1>植栽一覧</h1>
       <p class="lead lead--with-info">
-        エリアごとの植栽一覧です。<strong>エリア名</strong>からエリア全体の写真・メモ（<code>area.html</code>）、<strong>植栽名</strong>から記録の追加・編集、<strong>詳細</strong>から植栽ごとの解説（<code>data/plant-details.json</code>）へ進めます。
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと成長記録の時系列を開き、名前の横には最新の写真サムネイルを表示します。
         <button
           type="button"
           class="info-icon-btn"
@@ -58,7 +59,7 @@
           <thead>
             <tr>
               <th scope="col">エリア</th>
-              <th scope="col">植栽（名前は記録・詳細）</th>
+              <th scope="col">植栽（クリックで時系列）</th>
             </tr>
           </thead>
           <tbody id="plant-table-body">
@@ -196,6 +197,7 @@
   <script>
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
+  <script src="./data/growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>
   <script src="./ui-info.js" defer></script>
   <script src="./index.js" defer></script>
