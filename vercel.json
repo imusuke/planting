@@ -8,6 +8,10 @@
     "api/growth-image.js": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "api/area-details.js": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }

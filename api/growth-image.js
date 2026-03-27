@@ -1,12 +1,19 @@
 const { get } = require("@vercel/blob");
 const { Readable } = require("stream");
 
-/** Only serve paths uploaded by this app (api/growth.js). */
+/** Only serve paths uploaded by this app (api/growth.js, api/area-details.js). */
 function safeGrowthPathname(p) {
   if (!p || typeof p !== "string" || p.length > 400) return null;
   if (p.indexOf("..") !== -1 || p.charAt(0) === "/") return null;
   if (/^growth\/[A-Za-z0-9_.-]+\/[0-9]+\.jpg$/i.test(p)) return p;
   if (/^growth\/[A-Za-z0-9_.-]+\.jpg$/i.test(p)) return p;
+  return null;
+}
+
+function safeAreaDetailsPathname(p) {
+  if (!p || typeof p !== "string" || p.length > 400) return null;
+  if (p.indexOf("..") !== -1 || p.charAt(0) === "/") return null;
+  if (/^area-details\/[a-z0-9]+(-[a-z0-9]+)*\/[0-9]+\.jpg$/i.test(p)) return p;
   return null;
 }
 
@@ -20,9 +27,8 @@ module.exports = async function handler(req, res) {
     return res.status(503).json({ error: "blob_unavailable" });
   }
 
-  var pathname = safeGrowthPathname(
-    req.query && (req.query.pathname || req.query.p)
-  );
+  var q = req.query && (req.query.pathname || req.query.p);
+  var pathname = safeGrowthPathname(q) || safeAreaDetailsPathname(q);
   if (!pathname) {
     return res.status(400).json({ error: "invalid_pathname" });
   }

@@ -177,7 +177,14 @@ if (fs.existsSync(snapPath)) {
 }
 
 var plantsPayload = { areas: plants.areas };
-["index.html", "growth-edit.html", "plants.html", "plant.html", "area.html"].forEach(function (f) {
+[
+  "index.html",
+  "growth-edit.html",
+  "plants.html",
+  "plant.html",
+  "area.html",
+  "area-edit.html",
+].forEach(function (f) {
   var fp = path.join(root, f);
   if (!fs.existsSync(fp)) {
     issues.push("missing file: " + f);

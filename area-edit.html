@@ -4,33 +4,89 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリアの詳細</title>
+  <title>植栽メモ — エリアの写真・メモを編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./growth.css" />
 </head>
 <body>
-  <main class="panel">
+  <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">成長記録</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
-        <li aria-current="page" id="area-detail-breadcrumb-current">エリアの詳細</li>
+        <li aria-current="page">エリアの編集</li>
       </ol>
-      <div class="growth-nav-extra">
-        <a href="./area-edit.html" id="area-detail-edit-link">エリアを編集</a>
-        <a href="./growth-edit.html">記録の追加・編集</a>
-      </div>
     </nav>
 
-    <header class="page-header plant-detail-header">
+    <div id="area-edit-toast" class="growth-toast" role="status" aria-live="polite"></div>
+
+    <header class="page-header">
       <p class="eyebrow">Planting · Area</p>
-      <h1 id="area-detail-title">エリアの詳細</h1>
+      <h1>エリアの写真・メモを編集</h1>
+      <p class="lead">
+        エリア全体の<strong>概要・本文</strong>と<strong>登録写真</strong>を保存します（本番の Vercel + トークンが必要）。閲覧は <a href="./area.html">エリアの詳細</a> から。
+      </p>
     </header>
 
-    <article class="plant-detail-article" id="area-detail-root" aria-live="polite">
-      <p class="plant-detail-loading">読み込み中…</p>
-    </article>
+    <section class="growth-section" aria-labelledby="area-edit-connection-h2">
+      <h2 id="area-edit-connection-h2">保存先への接続</h2>
+      <p id="area-edit-cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div class="growth-token-row">
+        <label class="block" style="flex: 1; min-width: 200px">
+          <span class="growth-label-with-info">アップロード用トークン（成長記録と同じ）</span>
+          <input id="area-edit-cloud-token" type="password" autocomplete="off" placeholder="サイト管理者が設定した文字列" />
+        </label>
+        <button type="button" id="area-edit-cloud-token-save" class="growth-secondary" style="align-self: end">
+          保存
+        </button>
+      </div>
+    </section>
+
+    <form id="area-edit-form" class="growth-section growth-section--composer growth-form">
+      <h2>エリアを選ぶ</h2>
+      <label class="block">
+        <span class="growth-label">エリア</span>
+        <select id="area-edit-area" required></select>
+      </label>
+
+      <label class="block">
+        <span class="growth-label">概要（1〜2文）</span>
+        <textarea id="area-edit-summary" rows="3" class="growth-textarea"></textarea>
+      </label>
+
+      <label class="block">
+        <span class="growth-label">本文（段落は空行で区切り）</span>
+        <textarea id="area-edit-body" rows="8" class="growth-textarea"></textarea>
+      </label>
+
+      <div class="section-heading-row">
+        <h2>エリア全体の写真</h2>
+      </div>
+      <p class="growth-hint">最大 12 枚。保存すると Blob にアップロードされます（差し替え時は既存分も含めて再アップロードされます）。</p>
+      <div class="growth-photo-pick-row">
+        <input
+          id="area-edit-photo-library"
+          type="file"
+          accept="image/*"
+          multiple
+          class="growth-file-input-hidden"
+          tabindex="-1"
+        />
+        <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">写真を追加</label>
+        <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
+      </div>
+      <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">
+        <div id="area-edit-photo-queue" class="growth-photo-queue" aria-live="polite"></div>
+        <p id="area-edit-photo-queue-empty" class="growth-hint growth-photo-queue-empty">写真はまだありません。</p>
+      </div>
+
+      <p class="growth-actions">
+        <button type="submit" id="area-edit-save" class="growth-primary">保存する</button>
+        <a href="./growth-edit.html" class="plant-detail-link" style="margin-left: 0.75rem">成長記録の編集へ</a>
+      </p>
+    </form>
   </main>
   <script type="application/json" id="plants-embed">
   {
@@ -120,53 +176,10 @@
   ]
 }
   </script>
-  <script type="application/json" id="area-details-embed">
-  {
-  "version": 1,
-  "entries": [
-    {
-      "areaId": "entrance",
-      "summary": "玄関前の花壇・通路脇など、建物の正面にまとまっているゾーンです。",
-      "body": "複数の低木・多年草・一年草が混在しています。季節ごとに主役が変わるので、全体のバランスや通路幅との兼ね合いをメモしておくと手入れの優先度が決めやすくなります。\n\n全体写真や、区画のメモ（日当たり・水はけ・来客時の見え方など）はここに残せます。",
-      "images": []
-    },
-    {
-      "areaId": "parking",
-      "summary": "駐車スペースの脇・境界に沿ったライン植栽です。",
-      "body": "車の出入りや排熱・風の通り方を意識したメモがあると、植物の見え方の変化を追いやすくなります。\n\nエリア全体の景観や、剪定・除草のタイミングのメモを書いてください。",
-      "images": []
-    },
-    {
-      "areaId": "deck",
-      "summary": "ウッドデッキ周辺の鉢植え・地植えが集まるゾーンです。",
-      "body": "日照と風通し、デッキからの見え方をまとめて記録できます。夏場の乾燥対策や、冬の霜よけのメモもここに。",
-      "images": []
-    },
-    {
-      "areaId": "corner",
-      "summary": "建物の角に当たる小さな庭・花壇エリアです。",
-      "body": "日陰・半日陰の変化や、隣地との境界まわりの手入れメモに向いています。",
-      "images": []
-    },
-    {
-      "areaId": "indoor",
-      "summary": "室内で管理している観葉植物などのまとまりです。",
-      "body": "窓際の日射・加湿・換気の方針や、株ごとの置き場所のメモをエリア全体として残せます。",
-      "images": []
-    },
-    {
-      "areaId": "yatsu-hatake",
-      "summary": "谷津畑エリアの畑・花壇をまとめて指すゾーンです。",
-      "body": "区画全体の土づくり・輪作・灌水の方針や、季節の全景写真を残すのに使えます。",
-      "images": []
-    }
-  ]
-}
-  </script>
   <script>
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
-  <script src="./area.js" defer></script>
+  <script src="./area-edit.js" defer></script>
 </body>
 </html>

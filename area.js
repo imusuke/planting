@@ -131,19 +131,33 @@
       if (b.length > a.length) return b;
       return a.length ? a : b;
     }
-    return loadJson("data/area-details.json")
+    return fetch("/api/area-details", {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("api");
+        return res.json();
+      })
       .then(function (data) {
-        var fromNet = data && Array.isArray(data.entries) ? data.entries : [];
-        var emb = readEmbeddedAreaDetails();
-        var fromEmb = emb && Array.isArray(emb.entries) ? emb.entries : [];
-        return pickEntries(fromNet, fromEmb);
+        if (!data || !Array.isArray(data.entries)) throw new Error("shape");
+        return data.entries;
       })
       .catch(function () {
-        var embedded = readEmbeddedAreaDetails();
-        if (embedded && Array.isArray(embedded.entries)) {
-          return embedded.entries;
-        }
-        return [];
+        return loadJson("data/area-details.json")
+          .then(function (data) {
+            var fromNet = data && Array.isArray(data.entries) ? data.entries : [];
+            var emb = readEmbeddedAreaDetails();
+            var fromEmb = emb && Array.isArray(emb.entries) ? emb.entries : [];
+            return pickEntries(fromNet, fromEmb);
+          })
+          .catch(function () {
+            var embedded = readEmbeddedAreaDetails();
+            if (embedded && Array.isArray(embedded.entries)) {
+              return embedded.entries;
+            }
+            return [];
+          });
       });
   }
 
@@ -221,7 +235,7 @@
       var empty = document.createElement("p");
       empty.className = "plant-detail-photos-empty";
       empty.textContent =
-        "まだ登録がありません。リポジトリの data/area-details.json の該当エリアに images 配列（imageUrl・localSnapshotImage・caption など）を追加してください。npm run embed:plants で area.html の埋め込みも更新されます。";
+        "まだ登録がありません。本番では area-edit.html から写真をアップロードできます。リポジトリのみのときは data/area-details.json の images を編集し、npm run embed:plants で埋め込みを更新してください。";
       section.appendChild(empty);
       return section;
     }
@@ -417,6 +431,10 @@
     document.title = label + "（エリア） — 植栽メモ";
     titleEl.textContent = label;
     if (crumbEl) crumbEl.textContent = label;
+    var editLink = document.getElementById("area-detail-edit-link");
+    if (editLink && area && area.id) {
+      editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
+    }
 
     if (entry && entry.summary) {
       var sum = document.createElement("p");
@@ -439,7 +457,7 @@
       var hint = document.createElement("p");
       hint.className = "plant-detail-placeholder";
       hint.textContent =
-        "エリアの説明メモはまだありません。data/area-details.json に summary・body を追加してください。";
+        "エリアの説明メモはまだありません。area-edit.html で編集するか、data/area-details.json に summary・body を追加してください。";
       bodyWrap.appendChild(hint);
     }
     root.appendChild(bodyWrap);

@@ -22,6 +22,7 @@ var htmlFiles = [
   "plants.html",
   "plant.html",
   "area.html",
+  "area-edit.html",
 ];
 
 function run() {

@@ -7,7 +7,9 @@
 - **`index.html`** … サイトの**トップ**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
 - **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**（エリア全体の写真・メモ）、植栽名から **記録の追加・編集**（`growth-edit.html?area=…&plant=…`）、**詳細**から **`plant.html`** へ進めます。
 - **`plant.html`** + **`plant.js`** … **各植栽の説明ページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。本文は **`data/plant-details.json`** の `entries`（`areaId`・`name`・`summary`・`body`）から表示します。マスタに無い名前・エリアの組み合わせはエラーになります。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。
-- **`area.html`** + **`area.js`** … **エリア単位のページ**（複数植栽がまとまっているゾーン全体）。URL は `area.html?area=（エリアid）`。文章・段落は **`data/area-details.json`**（`areaId`・`summary`・`body`・任意の `images[]`）。**成長記録**でそのエリアに紐づいた写真も一覧表示します。
+- **`area.html`** + **`area.js`** … **エリア単位のページ**（複数植栽がまとまっているゾーン全体）。URL は `area.html?area=（エリアid）`。文章・写真は **`data/area-details.json`** と **GET `/api/area-details`**（本番で KV があればマージ）を反映。**成長記録**でそのエリアに紐づいた写真も一覧表示します。
+- **`area-edit.html`** + **`area-edit.js`** … エリア全体の **概要・本文・写真** をブラウザから保存（**POST `/api/area-details`**、成長記録と同じ **アップロード用トークン** `x-growth-token`）。`?area=（id）` でエリアを選択できます。
+- **`api/area-details.js`** … エリア詳細の上書きを **KV** に保存し、写真は **Vercel Blob**（パス `area-details/{areaId}/{n}.jpg`）。**GET はトークン不要**、POST は `GROWTH_UPLOAD_TOKEN` と一致するトークンが必要です。プライベート Blob は **`/api/growth-image`** から配信（パス許可を拡張済み）。
 - **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
 - **`data/area-details.json`** … エリアごとの全体メモ・任意の画像（`images[].imageUrl` / `localSnapshotImage` / `caption` など）。マスタの各 `areaId` に 1 エントリずつあると運用しやすいです。
 - **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
