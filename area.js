@@ -823,7 +823,7 @@
     }
 
     function deleteAreaPhoto(item, buttonEl) {
-      if (!item || !item.slot) {
+      if (!item || !item.slot || !item.recordId) {
         setPhotoStatus("削除対象の写真情報が見つかりません。", true);
         return;
       }
@@ -832,7 +832,33 @@
       }
       if (buttonEl) buttonEl.disabled = true;
       setPhotoStatus("削除中...", false);
-      removeMovedPhotoFromAreaRecord(item)
+      fetch(
+        API_AREA_GROWTH +
+          "?id=" +
+          encodeURIComponent(String(item.recordId)) +
+          "&slot=" +
+          encodeURIComponent(String(item.slotIndex)),
+        {
+          method: "DELETE",
+          headers: cloudHeadersForAreaWrite(),
+        }
+      )
+        .then(function (res) {
+          if (res.status === 401) {
+            throw new Error("トークンが無効です。ページ上部で再設定してください。");
+          }
+          if (!res.ok) {
+            return res
+              .json()
+              .catch(function () {
+                return {};
+              })
+              .then(function (j) {
+                throw new Error(j.error || ("削除に失敗しました (HTTP " + res.status + ")"));
+              });
+          }
+          return res.json();
+        })
         .then(function () {
           setPhotoStatus("エリア写真を削除しました。表示反映のため再読み込みします。", false);
           setTimeout(function () {

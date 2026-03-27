@@ -328,16 +328,60 @@ module.exports = async function handler(req, res) {
     if (recordsDel === null) {
       return res.status(503).json({ error: "kv_unavailable" });
     }
-    var found = recordsDel.find(function (r) {
+    var foundIdx = recordsDel.findIndex(function (r) {
       return r && r.id === idDel;
     });
+    var found = foundIdx >= 0 ? recordsDel[foundIdx] : null;
     if (!found) return res.status(404).json({ error: "not_found" });
-    await deleteAllRecordImages(found, process.env.BLOB_READ_WRITE_TOKEN);
-    var next = recordsDel.filter(function (r) {
-      return r && r.id !== idDel;
-    });
-    await writeRecords(next);
-    return res.status(200).json({ ok: true });
+    var slotRaw = req.query && req.query.slot;
+    var hasSlot = slotRaw !== undefined && slotRaw !== null && String(slotRaw).trim() !== "";
+    if (!hasSlot) {
+      await deleteAllRecordImages(found, process.env.BLOB_READ_WRITE_TOKEN);
+      var next = recordsDel.filter(function (r) {
+        return r && r.id !== idDel;
+      });
+      await writeRecords(next);
+      return res.status(200).json({ ok: true });
+    }
+
+    var slot = parseInt(String(slotRaw), 10);
+    var images = normalizeRecordImages(found);
+    if (isNaN(slot) || slot < 0 || slot >= images.length) {
+      return res.status(400).json({ error: "invalid_slot" });
+    }
+
+    var tokenDel = process.env.BLOB_READ_WRITE_TOKEN;
+    var target = images[slot];
+    if (tokenDel && target && target.imageUrl) {
+      try {
+        await del(target.imageUrl, { token: tokenDel });
+      } catch (e) {
+        console.error("area-growth blob del one", e);
+      }
+    }
+
+    var keep = [];
+    for (var si = 0; si < images.length; si++) {
+      if (si === slot) continue;
+      keep.push(images[si]);
+    }
+
+    var noteText = String(found.note || "");
+    if (!keep.length && !noteText.trim()) {
+      var nextDel = recordsDel.filter(function (r) {
+        return r && r.id !== idDel;
+      });
+      await writeRecords(nextDel);
+      return res.status(200).json({ ok: true, deleted: true });
+    }
+
+    found.images = keep;
+    found.imageUrl = keep[0] ? keep[0].imageUrl : null;
+    found.imagePathname = keep[0] ? keep[0].imagePathname : null;
+    found.updatedAt = new Date().toISOString();
+    recordsDel[foundIdx] = found;
+    await writeRecords(recordsDel);
+    return res.status(200).json({ ok: true, record: found });
   }
 
   res.setHeader("Allow", "GET, POST, DELETE");
