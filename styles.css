@@ -436,8 +436,8 @@ section.plant-overview h2 {
 }
 
 .plant-table tbody td:first-child {
-  width: 9.5rem;
-  white-space: nowrap;
+  width: 12rem;
+  white-space: normal;
   font-weight: 600;
 }
 
@@ -587,6 +587,34 @@ a.plant-area-link:hover,
 a.plant-area-link:focus-visible {
   text-decoration: underline;
   outline: none;
+}
+
+.plant-area-link-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  vertical-align: middle;
+}
+
+.plant-area-name {
+  line-height: 1.35;
+}
+
+.plant-area-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  background: rgba(45, 106, 79, 0.08);
+  border: 1px solid rgba(45, 106, 79, 0.14);
+}
+
+.plant-area-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .area-detail-plants {
@@ -1088,8 +1116,7 @@ a.plant-detail-cta:focus-visible {
 }
 
 
-.home-context-actions,
-.plants-page-actions {
+.home-context-actions {
   margin: 14px 0 0;
   padding-top: 0;
   border-top: none;

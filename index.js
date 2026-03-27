@@ -3,8 +3,10 @@
 
   var API_PLANTS = "/api/plants";
   var API_GROWTH = "/api/growth";
+  var API_AREA_GROWTH = "/api/area-growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var PLANTS_JSON = "data/plants.json";
+  var AREA_DETAILS_JSON = "data/area-details.json";
   var GROWTH_SNAPSHOT_JSON = "data/growth-snapshot.json";
 
   var tbody = document.getElementById("plant-table-body");
@@ -17,8 +19,8 @@
     });
   }
 
-  function readEmbeddedPlants() {
-    var el = document.getElementById("plants-embed");
+  function readEmbeddedJson(id) {
+    var el = document.getElementById(id);
     if (!el || !el.textContent || !el.textContent.trim()) {
       return null;
     }
@@ -60,7 +62,16 @@
     return "";
   }
 
-  function compareGrowthRecords(a, b) {
+  function normalizeStaticImageSlot(im) {
+    if (!im || typeof im !== "object") return null;
+    return {
+      imageUrl: im.imageUrl || im.url || null,
+      imagePathname: im.imagePathname || null,
+      localSnapshotImage: im.localSnapshotImage || im.localPath || null,
+    };
+  }
+
+  function compareRecordsNewest(a, b) {
     var aTime = Date.parse((a && (a.recordedAt || a.createdAt)) || "") || 0;
     var bTime = Date.parse((b && (b.recordedAt || b.createdAt)) || "") || 0;
     if (aTime !== bTime) return bTime - aTime;
@@ -71,7 +82,7 @@
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
-    records.slice().sort(compareGrowthRecords).forEach(function (record) {
+    records.slice().sort(compareRecordsNewest).forEach(function (record) {
       var areaId = String((record && record.areaId) || "").trim();
       var slot = growthImageSlots(record)[0];
       var src = growthImageSrcFromSlot(slot);
@@ -83,15 +94,48 @@
         if (!normalized) return;
         var key = areaId + "::" + normalized;
         if (!map[key]) {
-          map[key] = {
-            src: src,
-            alt: normalized + " の最新写真",
-          };
+          map[key] = { src: src };
         }
       });
     });
 
     return map;
+  }
+
+  function buildLatestAreaPhotoMap(records) {
+    var map = Object.create(null);
+    if (!Array.isArray(records) || !records.length) return map;
+
+    records.slice().sort(compareRecordsNewest).forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      if (!areaId || map[areaId]) return;
+      var slot = growthImageSlots(record)[0];
+      var src = growthImageSrcFromSlot(slot);
+      if (!src) return;
+      map[areaId] = { src: src };
+    });
+
+    return map;
+  }
+
+  function mergeStaticAreaPhotoMap(entries, map) {
+    var out = Object.assign(Object.create(null), map || {});
+    if (!Array.isArray(entries) || !entries.length) return out;
+
+    entries.forEach(function (entry) {
+      var areaId = String((entry && entry.areaId) || "").trim();
+      if (!areaId || out[areaId]) return;
+      var images = Array.isArray(entry.images) ? entry.images : [];
+      for (var i = 0; i < images.length; i++) {
+        var slot = normalizeStaticImageSlot(images[i]);
+        var src = growthImageSrcFromSlot(slot);
+        if (!src) continue;
+        out[areaId] = { src: src };
+        break;
+      }
+    });
+
+    return out;
   }
 
   function createEmptyRow(message, className) {
@@ -104,7 +148,7 @@
     return tr;
   }
 
-  function renderTable(data, photoMap) {
+  function renderTable(data, plantPhotoMap, areaPhotoMap) {
     tbody.innerHTML = "";
 
     var areas = data && Array.isArray(data.areas) ? data.areas : [];
@@ -117,12 +161,43 @@
       var tr = document.createElement("tr");
 
       var tdArea = document.createElement("td");
+      tdArea.className = "plant-table-area";
+
+      var areaWrap = document.createElement("span");
+      areaWrap.className = "plant-area-link-wrap";
+
       var areaPage = document.createElement("a");
       areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
       areaPage.className = "plant-area-link";
-      areaPage.textContent = area.label;
       areaPage.setAttribute("title", area.label + " のエリア詳細を開く");
-      tdArea.appendChild(areaPage);
+
+      var areaName = document.createElement("span");
+      areaName.className = "plant-area-name";
+      areaName.textContent = area.label;
+      areaPage.appendChild(areaName);
+      areaWrap.appendChild(areaPage);
+
+      var areaPhoto = areaPhotoMap[String(area.id || "").trim()];
+      if (areaPhoto && areaPhoto.src) {
+        var areaThumb = document.createElement("span");
+        areaThumb.className = "plant-area-thumb";
+
+        var areaImg = document.createElement("img");
+        areaImg.className = "plant-area-thumb-img";
+        areaImg.src = areaPhoto.src;
+        areaImg.alt = area.label + " の代表写真";
+        areaImg.loading = "lazy";
+        areaImg.decoding = "async";
+        areaImg.referrerPolicy = "no-referrer";
+        areaImg.addEventListener("error", function () {
+          areaThumb.remove();
+        });
+
+        areaThumb.appendChild(areaImg);
+        areaWrap.appendChild(areaThumb);
+      }
+
+      tdArea.appendChild(areaWrap);
 
       var tdPlants = document.createElement("td");
       tdPlants.className = "plant-table-plants";
@@ -158,7 +233,7 @@
           name.textContent = plantName;
           link.appendChild(name);
 
-          var photo = photoMap[String(area.id || "").trim() + "::" + normalizePlantName(plantName)];
+          var photo = plantPhotoMap[String(area.id || "").trim() + "::" + normalizePlantName(plantName)];
           if (photo && photo.src) {
             var thumb = document.createElement("span");
             thumb.className = "plant-record-thumb";
@@ -166,7 +241,7 @@
             var img = document.createElement("img");
             img.className = "plant-record-thumb-img";
             img.src = photo.src;
-            img.alt = photo.alt;
+            img.alt = plantName + " の最新写真";
             img.loading = "lazy";
             img.decoding = "async";
             img.referrerPolicy = "no-referrer";
@@ -202,7 +277,7 @@
         });
       })
       .catch(function () {
-        var embedded = readEmbeddedPlants();
+        var embedded = readEmbeddedJson("plants-embed");
         if (embedded && Array.isArray(embedded.areas)) return embedded;
         throw new Error("no plant data");
       });
@@ -228,11 +303,48 @@
       });
   }
 
-  Promise.all([loadPlantsData(), loadGrowthRecords()])
+  function loadAreaGrowthRecords() {
+    return loadJson(API_AREA_GROWTH)
+      .then(function (data) {
+        if (data && Array.isArray(data.records)) return data.records;
+        if (Array.isArray(data)) return data;
+        throw new Error("bad shape");
+      })
+      .catch(function () {
+        return [];
+      });
+  }
+
+  function loadAreaDetailEntries() {
+    return loadJson(AREA_DETAILS_JSON)
+      .then(function (data) {
+        if (data && Array.isArray(data.entries)) return data.entries;
+        throw new Error("bad shape");
+      })
+      .catch(function () {
+        var embedded = readEmbeddedJson("area-details-embed");
+        if (embedded && Array.isArray(embedded.entries)) return embedded.entries;
+        return [];
+      });
+  }
+
+  Promise.all([
+    loadPlantsData(),
+    loadGrowthRecords(),
+    loadAreaGrowthRecords(),
+    loadAreaDetailEntries(),
+  ])
     .then(function (results) {
       var plantsData = results[0];
       var growthRecords = results[1];
-      renderTable(plantsData, buildLatestPlantPhotoMap(growthRecords));
+      var areaGrowthRecords = results[2];
+      var areaDetailEntries = results[3];
+      var plantPhotoMap = buildLatestPlantPhotoMap(growthRecords);
+      var areaPhotoMap = mergeStaticAreaPhotoMap(
+        areaDetailEntries,
+        buildLatestAreaPhotoMap(areaGrowthRecords)
+      );
+      renderTable(plantsData, plantPhotoMap, areaPhotoMap);
     })
     .catch(function () {
       tbody.innerHTML = "";
