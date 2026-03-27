@@ -4,36 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>???? | ????</title>
+  <title>植栽メモ — 植栽一覧</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="panel">
-    <nav class="top growth-nav-top" aria-label="?????">
+    <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./areas.html">?????</a></li>
-        <li aria-current="page">????</li>
+        <li><a href="./index.html">成長記録</a></li>
+        <li aria-current="page">植栽一覧</li>
       </ol>
       <div class="growth-nav-extra">
-        <a href="./areas.html">?????</a>
-        <a href="./area-edit.html">?????</a>
-        <a href="./growth-edit.html">?????</a>
+        <a href="./area-edit.html">エリアを編集</a>
+        <a href="./growth-edit.html">記録の追加・編集</a>
       </div>
     </nav>
 
     <header class="page-header">
       <p class="eyebrow">Planting</p>
-      <h1>????</h1>
+      <h1>植栽一覧</h1>
       <p class="lead lead--with-info">
-        ???????????????????????????????????????????
+        エリアごとの植栽一覧です。<strong>エリア名</strong>からエリア全体の写真・メモ（<code>area.html</code>）、<strong>植栽名</strong>から記録の追加・編集、<strong>詳細</strong>から植栽ごとの解説（<code>data/plant-details.json</code>）へ進めます。
         <button
           type="button"
           class="info-icon-btn"
           data-open-dialog="index-page-info-dialog"
-          aria-label="?????????????"
-          title="??"
+          aria-label="この一覧について（説明を開く）"
+          title="説明"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
@@ -43,28 +42,28 @@
       </p>
     </header>
 
-    <section class="grid grid--cta" aria-label="??????????">
-      <a class="card growthlog" href="./areas.html">
-        <span class="card-label">Area</span>
-        <h2>????????</h2>
-        <p>?????????????????????</p>
-        <span class="open">Open</span>
+    <section class="grid grid--cta" aria-label="成長記録トップへのリンク">
+      <a class="card growthlog" href="./index.html">
+        <span class="card-label">Log</span>
+        <h2>成長記録（閲覧）</h2>
+        <p>サイトのトップです。写真付きの記録一覧を見られます。</p>
+        <span class="open">トップへ →</span>
       </a>
     </section>
 
     <section class="plant-overview" aria-labelledby="plant-overview-heading">
-      <h2 id="plant-overview-heading">????</h2>
+      <h2 id="plant-overview-heading">植栽一覧（全エリア）</h2>
       <div class="plant-table-wrap">
         <table class="plant-table">
           <thead>
             <tr>
-              <th scope="col">???</th>
-              <th scope="col">??</th>
+              <th scope="col">エリア</th>
+              <th scope="col">植栽（名前は記録・詳細）</th>
             </tr>
           </thead>
           <tbody id="plant-table-body">
             <tr>
-              <td colspan="2" class="plant-loading">??????</td>
+              <td colspan="2" class="plant-loading">読み込み中…</td>
             </tr>
           </tbody>
         </table>
@@ -74,14 +73,15 @@
     <dialog id="index-page-info-dialog" class="info-dialog" aria-labelledby="index-info-title">
       <div class="info-dialog-inner">
         <div class="info-dialog-head">
-          <h2 id="index-info-title" class="info-dialog-title">????????</h2>
+          <h2 id="index-info-title" class="info-dialog-title">この一覧について</h2>
           <form method="dialog">
-            <button type="submit" class="info-dialog-close">???</button>
+            <button type="submit" class="info-dialog-close">閉じる</button>
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>??????????????????????????????????????????</p>
-          <p>??????????????? <code>areas.html</code>???????????? <code>growth-edit.html</code> ?????????</p>
+          <p>表示している植栽のリストは、サイト用のデータファイルから読み込んでいます。</p>
+          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、各ページ内の <strong>コピー用データ</strong>（<code>plants-embed</code>）を同じ内容にしておくと、どこで開いてもずれません（<code>npm run embed:plants</code> で一括更新）。<code>plant.html</code>・<code>area.html</code> にも同じ植栽マスタの埋め込みがあります。エリアの文章・画像は <code>data/area-details.json</code> です。</p>
+          <p>パソコンで HTML をダブルクリックして開いているだけのときは、ブラウザの仕組み上、ファイルではなく埋め込みのコピーが使われることがあります。ウェブサーバー経由（アドレスが <code>http</code> や <code>https</code> で始まる）で開くと、ファイルから最新を読み込めます。</p>
         </div>
       </div>
     </dialog>
@@ -89,18 +89,18 @@
     <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title">
       <div class="info-dialog-inner">
         <div class="info-dialog-head">
-          <h2 id="hub-link-setup-title" class="info-dialog-title">????URL?????????</h2>
+          <h2 id="hub-link-setup-title" class="info-dialog-title">リンク集のURLを設定してください</h2>
           <form method="dialog">
-            <button type="submit" class="info-dialog-close">???</button>
+            <button type="submit" class="info-dialog-close">閉じる</button>
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>????????????URL?????????????????????????????????URL??????????</p>
+          <p>「リンク集へ戻る」は、入口のトップページへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
           <ul>
-            <li><code>data/hub-link.json</code> ? <code>linkCollectionUrl</code> ?????????URL?????</li>
-            <li>??? HTML ?????? <code>window.__PLANTING_HUB_URL__</code> ?URL??????</li>
+            <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
+            <li>または、HTML の先頭付近の <code>window.__PLANTING_HUB_URL__</code> に同じURLを書く</li>
           </ul>
-          <p>???????????????????????URL??????????</p>
+          <p>自分のパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開くようになっています。</p>
         </div>
       </div>
     </dialog>
