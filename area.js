@@ -395,6 +395,16 @@
           });
           fig.appendChild(moveBtn);
         }
+        if (opts.allowDeletePhoto && typeof opts.onDeletePhoto === "function") {
+          var delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "area-photo-import-btn area-photo-delete-btn";
+          delBtn.textContent = "削除";
+          delBtn.addEventListener("click", function () {
+            opts.onDeletePhoto(it, delBtn);
+          });
+          fig.appendChild(delBtn);
+        }
         grid.appendChild(fig);
       })(items[k]);
     }
@@ -812,6 +822,31 @@
         });
     }
 
+    function deleteAreaPhoto(item, buttonEl) {
+      if (!item || !item.slot) {
+        setPhotoStatus("削除対象の写真情報が見つかりません。", true);
+        return;
+      }
+      if (!window.confirm("このエリア写真を削除しますか？")) {
+        return;
+      }
+      if (buttonEl) buttonEl.disabled = true;
+      setPhotoStatus("削除中...", false);
+      removeMovedPhotoFromAreaRecord(item)
+        .then(function () {
+          setPhotoStatus("エリア写真を削除しました。表示反映のため再読み込みします。", false);
+          setTimeout(function () {
+            window.location.reload();
+          }, 250);
+        })
+        .catch(function (err) {
+          setPhotoStatus(err && err.message ? err.message : "削除に失敗しました。", true);
+        })
+        .finally(function () {
+          if (buttonEl) buttonEl.disabled = false;
+        });
+    }
+
     var areaPhotoGroup = document.createElement("div");
     areaPhotoGroup.className = "area-photo-group area-photo-group-area";
     areaPhotoGroup.appendChild(
@@ -825,6 +860,8 @@
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
         allowMoveToPlant: true,
         onMovePhoto: moveAreaPhotoToPlant,
+        allowDeletePhoto: true,
+        onDeletePhoto: deleteAreaPhoto,
       })
     );
 

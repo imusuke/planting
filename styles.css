@@ -722,6 +722,10 @@ img.plant-detail-photo-img {
   color: #855500;
 }
 
+.area-photo-delete-btn {
+  color: #b00020;
+}
+
 .home-simple-header .lead {
   max-width: 100%;
 }
