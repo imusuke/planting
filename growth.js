@@ -2834,9 +2834,9 @@
       quick.innerHTML =
         '<h2 id="home-quick-heading">Quick Start</h2>' +
         '<div class="home-quick-grid">' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Step 1</span><h2>記録を追加</h2><p>写真とメモを追加します。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">Step 2</span><h2>植物一覧を見る</h2><p>植物・エリアの情報を確認します。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">Step 3</span><h2>エリア一覧を見る</h2><p>エリア詳細ページを開きます。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">Step 1</span><h2>????????</h2><p>?????????????????????</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">Step 2</span><h2>???????</h2><p>?????????????????????</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Step 3</span><h2>???????</h2><p>???????????????</p><span class="open">Open</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);
