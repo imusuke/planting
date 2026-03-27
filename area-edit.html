@@ -14,9 +14,9 @@
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">成長記録</a></li>
+        <li><a href="./index.html">ホーム</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
-        <li aria-current="page">エリアの編集</li>
+        <li aria-current="page" id="area-edit-breadcrumb-current">エリアを編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
@@ -28,8 +28,9 @@
 
     <header class="page-header">
       <p class="eyebrow">Planting · Area</p>
-      <h1>エリアの写真・メモを編集</h1>
-      <p class="lead">
+      <h1 id="area-edit-page-title">エリアの写真・メモを編集</h1>
+      <p id="area-edit-context-line" class="lead plant-detail-area-line" hidden></p>
+      <p id="area-edit-page-lead" class="lead">
         エリア全体の<strong>概要・本文</strong>と<strong>登録写真</strong>を保存します（本番の Vercel + トークンが必要）。閲覧は <a href="./area.html">エリアの詳細</a> から。
       </p>
     </header>

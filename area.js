@@ -10,6 +10,7 @@
   var root = document.getElementById("area-detail-root");
   var titleEl = document.getElementById("area-detail-title");
   var crumbEl = document.getElementById("area-detail-breadcrumb-current");
+  var growthEditLinkEl = document.getElementById("area-detail-growth-edit-link");
   if (!root || !titleEl) return;
 
   function readEmbeddedPlants() {
@@ -540,6 +541,11 @@
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
+      editLink.textContent = "このエリアを編集";
+    }
+    if (growthEditLinkEl && area && area.id) {
+      growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
+      growthEditLinkEl.textContent = "このエリアで植栽記録を追加・編集";
     }
 
     if (entry && entry.summary) {

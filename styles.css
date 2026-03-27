@@ -1086,3 +1086,14 @@ a.plant-detail-cta:focus-visible {
     width: 16px;
   }
 }
+
+
+.home-context-actions,
+.plants-page-actions {
+  margin: 14px 0 0;
+  padding-top: 0;
+  border-top: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}

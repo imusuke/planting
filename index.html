@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 成長記録</title>
+  <title>植栽メモ — ホーム</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
@@ -14,7 +14,7 @@
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li aria-current="page">成長記録</li>
+        <li aria-current="page">ホーム</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
@@ -27,10 +27,10 @@
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
     <header class="page-header">
-      <p class="eyebrow">Growth log</p>
-      <h1>成長記録</h1>
-      <p class="lead lead--with-info">
-        このサイトのトップです。写真付きの記録を閲覧できます。<strong>植栽別・時系列</strong>では、1つの植栽について記録日の古い順に並べられます。追加・編集は<strong>記録を追加・編集</strong>から。
+      <p class="eyebrow">Home</p>
+      <h1 id="growth-home-title">ホーム</h1>
+      <p id="growth-home-lead" class="lead lead--with-info">
+        このサイト全体の入り口です。植栽一覧・サイトマップ・記録の閲覧と編集へ進めます。
         <button
           type="button"
           class="info-icon-btn"
@@ -43,6 +43,10 @@
             <path d="M12 16v-4M12 8h.01" />
           </svg>
         </button>
+      </p>
+          <p id="growth-context-actions" class="plant-detail-actions home-context-actions">
+        <a id="growth-context-primary" class="plant-detail-cta" href="./plants.html">植栽一覧を見る</a>
+        <a id="growth-context-secondary" class="plant-detail-cta" href="./growth-edit.html#plants">植栽一覧を編集</a>
       </p>
     </header>
 

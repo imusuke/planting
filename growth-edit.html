@@ -14,8 +14,8 @@
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">成長記録</a></li>
-        <li aria-current="page">記録の追加・編集</li>
+        <li><a href="./index.html">ホーム</a></li>
+        <li aria-current="page" id="growth-edit-breadcrumb-current">記録の追加・編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
@@ -27,8 +27,9 @@
 
     <header class="page-header">
       <p class="eyebrow">Growth log</p>
-      <h1>記録の追加・編集</h1>
-      <p class="lead lead--with-info">
+      <h1 id="growth-edit-page-title">記録の追加・編集</h1>
+      <p id="growth-edit-context-line" class="lead plant-detail-area-line" hidden></p>
+      <p id="growth-edit-page-lead" class="lead lead--with-info">
         下のタブで<strong>記録の追加・編集</strong>と<strong>エリア</strong>・<strong>植栽名</strong>のマスタ編集を切り替えられます。一覧の閲覧は<strong>閲覧ページ</strong>から。
         <button
           type="button"

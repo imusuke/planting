@@ -1276,11 +1276,84 @@
     if (el.deleteRecordBtn) el.deleteRecordBtn.hidden = !editing;
   }
 
+  function syncEditPageContext(record) {
+    if (IS_VIEW) return;
+
+    var crumbEl = $("growth-edit-breadcrumb-current");
+    var titleEl = $("growth-edit-page-title");
+    var contextEl = $("growth-edit-context-line");
+    if (!crumbEl && !titleEl && !contextEl) return;
+
+    var params = new URLSearchParams(window.location.search);
+    var areaId = record && record.areaId ? String(record.areaId).trim() : String(params.get("area") || "").trim();
+    var plantName = "";
+    if (record && Array.isArray(record.plants) && record.plants.length) {
+      plantName = String(record.plants[0] || "").trim();
+    }
+    if (!plantName) {
+      plantName = String(params.get("plant") || "").trim();
+      try {
+        plantName = decodeURIComponent(plantName).trim();
+      } catch (e2) {
+        plantName = plantName.trim();
+      }
+    }
+
+    var area = findAreaById(areaId);
+
+    if (record) {
+      if (crumbEl) crumbEl.textContent = "\u8a18\u9332\u3092\u7de8\u96c6";
+      if (titleEl) {
+        titleEl.textContent = plantName
+          ? plantName + "\u306e\u8a18\u9332\u3092\u7de8\u96c6"
+          : "\u8a18\u9332\u3092\u7de8\u96c6";
+      }
+      if (contextEl) {
+        contextEl.hidden = false;
+        contextEl.textContent = area
+          ? area.label + "\u306e\u8a18\u9332\u3092\u7de8\u96c6\u3057\u307e\u3059\u3002"
+          : "\u9078\u3093\u3060\u8a18\u9332\u3092\u7de8\u96c6\u3057\u307e\u3059\u3002";
+      }
+      return;
+    }
+
+    if (plantName) {
+      if (crumbEl) crumbEl.textContent = "\u690d\u683d\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
+      if (titleEl) titleEl.textContent = plantName + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+      if (contextEl) {
+        contextEl.hidden = false;
+        contextEl.textContent = area
+          ? area.label + "\u306e\u300c" + plantName + "\u300d\u3092\u5bfe\u8c61\u306b\u3001\u690d\u683d\u6642\u7cfb\u5217\u3078\u8a18\u9332\u3092\u8ffd\u52a0\u3057\u307e\u3059\u3002"
+          : "\u300c" + plantName + "\u300d\u306e\u690d\u683d\u6642\u7cfb\u5217\u3078\u8a18\u9332\u3092\u8ffd\u52a0\u3057\u307e\u3059\u3002";
+      }
+      return;
+    }
+
+    if (area) {
+      if (crumbEl) crumbEl.textContent = "\u30a8\u30ea\u30a2\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
+      if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+      if (contextEl) {
+        contextEl.hidden = false;
+        contextEl.textContent =
+          "\u3053\u306e\u30a8\u30ea\u30a2\u306b\u7d10\u3065\u304f\u690d\u683d\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6\u3057\u307e\u3059\u3002";
+      }
+      return;
+    }
+
+    if (crumbEl) crumbEl.textContent = "\u8a18\u9332\u306e\u8ffd\u52a0\u30fb\u7de8\u96c6";
+    if (titleEl) titleEl.textContent = "\u8a18\u9332\u306e\u8ffd\u52a0\u30fb\u7de8\u96c6";
+    if (contextEl) {
+      contextEl.hidden = true;
+      contextEl.textContent = "";
+    }
+  }
+
   function clearEditMode() {
     state.editRecord = null;
     state.photoQueue = [];
     state.photosTouched = false;
     syncEditFormUI();
+    syncEditPageContext();
     if (!el.form || !el.area) return;
     el.form.reset();
     if (el.date) el.date.value = todayInputValue();
@@ -1309,6 +1382,7 @@
     clearPhotoInputs();
     resetPhotoQueueFromRecord(r);
     syncEditFormUI();
+    syncEditPageContext(r);
     requestAnimationFrame(function () {
       var t = document.getElementById("edit-record-section");
       if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2344,9 +2418,115 @@
     if (lead) lead.hidden = !tl;
   }
 
+  function findAreaById(areaId) {
+    var wanted = areaId ? String(areaId).trim() : "";
+    if (!wanted || !Array.isArray(state.areas)) return null;
+    for (var i = 0; i < state.areas.length; i++) {
+      if (state.areas[i] && state.areas[i].id === wanted) return state.areas[i];
+    }
+    return null;
+  }
+
+  function syncViewHomeContext() {
+    if (!IS_VIEW) return;
+
+    var titleEl = $("growth-home-title");
+    var leadEl = $("growth-home-lead");
+    var actionsEl = $("growth-context-actions");
+    var primaryEl = $("growth-context-primary");
+    var secondaryEl = $("growth-context-secondary");
+    if (!titleEl && !leadEl && !actionsEl) return;
+
+    var areaId = el.filterArea ? String(el.filterArea.value || "").trim() : "";
+    var plantName = el.filterPlant ? String(el.filterPlant.value || "").trim() : "";
+    var area = findAreaById(areaId);
+
+    if (actionsEl) actionsEl.hidden = false;
+
+    if (state.viewLayout === "timeline" && plantName) {
+      if (titleEl) titleEl.textContent = plantName + "\u306e\u6642\u7cfb\u5217";
+      if (leadEl) {
+        setLeadTextKeepingButton(
+          leadEl,
+          area
+            ? area.label + "\u306e\u300c" + plantName + "\u300d\u306e\u8a18\u9332\u3092\u6642\u7cfb\u5217\u3067\u898b\u3066\u3044\u307e\u3059\u3002"
+            : "\u300c" + plantName + "\u300d\u306e\u8a18\u9332\u3092\u6642\u7cfb\u5217\u3067\u898b\u3066\u3044\u307e\u3059\u3002"
+        );
+      }
+      if (primaryEl) {
+        primaryEl.href =
+          "./growth-edit.html?area=" +
+          encodeURIComponent(areaId) +
+          "&plant=" +
+          encodeURIComponent(plantName);
+        primaryEl.textContent = "\u3053\u306e\u690d\u683d\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+      }
+      if (secondaryEl) {
+        secondaryEl.href =
+          "./plant.html?area=" +
+          encodeURIComponent(areaId) +
+          "&plant=" +
+          encodeURIComponent(plantName);
+        secondaryEl.textContent = "\u3053\u306e\u690d\u683d\u306e\u8a73\u7d30\u3092\u898b\u308b";
+      }
+      document.title = plantName + " \u2014 \u30db\u30fc\u30e0";
+      return;
+    }
+
+    if (area) {
+      if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332";
+      if (leadEl) {
+        setLeadTextKeepingButton(
+          leadEl,
+          "\u300c" +
+            area.label +
+            "\u300d\u306b\u95a2\u9023\u3059\u308b\u8a18\u9332\u3092\u4e00\u89a7\u3067\u78ba\u8a8d\u3067\u304d\u307e\u3059\u3002"
+        );
+      }
+      if (primaryEl) {
+        primaryEl.href = "./area.html?area=" + encodeURIComponent(area.id);
+        primaryEl.textContent = "\u3053\u306e\u30a8\u30ea\u30a2\u8a73\u7d30\u3092\u898b\u308b";
+      }
+      if (secondaryEl) {
+        secondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
+        secondaryEl.textContent = "\u3053\u306e\u30a8\u30ea\u30a2\u3092\u7de8\u96c6";
+      }
+      document.title = area.label + " \u2014 \u30db\u30fc\u30e0";
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = "\u30db\u30fc\u30e0";
+    if (leadEl) {
+      setLeadTextKeepingButton(
+        leadEl,
+        "\u3053\u306e\u30b5\u30a4\u30c8\u5168\u4f53\u306e\u5165\u308a\u53e3\u3067\u3059\u3002\u690d\u683d\u4e00\u89a7\u30fb\u30b5\u30a4\u30c8\u30de\u30c3\u30d7\u30fb\u8a18\u9332\u306e\u95b2\u89a7\u3068\u7de8\u96c6\u3078\u9032\u3081\u307e\u3059\u3002"
+      );
+    }
+    if (primaryEl) {
+      primaryEl.href = "./plants.html";
+      primaryEl.textContent = "\u690d\u683d\u4e00\u89a7\u3092\u898b\u308b";
+    }
+    if (secondaryEl) {
+      secondaryEl.href = "./growth-edit.html#plants";
+      secondaryEl.textContent = "\u690d\u683d\u4e00\u89a7\u3092\u7de8\u96c6";
+    }
+    document.title = "\u690d\u683d\u30e1\u30e2 \u2014 \u30db\u30fc\u30e0";
+  }
+
+  function setLeadTextKeepingButton(node, text) {
+    if (!node) return;
+    var btn = node.querySelector("button");
+    node.textContent = text;
+    if (btn) {
+      node.appendChild(document.createTextNode(" "));
+      node.appendChild(btn);
+    }
+  }
+
   function renderPlantTimeline(records) {
     if (!el.plantTimeline) return;
     el.plantTimeline.innerHTML = "";
+    syncViewHomeContext();
 
     var plant = el.filterPlant ? el.filterPlant.value : "";
     var fa = el.filterArea ? el.filterArea.value : "";
@@ -2401,6 +2581,7 @@
     updateFilterPlantOptions();
     applyPendingTimelinePlant();
     syncViewModeUi();
+    syncViewHomeContext();
     if (state.viewLayout === "timeline") {
       if (el.feed) el.feed.innerHTML = "";
       renderPlantTimeline(state.lastGrowthRecords);
@@ -2832,11 +3013,11 @@
       quick.className = "growth-section home-quick";
       quick.setAttribute("aria-labelledby", "home-quick-heading");
       quick.innerHTML =
-        '<h2 id="home-quick-heading">Quick Start</h2>' +
+        '<h2 id="home-quick-heading">ホームの入口</h2>' +
         '<div class="home-quick-grid">' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Step 1</span><h2>記録を追加</h2><p>写真とメモを追加します。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">Step 2</span><h2>植物一覧を見る</h2><p>植物・エリアの情報を確認します。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">Step 3</span><h2>エリア一覧を見る</h2><p>エリア詳細ページを開きます。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">Browse</span><h2>植栽一覧を見る</h2><p>植栽とエリアの関係から入ります。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./sitemap.html"><span class="card-label">Map</span><h2>サイトマップを見る</h2><p>ページ構成とツリーを確認できます。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Edit</span><h2>記録を追加・編集</h2><p>写真とメモを登録します。</p><span class="open">Open</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);
@@ -2964,6 +3145,7 @@
         state.areas = pack.areas || [];
         populateAreaSelects();
         applyViewQueryFilters();
+        syncViewHomeContext();
         if (el.viewModeGridRadio && el.viewModeTimelineRadio) {
           el.viewModeGridRadio.checked = state.viewLayout !== "timeline";
           el.viewModeTimelineRadio.checked = state.viewLayout === "timeline";
@@ -3223,6 +3405,7 @@
         populateAreaSelects();
         renderPlantsCatalogEditor();
         updatePlantsCatalogSourceLabel();
+        syncEditPageContext();
         var q = new URLSearchParams(window.location.search);
         var idParam = q.get("id");
         if (idParam) {
@@ -3249,6 +3432,7 @@
         applyPlantsToForm(state.editRecord.plants, el.area.value);
       }
       updateFilterPlantOptions();
+      syncEditPageContext(state.editRecord);
     });
 
     if (el.filterArea) {

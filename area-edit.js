@@ -401,6 +401,7 @@
     var id = el.area && el.area.value;
     if (!id) return;
     applyFormForArea(id);
+    syncAreaEditContext(id);
   }
 
   function onSubmit(e) {
@@ -516,6 +517,43 @@
     });
   }
 
+  function syncAreaEditContext(areaId) {
+    var crumbEl = $("area-edit-breadcrumb-current");
+    var titleEl = $("area-edit-page-title");
+    var contextEl = $("area-edit-context-line");
+    if (!crumbEl && !titleEl && !contextEl) return;
+
+    var wanted = areaId ? String(areaId).trim() : "";
+    var area = null;
+    if (wanted) {
+      for (var i = 0; i < state.areas.length; i++) {
+        if (state.areas[i] && state.areas[i].id === wanted) {
+          area = state.areas[i];
+          break;
+        }
+      }
+    }
+
+    if (area) {
+      if (crumbEl) crumbEl.textContent = "エリア詳細の編集";
+      if (titleEl) titleEl.textContent = area.label + " を編集";
+      if (contextEl) {
+        contextEl.hidden = false;
+        contextEl.textContent = "このエリアの説明・写真・メモを編集します。";
+      }
+      document.title = area.label + " を編集 — 植栽メモ";
+      return;
+    }
+
+    if (crumbEl) crumbEl.textContent = "エリアを編集";
+    if (titleEl) titleEl.textContent = "エリアの写真・メモを編集";
+    if (contextEl) {
+      contextEl.hidden = true;
+      contextEl.textContent = "";
+    }
+    document.title = "植栽メモ — エリアを編集";
+  }
+
   function init() {
     el.toast = $("area-edit-toast");
     el.cloudStatus = $("area-edit-cloud-status");
@@ -596,6 +634,7 @@
         if (el.area && el.area.value) {
           applyFormForArea(el.area.value);
         }
+        syncAreaEditContext(el.area && el.area.value ? el.area.value : want);
       })
       .catch(function () {
         showToast("データを読み込めませんでした", true);
