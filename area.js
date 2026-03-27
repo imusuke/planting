@@ -873,6 +873,57 @@
         });
     }
 
+    function deletePlantPhoto(item, buttonEl) {
+      if (!item || !item.slot || !item.recordId) {
+        setPhotoStatus("削除対象の写真情報が見つかりません。", true);
+        return;
+      }
+      if (!window.confirm("この植栽写真を削除しますか？")) {
+        return;
+      }
+      if (buttonEl) buttonEl.disabled = true;
+      setPhotoStatus("削除中...", false);
+      fetch(
+        API_GROWTH +
+          "?id=" +
+          encodeURIComponent(String(item.recordId)) +
+          "&slot=" +
+          encodeURIComponent(String(item.slotIndex)),
+        {
+          method: "DELETE",
+          headers: cloudHeadersForAreaWrite(),
+        }
+      )
+        .then(function (res) {
+          if (res.status === 401) {
+            throw new Error("トークンが無効です。ページ上部で再設定してください。");
+          }
+          if (!res.ok) {
+            return res
+              .json()
+              .catch(function () {
+                return {};
+              })
+              .then(function (j) {
+                throw new Error(j.error || ("削除に失敗しました (HTTP " + res.status + ")"));
+              });
+          }
+          return res.json();
+        })
+        .then(function () {
+          setPhotoStatus("植栽写真を削除しました。表示反映のため再読み込みします。", false);
+          setTimeout(function () {
+            window.location.reload();
+          }, 250);
+        })
+        .catch(function (err) {
+          setPhotoStatus(err && err.message ? err.message : "削除に失敗しました。", true);
+        })
+        .finally(function () {
+          if (buttonEl) buttonEl.disabled = false;
+        });
+    }
+
     var areaPhotoGroup = document.createElement("div");
     areaPhotoGroup.className = "area-photo-group area-photo-group-area";
     areaPhotoGroup.appendChild(
@@ -902,6 +953,8 @@
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
         allowImportFromPlant: true,
         onImportPhoto: importPlantPhotoToArea,
+        allowDeletePhoto: true,
+        onDeletePhoto: deletePlantPhoto,
       })
     );
 
