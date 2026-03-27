@@ -1,0 +1,128 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>植栽メモ | エリア一覧</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="panel">
+    <nav class="top growth-nav-top" aria-label="ページ移動">
+      <ol class="growth-breadcrumb">
+        <li><a href="./index.html">ホーム</a></li>
+        <li aria-current="page">エリア一覧</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./plants.html">植物一覧</a>
+        <a href="./area-edit.html">エリア管理</a>
+        <a href="./growth-edit.html">記録を追加</a>
+      </div>
+    </nav>
+
+    <header class="page-header">
+      <p class="eyebrow">Areas</p>
+      <h1>エリア一覧</h1>
+      <p class="lead">エリアを選ぶと、写真と説明の詳細ページを開けます。</p>
+    </header>
+
+    <section class="plant-overview" aria-labelledby="areas-overview-heading">
+      <h2 id="areas-overview-heading">エリア</h2>
+      <div id="area-list" class="area-list-grid" aria-live="polite"></div>
+    </section>
+  </main>
+  <script type="application/json" id="plants-embed">
+{
+  "areas": [
+    {
+      "id": "entrance",
+      "label": "邇・未蜑・,
+      "plants": [
+        "繝弱Μ繧ｦ繝・ぐ",
+        "繧ｫ繧ｷ繝ｯ繝舌い繧ｸ繧ｵ繧､・域沛闡臥ｴｫ髯ｽ闃ｱ・・,
+        "繝ｦ繝ｼ繧ｫ繝ｪ",
+        "繝繧ｹ繧ｫ繝ｪ・医ヶ繝峨え繝偵Ζ繧ｷ繝ｳ繧ｹ・・,
+        "繝ｬ繧ｦ繧ｳ繝医お繝ｻ繧｢繧ｯ繧ｷ繝ｩ繝ｪ繧ｹ・医そ繧､繝ｨ繧ｦ繧､繝ｯ繝翫Φ繝・Φ・・,
+        "繧ｹ繧､繝ｼ繝医い繝ｪ繝・し繝・亥ｺｭ阮ｺ/繝九Ρ繝翫ぜ繝奇ｼ・,
+        "繧ｳ繝・・繝ｪ・亥ｰ乗焔豈ｬ・会ｼ・,
+        "繝ｩ繝吶Φ繝繝ｼ・医う繝ｳ繧ｰ繝ｪ繝・す繝･邉ｻ・滂ｼ・,
+        "繝阪Δ繝輔ぅ繝ｩ",
+        "繧ｹ繧､繝ｼ繝医い繝ｪ繝・し繝",
+        "繧ｷ繝ｫ繝舌・繧ｿ繧､繝",
+        "繝偵Η繝ｼ繧ｱ繝ｩ・医ヤ繝懊し繝ｳ繧ｴ・・,
+        "繝上ヤ繝ｦ繧ｭ繧ｫ繧ｺ繝ｩ・亥・髮ｪ繧ｫ繧ｺ繝ｩ・・
+      ]
+    },
+    {
+      "id": "parking",
+      "label": "鬧占ｻ雁ｴ閼・,
+      "plants": [
+        "繧ｷ繝ｫ繝舌・繝励Μ繝壹ャ繝・,
+        "繧ｷ繝",
+        "繧｢繧ｸ繝･繧ｬ",
+        "繧ｯ繝ｪ繧ｹ繝槭せ繝ｭ繝ｼ繧ｺ・医・繝ｬ繝懊Ν繧ｹ・・
+      ]
+    },
+    {
+      "id": "deck",
+      "label": "繧ｦ繝・ラ繝・ャ繧ｭ",
+      "plants": [
+        "關ｽ闡峨Ζ繝槭・繧ｦ繧ｷ・域律譛ｬ蝗ｺ譛臥ｨｮ・・,
+        "繝溘Δ繧ｶ繝ｻ繧｢繧ｫ繧ｷ繧｢",
+        "繧ｳ繝ｫ繧ｸ繝ｪ繝搾ｼ医さ繝ｫ繧ｸ繝ｪ繝阪・繧ｪ繝ｼ繧ｹ繝医Λ繝ｪ繧ｹ・・,
+        "繧ｦ繧ｨ繧ｹ繝医Μ繝ｳ繧ｮ繧｢・医が繝ｼ繧ｹ繝医Λ繝ｪ繧｢繝ｳ繝ｭ繝ｼ繧ｺ繝槭Μ繝ｼ・・,
+        "繧ｭ繝｣繝・ヨ繝溘Φ繝・繧ｷ繝・け繧ｹ繝偵Ν繧ｺ 繧ｸ繝｣繧､繧｢繝ｳ繝・,
+        "繝阪・繧ｿ 繝√Η繝ｼ繝吶Ο繝ｼ繧ｵ",
+        "繝ｦ繝ｼ繝輔か繝ｫ繝薙い繝ｻ繧｢繧ｹ繧ｳ繝・ヨ繝ｬ繧､繝ｳ繝懊・",
+        "繧ｨ繝ｬ繝｢繝輔ぅ繝ｩ繝ｻ繝九・繧｢",
+        "繧ｰ繝ｬ繝ｴ繧｣繝ｬ繧｢繝ｻ繝励・繝ｪ繝ｳ繝繝ｻ繝ｭ繧､繝､繝ｫ繝槭Φ繝医Ν",
+        "繝ｪ繝･繝ｼ繧ｫ繝・Φ繝峨Ο繝ｳ",
+        "繧ｰ繝ｬ繝ｴ繧｣繝ｬ繧｢繝ｻ繝舌う繝ｬ繝､繝・,
+        "繧ｪ繝ｪ繝ｼ繝悶・譛ｨ",
+        "繝偵Η繝ｼ繧ｱ繝ｩ・医ヤ繝懊し繝ｳ繧ｴ・・
+      ]
+    },
+    {
+      "id": "corner",
+      "label": "隗貞ｺｭ",
+      "plants": [
+        "繧｢繝翫・繝ｫ",
+        "繝ｭ繝ｼ繧ｺ繝槭Μ繝ｼ",
+        "繝､繝槭い繧ｸ繧ｵ繧､",
+        "繧ｵ繝ｫ繝薙い 繧ｹ繝壹Ν繝舌繝懊Ν繝峨・縲繝・ぅ繝ｼ繝励ヶ繝ｫ繝ｼ",
+        "繧ｪ繝ｪ繝・Ν繝ｩ繝ｳ・域釜鮓ｴ陂ｭ・・,
+        "繝弱・繧ｹ繝昴・繝ｫ・医け繝ｪ繧ｵ繝ｳ繧ｻ繝槭Β繝ｻ繝代Ν繝峨Λ繝・・
+      ]
+    },
+    {
+      "id": "indoor",
+      "label": "螳､蜀・,
+      "plants": [
+        "繝峨Λ繧ｻ繝翫・繧ｳ繝ｳ繧ｷ繝ｳ繝・,
+        "繝輔ぅ繧ｫ繧ｹ繝ｻ繧ｦ繝ｳ繝吶Λ繝ｼ繧ｿ",
+        "繧ｴ繝縺ｮ譛ｨ",
+        "繝壹・繝ｭ繝溘い繝ｻ繧ｫ繝壹Λ繝ｼ繧ｿ",
+        "繝帙Ζ繝ｻ繧ｫ繝ｫ繝弱・繧ｵ縲繧ｯ繝ｪ繝繧ｾ繝ｳ繝ｻ繧ｯ繧､繝ｼ繝ｳ",
+        "繧ｵ繝ｳ繧ｹ繝吶Μ繧｢・医し繝ｳ繧ｻ繝吶Μ繧｢・峨繝ｭ繝ｼ繝ｬ繝ｳ繝・ぅ・・aurentii・・
+      ]
+    },
+    {
+      "id": "yatsu-hatake",
+      "label": "隹ｷ豢･逡・,
+      "plants": [
+        "繧｢繧ｸ繧ｵ繧､",
+        "繧ｽ繝ｩ繝槭Γ",
+        "繧ｹ繝翫ャ繝励お繝ｳ繝峨え",
+        "逡大・菴・
+      ]
+    }
+  ]
+}
+  </script>
+  <script src="./areas.js" defer></script>
+</body>
+</html>
+

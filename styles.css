@@ -758,6 +758,12 @@ img.plant-detail-photo-img {
   margin-bottom: 10px;
 }
 
+.area-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
 .plant-detail-body {
   margin: 0;
 }
