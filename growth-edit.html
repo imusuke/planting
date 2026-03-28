@@ -64,7 +64,7 @@
       </div>
       <p id="cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div class="growth-token-row">
-        <label class="block" style="flex: 1; min-width: 200px">
+        <label class="block growth-token-field">
           <span class="growth-label-with-info">
             アップロード用トークン（任意）
             <button
@@ -82,7 +82,7 @@
           </span>
           <input id="cloud-token" type="password" autocomplete="off" placeholder="サイト管理者が設定した文字列" />
         </label>
-        <button type="button" id="cloud-token-save" class="growth-secondary" style="align-self: end">
+        <button type="button" id="cloud-token-save" class="growth-secondary">
           トークンを保存
         </button>
       </div>
@@ -215,7 +215,7 @@
       <p class="growth-hint">
         記録を JSON でダウンロードできます（閲覧ページと同じ内容です）。
       </p>
-      <div class="growth-backup-row" style="margin-top: 12px">
+      <div class="growth-backup-row growth-backup-row--spaced">
         <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
       </div>
     </section>
@@ -319,7 +319,7 @@
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>入力した写真やメモはサーバーに保存されます。閲覧だけならトークン不要の<strong>トップページ</strong>（<code>index.html</code>）を使えます。</p>
+          <p>入力した写真やメモはサーバーに保存されます。閲覧だけならトークン不要の<strong>ホーム</strong>（<code>index.html</code>）を使えます。</p>
           <p><strong>記録の閲覧と写真の表示</strong>はどの端末からでも行えます。<strong>このページでの保存・編集・削除・マスタの保存</strong>だけ、トークンが設定されている場合は上の欄への入力が必要です。作業はタブ（記録／エリア／植栽名）で切り替えられます。</p>
           <p>ブラウザのアドレスが <code>http</code> や <code>https</code> で始まる形で開いている必要があります。</p>
         </div>
@@ -366,7 +366,7 @@
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>「リンク集へ戻る」は、入口のトップページへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
+          <p>「リンク集へ戻る」は、入口のホームへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
           <ul>
             <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
             <li>または、HTML の先頭付近の <code>window.__PLANTING_HUB_URL__</code> に同じURLを書く</li>

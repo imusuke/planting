@@ -4,34 +4,36 @@ main.growth-panel .growth-nav-top {
   max-width: 100%;
 }
 
-a.growth-card-edit-link {
-  font-size: 0.82rem;
+a.growth-card-view-link,
+a.growth-card-timeline-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(45, 106, 79, 0.35);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--green);
+  line-height: 1.2;
+  padding: 7px 11px;
+  border-radius: 999px;
   text-decoration: none;
-  text-align: center;
 }
 
-a.growth-card-edit-link:hover,
-a.growth-card-edit-link:focus-visible {
-  border-color: rgba(45, 106, 79, 0.55);
+a.growth-card-view-link {
+  border: 1px solid rgba(45, 106, 79, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--green);
+}
+
+a.growth-card-view-link:hover,
+a.growth-card-view-link:focus-visible {
+  border-color: rgba(45, 106, 79, 0.46);
+  background: rgba(255, 255, 255, 1);
   outline: none;
 }
 
 a.growth-card-timeline-link {
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 10px;
   border: 1px solid rgba(45, 106, 79, 0.28);
   background: rgba(45, 106, 79, 0.08);
   color: var(--green);
-  text-decoration: none;
-  text-align: center;
 }
 
 a.growth-card-timeline-link:hover,
@@ -50,12 +52,19 @@ main.growth-panel {
   margin-top: 8px;
 }
 
+
+
 .growth-token-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
   margin-top: 12px;
+}
+
+.growth-token-field {
+  flex: 1;
+  min-width: 200px;
 }
 
 .growth-section {
@@ -925,11 +934,17 @@ button.growth-danger {
   border: 1px solid rgba(45, 106, 79, 0.2);
 }
 
+
+
 .growth-backup-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+}
+
+.growth-backup-row--spaced {
+  margin-top: 12px;
 }
 
 .growth-backup-row input[type="file"] {

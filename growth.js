@@ -2338,37 +2338,58 @@
 
     var actions = document.createElement("div");
     actions.className = "growth-card-actions";
-    if (IS_VIEW && !inTimeline) {
-      var tlNames = [];
-      var tlSeen = {};
-      (r.plants || []).forEach(function (p) {
-        var tn = typeof p === "string" ? p.trim() : String(p || "").trim();
-        if (!tn || tlSeen[tn]) return;
-        tlSeen[tn] = true;
-        tlNames.push(tn);
-      });
-      for (var tli = 0; tli < tlNames.length; tli++) {
-        var tln = tlNames[tli];
-        var tlLink = document.createElement("a");
-        tlLink.className = "growth-card-timeline-link";
-        tlLink.href = growthTimelineBrowseHref(tln, r.areaId);
-        tlLink.setAttribute("data-growth-timeline-plant", tln);
-        if (r.areaId) tlLink.setAttribute("data-growth-timeline-area", String(r.areaId));
-        tlLink.setAttribute(
-          "aria-label",
-          tln + "の成長記録を植栽別・時系列で見る"
-        );
-        tlLink.textContent =
-          tlNames.length === 1 ? "時系列で見る" : "時系列（" + tln + "）";
-        actions.appendChild(tlLink);
+    var plantNames = [];
+    var plantSeen = {};
+    (r.plants || []).forEach(function (p) {
+      var plantName = typeof p === "string" ? p.trim() : String(p || "").trim();
+      if (!plantName || plantSeen[plantName]) return;
+      plantSeen[plantName] = true;
+      plantNames.push(plantName);
+    });
+    if (IS_VIEW) {
+      if (!inTimeline) {
+        for (var tli = 0; tli < plantNames.length; tli++) {
+          var tln = plantNames[tli];
+          var tlLink = document.createElement("a");
+          tlLink.className = "growth-card-timeline-link";
+          tlLink.href = growthTimelineBrowseHref(tln, r.areaId);
+          tlLink.setAttribute("data-growth-timeline-plant", tln);
+          if (r.areaId) tlLink.setAttribute("data-growth-timeline-area", String(r.areaId));
+          tlLink.setAttribute("aria-label", tln + "の成長記録を植栽別・時系列で見る");
+          tlLink.textContent =
+            plantNames.length === 1 ? "時系列で見る" : "時系列（" + tln + "）";
+          actions.appendChild(tlLink);
+        }
+        if (r.areaId) {
+          var areaLink = document.createElement("a");
+          areaLink.className = "growth-card-view-link";
+          areaLink.href = "./area.html?area=" + encodeURIComponent(r.areaId);
+          areaLink.setAttribute(
+            "aria-label",
+            (r.areaLabel || "このエリア") + "のページを見る"
+          );
+          areaLink.textContent = "エリアを見る";
+          actions.appendChild(areaLink);
+        }
+        for (var dli = 0; dli < plantNames.length; dli++) {
+          var detailName = plantNames[dli];
+          var detailLink = document.createElement("a");
+          detailLink.className = "growth-card-view-link";
+          detailLink.href = plantDetailHref(r.areaId, detailName);
+          detailLink.setAttribute("aria-label", detailName + "の詳細を見る");
+          detailLink.textContent =
+            plantNames.length === 1 ? "詳細を見る" : "詳細（" + detailName + "）";
+          actions.appendChild(detailLink);
+        }
       }
+    } else {
+      var editLink = document.createElement("a");
+      editLink.className = "growth-edit growth-card-view-link";
+      editLink.href = "./growth-edit.html?id=" + encodeURIComponent(r.id);
+      editLink.textContent = "編集する";
+      actions.appendChild(editLink);
     }
-    var editLink = document.createElement("a");
-    editLink.className = "growth-edit growth-card-edit-link";
-    editLink.href = "./growth-edit.html?id=" + encodeURIComponent(r.id);
-    editLink.textContent = "編集する";
-    actions.appendChild(editLink);
-    card.appendChild(actions);
+    if (actions.childNodes.length) card.appendChild(actions);
 
     return card;
   }

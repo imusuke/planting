@@ -52,13 +52,6 @@ main.panel {
   text-decoration: underline;
 }
 
-.top-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 22px;
-  align-items: center;
-}
-
 /* パンくず（植栽メモ各ページ） */
 .growth-nav-top {
   display: flex;
@@ -520,11 +513,6 @@ a.plant-record-link--with-thumb {
   object-fit: cover;
 }
 
-.plant-table-detail-wrap {
-  font-size: 0.86em;
-  font-weight: 500;
-}
-
 a.plant-detail-link {
   color: var(--muted);
   text-decoration: none;
@@ -536,23 +524,6 @@ a.plant-detail-link:focus-visible {
   color: var(--green);
   border-bottom-color: rgba(45, 106, 79, 0.55);
   outline: none;
-}
-
-.plant-delete-btn {
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #b00020;
-  border-radius: 8px;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.plant-delete-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 .plant-detail-header {
@@ -805,15 +776,30 @@ img.plant-detail-photo-img {
 }
 
 .home-quick .card {
-  min-height: 140px;
+  min-height: 112px;
+  padding: 16px;
+  gap: 8px;
+  border-radius: 16px;
+}
+
+.home-quick .card h2 {
+  font-size: 1.1rem;
+}
+
+.home-quick .card p {
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.home-quick .card .open {
+  font-size: 0.78rem;
 }
 
 .home-quick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
 }
-
 .home-advanced-controls {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -915,40 +901,8 @@ a.plant-detail-cta:focus-visible {
 
 
 /* sitemap */
-.sitemap-summary,
 .sitemap-section {
   padding: 0 24px 24px;
-}
-
-.sitemap-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 16px;
-}
-
-.card.sitemap-card {
-  min-height: 188px;
-}
-
-.sitemap-card h3 {
-  margin: 0;
-  font-size: 1.35rem;
-}
-
-.card.sitemap-card--home::after {
-  background: radial-gradient(circle, rgba(83, 153, 126, 0.5), transparent 68%);
-}
-
-.card.sitemap-card--plants::after {
-  background: radial-gradient(circle, rgba(112, 193, 179, 0.42), transparent 68%);
-}
-
-.card.sitemap-card--entry::after {
-  background: radial-gradient(circle, rgba(248, 150, 30, 0.24), transparent 68%);
-}
-
-.card.sitemap-card--area::after {
-  background: radial-gradient(circle, rgba(87, 117, 144, 0.28), transparent 68%);
 }
 
 .sitemap-section-head {
@@ -1094,7 +1048,6 @@ a.plant-detail-cta:focus-visible {
 }
 
 @media (max-width: 640px) {
-  .sitemap-summary,
   .sitemap-section {
     padding: 0 18px 18px;
   }
