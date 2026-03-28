@@ -3098,8 +3098,8 @@
   }
 
   function applyThumbFeedClass() {
-    var v = localStorage.getItem(LS_THUMB_SIZE) || "md";
-    if (v !== "sm" && v !== "lg") v = "md";
+    var v = localStorage.getItem(LS_THUMB_SIZE) || "sm";
+    if (v !== "md" && v !== "lg") v = "sm";
     if (el.feed) {
       el.feed.classList.remove(
         "growth-feed--thumb-sm",
@@ -3230,7 +3230,7 @@
     }
 
     if (el.thumbSize) {
-      var saved = localStorage.getItem(LS_THUMB_SIZE) || "md";
+      var saved = localStorage.getItem(LS_THUMB_SIZE) || "sm";
       if (saved === "sm" || saved === "md" || saved === "lg") {
         el.thumbSize.value = saved;
       }
