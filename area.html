@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリアの詳細</title>
+  <title>植栽メモ — エリア時系列</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
@@ -14,19 +14,20 @@
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">ホーム</a></li>
-        <li><a href="./plants.html">植栽一覧</a></li>
-        <li aria-current="page" id="area-detail-breadcrumb-current">エリアの詳細</li>
+        <li><a href="./areas.html">エリア一覧</a></li>
+        <li aria-current="page" id="area-detail-breadcrumb-current">エリア時系列</li>
       </ol>
       <div class="growth-nav-extra">
+        <a href="./plants.html">植栽一覧</a>
         <a href="./sitemap.html">サイトマップ</a>
         <a href="./area-edit.html" id="area-detail-edit-link">このエリアを編集</a>
-        <a href="./growth-edit.html" id="area-detail-growth-edit-link">このエリアで植栽記録を追加・編集</a>
+        <a href="./growth-edit.html" id="area-detail-growth-edit-link">このエリアの記録を追加・編集</a>
       </div>
     </nav>
 
     <header class="page-header plant-detail-header">
       <p class="eyebrow">Planting · Area</p>
-      <h1 id="area-detail-title">エリアの詳細</h1>
+      <h1 id="area-detail-title">エリア時系列</h1>
     </header>
 
     <article class="plant-detail-article" id="area-detail-root" aria-live="polite">

@@ -867,6 +867,10 @@ p.plant-detail-body-p {
   margin: 2rem 0 0;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
 }
 
 a.plant-detail-cta {

@@ -62,7 +62,7 @@
 
       var count = Array.isArray(area.plants) ? area.plants.length : 0;
       var desc = document.createElement("p");
-      desc.textContent = "植栽数: " + count + " / 詳細ページを開く";
+      desc.textContent = "植栽数: " + count + " / エリア時系列を開く";
       card.appendChild(desc);
 
       var open = document.createElement("span");

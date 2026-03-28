@@ -13,13 +13,11 @@
 <body>
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
-      <ol class="growth-breadcrumb">
+      <ol class="growth-breadcrumb" id="growth-breadcrumb">
         <li aria-current="page">ホーム</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./plants.html">植栽一覧</a>
-        <a href="./area-edit.html">エリアを編集</a>
         <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
       </div>
     </nav>
@@ -43,10 +41,6 @@
             <path d="M12 16v-4M12 8h.01" />
           </svg>
         </button>
-      </p>
-          <p id="growth-context-actions" class="plant-detail-actions home-context-actions">
-        <a id="growth-context-primary" class="plant-detail-cta" href="./plants.html">植栽一覧を見る</a>
-        <a id="growth-context-secondary" class="plant-detail-cta" href="./growth-edit.html#plants">植栽一覧を編集</a>
       </p>
     </header>
 
@@ -114,15 +108,15 @@
     <dialog id="growth-view-info-dialog" class="info-dialog" aria-labelledby="growth-view-info-title">
       <div class="info-dialog-inner">
         <div class="info-dialog-head">
-          <h2 id="growth-view-info-title" class="info-dialog-title">トップ（閲覧）ページについて</h2>
+          <h2 id="growth-view-info-title" class="info-dialog-title">ホームについて</h2>
           <form method="dialog">
             <button type="submit" class="info-dialog-close">閉じる</button>
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>このページがサイトのトップ（<code>index.html</code>）です。記録の閲覧と JSON のエクスポート、サムネイル表示サイズの切り替えができます。トークンは不要です（選択はこのブラウザに記憶されます）。</p>
-          <p><strong>植栽別・時系列</strong>では、マスタや過去の記録にだけ出ている名前も含めて植栽を選び、その植栽が載っている記録を日付の古い順に並べます。表示形式の選択はこのブラウザに記憶されます。</p>
-          <p>エリア別の植栽名の表は<strong>植栽一覧</strong>ページから開けます。新しい記録の追加や編集・削除、植栽名マスタの変更は「記録を追加・編集」から行います。</p>
+          <p>このページがサイトのトップ（<code>index.html</code>）です。ここから <strong>エリア一覧</strong> と <strong>植栽一覧</strong> に進み、各ページの時系列や詳細をたどれます。</p>
+          <p><strong>植栽時系列</strong>では、マスタや過去の記録にだけ出ている名前も含めて植栽を選び、その植栽が載っている記録を日付順に並べます。表示形式の選択はこのブラウザに記憶されます。</p>
+          <p>新しい記録の追加や編集・削除、植栽名マスタの変更は「記録を追加・編集」から行います。エリア写真の整理は各エリア時系列ページやエリア管理ページから行えます。</p>
           <p>ブラウザのアドレスが <code>http</code> や <code>https</code> で始まる形で開いている必要があります。</p>
         </div>
       </div>

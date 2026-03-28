@@ -169,7 +169,7 @@
       var areaPage = document.createElement("a");
       areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
       areaPage.className = "plant-area-link";
-      areaPage.setAttribute("title", area.label + " のエリア詳細を開く");
+      areaPage.setAttribute("title", area.label + " のエリア時系列を開く");
 
       var areaName = document.createElement("span");
       areaName.className = "plant-area-name";

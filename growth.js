@@ -1330,6 +1330,7 @@
     }
 
     if (area) {
+      if (actionsEl) actionsEl.hidden = false;
       if (crumbEl) crumbEl.textContent = "\u30a8\u30ea\u30a2\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
       if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
       if (contextEl) {
@@ -2409,6 +2410,27 @@
     state.pendingTimelinePlant = null;
   }
 
+  function syncViewBreadcrumb(items) {
+    if (!IS_VIEW) return;
+    var breadcrumbEl = $("growth-breadcrumb");
+    if (!breadcrumbEl) return;
+    breadcrumbEl.innerHTML = "";
+    (items || []).forEach(function (item, index) {
+      var li = document.createElement("li");
+      var isCurrent = !!item.current || index === items.length - 1;
+      if (item.href && !isCurrent) {
+        var a = document.createElement("a");
+        a.href = item.href;
+        a.textContent = item.label;
+        li.appendChild(a);
+      } else {
+        li.textContent = item.label;
+        if (isCurrent) li.setAttribute("aria-current", "page");
+      }
+      breadcrumbEl.appendChild(li);
+    });
+  }
+
   function syncViewModeUi() {
     if (!IS_VIEW) return;
     var tl = state.viewLayout === "timeline";
@@ -2427,90 +2449,164 @@
     return null;
   }
 
+  function ensureViewContextActions() {
+    var actionsEl = $("growth-context-actions");
+    if (!actionsEl) {
+      var leadEl = $("growth-home-lead");
+      if (!leadEl || !leadEl.parentNode) {
+        return {
+          actionsEl: null,
+          primaryEl: null,
+          secondaryEl: null,
+          tertiaryEl: null,
+        };
+      }
+      actionsEl = document.createElement("p");
+      actionsEl.id = "growth-context-actions";
+      actionsEl.className = "plant-detail-actions home-context-actions";
+      actionsEl.hidden = true;
+
+      var primaryEl = document.createElement("a");
+      primaryEl.id = "growth-context-primary";
+      primaryEl.className = "plant-detail-cta";
+      primaryEl.href = "./plants.html";
+      actionsEl.appendChild(primaryEl);
+
+      var secondaryEl = document.createElement("a");
+      secondaryEl.id = "growth-context-secondary";
+      secondaryEl.className = "plant-detail-cta";
+      secondaryEl.href = "./growth-edit.html#plants";
+      actionsEl.appendChild(secondaryEl);
+
+      var tertiaryEl = document.createElement("a");
+      tertiaryEl.id = "growth-context-tertiary";
+      tertiaryEl.className = "plant-detail-cta";
+      tertiaryEl.href = "./plant-edit.html";
+      tertiaryEl.hidden = true;
+      actionsEl.appendChild(tertiaryEl);
+
+      if (leadEl.nextSibling) leadEl.parentNode.insertBefore(actionsEl, leadEl.nextSibling);
+      else leadEl.parentNode.appendChild(actionsEl);
+    }
+
+    return {
+      actionsEl: actionsEl,
+      primaryEl: $("growth-context-primary"),
+      secondaryEl: $("growth-context-secondary"),
+      tertiaryEl: $("growth-context-tertiary"),
+    };
+  }
+
   function syncViewHomeContext() {
     if (!IS_VIEW) return;
 
     var titleEl = $("growth-home-title");
     var leadEl = $("growth-home-lead");
-    var actionsEl = $("growth-context-actions");
-    var primaryEl = $("growth-context-primary");
-    var secondaryEl = $("growth-context-secondary");
-    if (!titleEl && !leadEl && !actionsEl) return;
+    var currentActionsEl = $("growth-context-actions");
+    if (!titleEl && !leadEl && !currentActionsEl) return;
 
     var areaId = el.filterArea ? String(el.filterArea.value || "").trim() : "";
     var plantName = el.filterPlant ? String(el.filterPlant.value || "").trim() : "";
     var area = findAreaById(areaId);
 
-    if (actionsEl) actionsEl.hidden = false;
+    if (currentActionsEl) currentActionsEl.hidden = true;
+    var currentTertiaryEl = $("growth-context-tertiary");
+    if (currentTertiaryEl) currentTertiaryEl.hidden = true;
+    syncViewBreadcrumb([{ label: "ホーム", current: true }]);
 
     if (state.viewLayout === "timeline" && plantName) {
-      if (titleEl) titleEl.textContent = plantName + "\u306e\u6642\u7cfb\u5217";
+      var links = ensureViewContextActions();
+      var actionsEl = links.actionsEl;
+      var primaryEl = links.primaryEl;
+      var secondaryEl = links.secondaryEl;
+      var tertiaryEl = links.tertiaryEl;
+      var plantQuery = "./plant.html?plant=" + encodeURIComponent(plantName);
+      var plantEditQuery = "./plant-edit.html?plant=" + encodeURIComponent(plantName);
+      var growthEditQuery = "./growth-edit.html?plant=" + encodeURIComponent(plantName);
+      if (areaId) {
+        plantQuery += "&area=" + encodeURIComponent(areaId);
+        plantEditQuery += "&area=" + encodeURIComponent(areaId);
+        growthEditQuery += "&area=" + encodeURIComponent(areaId);
+      }
+      if (actionsEl) actionsEl.hidden = false;
+      syncViewBreadcrumb([
+        { label: "ホーム", href: "./index.html" },
+        { label: "植栽一覧", href: "./plants.html" },
+        { label: plantName + "の時系列", current: true },
+      ]);
+      if (titleEl) titleEl.textContent = plantName + "の時系列";
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
           area
-            ? area.label + "\u306e\u300c" + plantName + "\u300d\u306e\u8a18\u9332\u3092\u6642\u7cfb\u5217\u3067\u898b\u3066\u3044\u307e\u3059\u3002"
-            : "\u300c" + plantName + "\u300d\u306e\u8a18\u9332\u3092\u6642\u7cfb\u5217\u3067\u898b\u3066\u3044\u307e\u3059\u3002"
+            ? area.label + "の「" + plantName + "」の記録を時系列で見ています。"
+            : "「" + plantName + "」の記録を時系列で見ています。"
         );
       }
       if (primaryEl) {
-        primaryEl.href =
-          "./growth-edit.html?area=" +
-          encodeURIComponent(areaId) +
-          "&plant=" +
-          encodeURIComponent(plantName);
-        primaryEl.textContent = "\u3053\u306e\u690d\u683d\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+        primaryEl.href = growthEditQuery;
+        primaryEl.textContent = "この植栽の記録を追加・編集";
       }
       if (secondaryEl) {
-        secondaryEl.href =
-          "./plant.html?area=" +
-          encodeURIComponent(areaId) +
-          "&plant=" +
-          encodeURIComponent(plantName);
-        secondaryEl.textContent = "\u3053\u306e\u690d\u683d\u306e\u8a73\u7d30\u3092\u898b\u308b";
+        secondaryEl.href = plantQuery;
+        secondaryEl.textContent = "この植栽詳細を見る";
       }
-      document.title = plantName + " \u2014 \u30db\u30fc\u30e0";
+      if (tertiaryEl) {
+        tertiaryEl.hidden = false;
+        tertiaryEl.href = plantEditQuery;
+        tertiaryEl.textContent = "この植栽詳細を編集";
+      }
+      document.title = plantName + " — ホーム";
       return;
     }
 
     if (area) {
-      if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332";
+      var areaLinks = ensureViewContextActions();
+      var areaActionsEl = areaLinks.actionsEl;
+      var areaPrimaryEl = areaLinks.primaryEl;
+      var areaSecondaryEl = areaLinks.secondaryEl;
+      var areaTertiaryEl = areaLinks.tertiaryEl;
+      if (areaActionsEl) areaActionsEl.hidden = false;
+      syncViewBreadcrumb([
+        { label: "ホーム", href: "./index.html" },
+        { label: "エリア一覧", href: "./areas.html" },
+        { label: area.label + "の時系列", current: true },
+      ]);
+      if (titleEl) titleEl.textContent = area.label + "の時系列";
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
-          "\u300c" +
-            area.label +
-            "\u300d\u306b\u95a2\u9023\u3059\u308b\u8a18\u9332\u3092\u4e00\u89a7\u3067\u78ba\u8a8d\u3067\u304d\u307e\u3059\u3002"
+          "「" + area.label + "」の写真と記録を時系列で見ています。"
         );
       }
-      if (primaryEl) {
-        primaryEl.href = "./area.html?area=" + encodeURIComponent(area.id);
-        primaryEl.textContent = "\u3053\u306e\u30a8\u30ea\u30a2\u8a73\u7d30\u3092\u898b\u308b";
+      if (areaPrimaryEl) {
+        areaPrimaryEl.href = "./area.html?area=" + encodeURIComponent(area.id);
+        areaPrimaryEl.textContent = "このエリアの時系列を見る";
       }
-      if (secondaryEl) {
-        secondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-        secondaryEl.textContent = "\u3053\u306e\u30a8\u30ea\u30a2\u3092\u7de8\u96c6";
+      if (areaSecondaryEl) {
+        areaSecondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
+        areaSecondaryEl.textContent = "このエリアを編集";
       }
-      document.title = area.label + " \u2014 \u30db\u30fc\u30e0";
+      if (areaTertiaryEl) {
+        areaTertiaryEl.hidden = false;
+        areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
+        areaTertiaryEl.textContent = "このエリアの記録を追加・編集";
+      }
+      document.title = area.label + "の時系列 — ホーム";
       return;
     }
 
-    if (titleEl) titleEl.textContent = "\u30db\u30fc\u30e0";
+    if (currentActionsEl && currentActionsEl.parentNode) {
+      currentActionsEl.parentNode.removeChild(currentActionsEl);
+    }
+    if (titleEl) titleEl.textContent = "ホーム";
     if (leadEl) {
       setLeadTextKeepingButton(
         leadEl,
-        "\u3053\u306e\u30b5\u30a4\u30c8\u5168\u4f53\u306e\u5165\u308a\u53e3\u3067\u3059\u3002\u690d\u683d\u4e00\u89a7\u30fb\u30b5\u30a4\u30c8\u30de\u30c3\u30d7\u30fb\u8a18\u9332\u306e\u95b2\u89a7\u3068\u7de8\u96c6\u3078\u9032\u3081\u307e\u3059\u3002"
+        "このサイト全体の入り口です。植栽一覧・サイトマップ・記録の閲覧と編集へ進めます。"
       );
     }
-    if (primaryEl) {
-      primaryEl.href = "./plants.html";
-      primaryEl.textContent = "\u690d\u683d\u4e00\u89a7\u3092\u898b\u308b";
-    }
-    if (secondaryEl) {
-      secondaryEl.href = "./growth-edit.html#plants";
-      secondaryEl.textContent = "\u690d\u683d\u4e00\u89a7\u3092\u7de8\u96c6";
-    }
-    document.title = "\u690d\u683d\u30e1\u30e2 \u2014 \u30db\u30fc\u30e0";
+    document.title = "植栽メモ — ホーム";
   }
 
   function setLeadTextKeepingButton(node, text) {
@@ -3015,6 +3111,7 @@
       quick.innerHTML =
         '<h2 id="home-quick-heading">ホームの入口</h2>' +
         '<div class="home-quick-grid">' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">Areas</span><h2>エリア一覧を見る</h2><p>エリアごとの時系列へ進みます。</p><span class="open">Open</span></a>' +
         '<a class="card growthlog" href="./plants.html"><span class="card-label">Browse</span><h2>植栽一覧を見る</h2><p>植栽とエリアの関係から入ります。</p><span class="open">Open</span></a>' +
         '<a class="card growthlog" href="./sitemap.html"><span class="card-label">Map</span><h2>サイトマップを見る</h2><p>ページ構成とツリーを確認できます。</p><span class="open">Open</span></a>' +
         '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Edit</span><h2>記録を追加・編集</h2><p>写真とメモを登録します。</p><span class="open">Open</span></a>' +

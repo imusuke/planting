@@ -535,7 +535,7 @@
     }
 
     if (area) {
-      if (crumbEl) crumbEl.textContent = "エリア詳細の編集";
+      if (crumbEl) crumbEl.textContent = "エリア時系列の編集";
       if (titleEl) titleEl.textContent = area.label + " を編集";
       if (contextEl) {
         contextEl.hidden = false;

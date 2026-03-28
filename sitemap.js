@@ -113,7 +113,7 @@
       var areaLinks = document.createElement("div");
       areaLinks.className = "sitemap-links";
       areaLinks.appendChild(
-        makeChip("エリア詳細", "./area.html?area=" + encodeURIComponent(area.id))
+        makeChip("エリア時系列", "./area.html?area=" + encodeURIComponent(area.id))
       );
       areaLinks.appendChild(makeChip("植栽一覧", "./plants.html"));
       areaNode.appendChild(areaLinks);
@@ -134,7 +134,7 @@
           plantLinks.className = "sitemap-links";
           plantLinks.appendChild(
             makeChip(
-              "成長記録（時系列）",
+              "植栽時系列",
               "./index.html?view=timeline&area=" +
                 encodeURIComponent(area.id) +
                 "&plant=" +

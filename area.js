@@ -462,13 +462,13 @@
   }
 
   function renderError(message) {
-    document.title = "エリアの詳細 — 植栽メモ";
+    document.title = "エリア時系列 — 植栽メモ";
     clearRoot();
     var p = document.createElement("p");
     p.className = "plant-detail-error";
     p.textContent = message;
     root.appendChild(p);
-    titleEl.textContent = "エリアの詳細";
+    titleEl.textContent = "エリア時系列";
     if (crumbEl) crumbEl.textContent = "エラー";
   }
 
@@ -505,7 +505,7 @@
         var li = document.createElement("li");
         var a = document.createElement("a");
         a.href =
-          "plant.html?area=" +
+          "index.html?view=timeline&area=" +
           encodeURIComponent(area.id) +
           "&plant=" +
           encodeURIComponent(pname);
@@ -517,11 +517,11 @@
         span.appendChild(document.createTextNode(" "));
         var g = document.createElement("a");
         g.href =
-          "growth-edit.html?area=" +
+          "plant.html?area=" +
           encodeURIComponent(area.id) +
           "&plant=" +
           encodeURIComponent(pname);
-        g.textContent = "記録";
+        g.textContent = "詳細";
         g.className = "plant-record-link";
         span.appendChild(g);
         li.appendChild(span);
@@ -535,9 +535,9 @@
   function renderPage(area, entry, areaGrowthRecords, plantGrowthRecords) {
     clearRoot();
     var label = area.label || area.id;
-    document.title = label + "（エリア） — 植栽メモ";
-    titleEl.textContent = label;
-    if (crumbEl) crumbEl.textContent = label;
+    document.title = label + "の時系列 — 植栽メモ";
+    titleEl.textContent = label + "の時系列";
+    if (crumbEl) crumbEl.textContent = label + "の時系列";
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
@@ -545,7 +545,7 @@
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-      growthEditLinkEl.textContent = "このエリアで植栽記録を追加・編集";
+      growthEditLinkEl.textContent = "このエリアの記録を追加・編集";
     }
 
     if (entry && entry.summary) {
@@ -1005,7 +1005,7 @@
 
   if (!areaId) {
     renderError(
-      "URL にエリアIDが必要です。例: area.html?area=entrance （植栽一覧のエリア名から開けます）"
+      "URL にエリアIDが必要です。例: area.html?area=entrance （エリア一覧から開けます）"
     );
     return;
   }

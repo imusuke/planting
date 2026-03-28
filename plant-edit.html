@@ -4,39 +4,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 植栽詳細</title>
+  <title>植栽メモ — 植栽詳細を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./growth.css" />
 </head>
 <body>
-  <main class="panel">
+  <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">ホーム</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
-        <li><a href="./index.html?view=timeline" id="plant-detail-timeline-link">植栽時系列</a></li>
-        <li aria-current="page" id="plant-detail-breadcrumb-current">植栽詳細</li>
+        <li><a href="./plant.html" id="plant-edit-detail-breadcrumb-link">植栽詳細</a></li>
+        <li aria-current="page" id="plant-edit-breadcrumb-current">植栽詳細を編集</li>
       </ol>
       <div class="growth-nav-extra">
-  <a href="./sitemap.html">サイトマップ</a>
-  <a href="./plant-edit.html" id="plant-detail-edit-link">この植栽詳細を編集</a>
-  <a href="./growth-edit.html" id="plant-detail-record-edit-link">この植栽の記録を追加・編集</a>
-</div>
+        <a href="./sitemap.html">サイトマップ</a>
+        <a href="./index.html?view=timeline" id="plant-edit-timeline-link">この植栽の時系列を見る</a>
+        <a href="./growth-edit.html" id="plant-edit-record-link">この植栽の記録を追加・編集</a>
+        <a href="./plant.html" id="plant-edit-detail-link">この植栽詳細を見る</a>
+      </div>
     </nav>
 
-    <header class="page-header plant-detail-header">
-      <p class="eyebrow">Planting</p>
-      <h1 id="plant-detail-title">植栽詳細</h1>
-      <p id="plant-detail-area-line" class="lead plant-detail-area-line" hidden></p>
+    <div id="plant-edit-toast" class="growth-toast" role="status" aria-live="polite"></div>
+
+    <header class="page-header">
+      <p class="eyebrow">Planting × Plant</p>
+      <h1 id="plant-edit-page-title">植栽詳細を編集</h1>
+      <p id="plant-edit-context-line" class="lead plant-detail-area-line" hidden></p>
+      <p class="lead">
+        植栽の要約と本文を編集します。閲覧は
+        <a href="./plant.html" id="plant-edit-lead-detail-link" class="plant-detail-link">植栽詳細</a>
+        から確認できます。
+      </p>
     </header>
 
-    <article class="plant-detail-article" id="plant-detail-root" aria-live="polite">
-      <p class="plant-detail-loading">読み込み中…</p>
-    </article>
+    <section class="growth-section" aria-labelledby="plant-edit-connection-h2">
+      <h2 id="plant-edit-connection-h2">保存先との接続</h2>
+      <p id="plant-edit-cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div class="growth-token-row">
+        <label class="block" style="flex: 1; min-width: 200px">
+          <span class="growth-label-with-info">アップロード用トークン（詳細編集と共通）</span>
+          <input id="plant-edit-cloud-token" type="password" autocomplete="off" placeholder="サイト管理者のみが設定します" />
+        </label>
+        <button type="button" id="plant-edit-cloud-token-save" class="growth-secondary" style="align-self: end">
+          保存
+        </button>
+      </div>
+    </section>
+
+    <form id="plant-edit-form" class="growth-section growth-section--composer growth-form">
+      <h2>植栽詳細を編集</h2>
+
+      <label class="block">
+        <span class="growth-label">エリア</span>
+        <select id="plant-edit-area" required></select>
+      </label>
+
+      <label class="block">
+        <span class="growth-label">植栽</span>
+        <select id="plant-edit-plant" required></select>
+      </label>
+
+      <label class="block">
+        <span class="growth-label">要約</span>
+        <textarea id="plant-edit-summary" rows="3" class="growth-textarea"></textarea>
+      </label>
+
+      <label class="block">
+        <span class="growth-label">本文</span>
+        <textarea id="plant-edit-body" rows="10" class="growth-textarea"></textarea>
+      </label>
+
+      <p class="growth-actions">
+        <button type="submit" id="plant-edit-save" class="growth-primary">保存する</button>
+        <a href="./plant.html" id="plant-edit-open-detail" class="plant-detail-link" style="margin-left: 0.75rem">植栽詳細を見る</a>
+        <a href="./index.html?view=timeline" id="plant-edit-open-timeline" class="plant-detail-link" style="margin-left: 0.75rem">植栽時系列を見る</a>
+      </p>
+    </form>
   </main>
   <script type="application/json" id="plants-embed">
-  {
+{
   "areas": [
     {
       "id": "entrance",
@@ -124,7 +173,7 @@
 }
   </script>
   <script type="application/json" id="plant-details-embed">
-  {
+{
   "version": 1,
   "entries": [
     {
@@ -410,6 +459,6 @@
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
-  <script src="./plant.js" defer></script>
+  <script src="./plant-edit.js" defer></script>
 </body>
 </html>
