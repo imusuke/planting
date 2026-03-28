@@ -15,12 +15,13 @@
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">ホーム</a></li>
-        <li><a href="./plants.html">植栽一覧</a></li>
+        <li><a href="./areas.html">エリア一覧</a></li>
+        <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア時系列</a></li>
         <li aria-current="page" id="area-edit-breadcrumb-current">エリアを編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html">記録の追加・編集</a>
+        <a href="./growth-edit.html" id="area-edit-record-link">記録の追加・編集</a>
       </div>
     </nav>
 
@@ -31,7 +32,7 @@
       <h1 id="area-edit-page-title">エリアの写真・メモを編集</h1>
       <p id="area-edit-context-line" class="lead plant-detail-area-line" hidden></p>
       <p id="area-edit-page-lead" class="lead">
-        エリア全体の<strong>概要・本文</strong>と<strong>登録写真</strong>を保存します（本番の Vercel + トークンが必要）。閲覧は <a href="./area.html">エリア時系列</a> から。
+        エリア全体の<strong>概要・本文</strong>と<strong>登録写真</strong>を保存します（本番の Vercel + トークンが必要）。閲覧は <a href="./area.html" id="area-edit-view-link">エリア時系列</a> から。
       </p>
     </header>
 
@@ -108,7 +109,7 @@
 
       <p class="growth-actions">
         <button type="submit" id="area-edit-save" class="growth-primary">保存する</button>
-        <a href="./growth-edit.html" class="plant-detail-link">成長記録の編集へ</a>
+        <a href="./growth-edit.html" id="area-edit-growth-link" class="plant-detail-link">記録の追加・編集へ</a>
       </p>
     </form>
   </main>

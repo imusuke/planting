@@ -1330,7 +1330,6 @@
     }
 
     if (area) {
-      if (actionsEl) actionsEl.hidden = false;
       if (crumbEl) crumbEl.textContent = "\u30a8\u30ea\u30a2\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
       if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
       if (contextEl) {
@@ -2123,7 +2122,7 @@
     return "";
   }
 
-  function plantDetailHref(areaId, plantName) {
+  function plantPageHref(areaId, plantName) {
     var name = normalizeLooseString(plantName);
     if (!name) return "./plant.html";
     if (areaId) {
@@ -2137,9 +2136,23 @@
     return "./plant.html?plant=" + encodeURIComponent(name);
   }
 
+  function plantDetailHref(areaId, plantName) {
+    var name = normalizeLooseString(plantName);
+    if (!name) return "./plant-detail.html";
+    if (areaId) {
+      return (
+        "./plant-detail.html?area=" +
+        encodeURIComponent(areaId) +
+        "&plant=" +
+        encodeURIComponent(name)
+      );
+    }
+    return "./plant-detail.html?plant=" + encodeURIComponent(name);
+  }
+
   /** 旧ホーム時系列 URL の代わりに、植栽ページを返す。 */
   function growthTimelineBrowseHref(plantName, areaId) {
-    return plantDetailHref(areaId, plantName);
+    return plantPageHref(areaId, plantName);
   }
 
   function areaTimelineHref(areaId) {
@@ -2156,7 +2169,7 @@
     } catch (e) {}
     plantName = normalizeLooseString(plantName);
     var nextHref = "";
-    if (plantName) nextHref = plantDetailHref(areaId, plantName);
+    if (plantName) nextHref = plantPageHref(areaId, plantName);
     else if (areaId) nextHref = areaTimelineHref(areaId);
     else nextHref = "./plants.html";
     try {
@@ -2269,9 +2282,9 @@
         var aid = resolveGrowthRecordAreaIdForPlant(r, name);
         var a = document.createElement("a");
         a.className = "growth-card-plant-link";
-        a.href = plantDetailHref(aid, name);
+        a.href = plantPageHref(aid, name);
         a.textContent = name;
-        a.setAttribute("title", name + "の詳細ページへ");
+        a.setAttribute("title", name + "のページへ");
         title.appendChild(a);
       });
       if (!title.childNodes.length) {
@@ -2362,7 +2375,7 @@
       var editLink = document.createElement("a");
       editLink.className = "growth-edit growth-card-view-link";
       editLink.href = "./growth-edit.html?id=" + encodeURIComponent(r.id);
-      editLink.textContent = "編集する";
+      editLink.textContent = "この記録を編集";
       actions.appendChild(editLink);
     }
     if (actions.childNodes.length) card.appendChild(actions);

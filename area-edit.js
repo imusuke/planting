@@ -403,6 +403,23 @@
     return areaId;
   }
 
+
+  function syncAreaEditLinks(areaId) {
+    var wanted = areaId ? String(areaId).trim() : "";
+    var viewHref = wanted ? "./area.html?area=" + encodeURIComponent(wanted) : "./area.html";
+    var recordHref = wanted ? "./growth-edit.html?area=" + encodeURIComponent(wanted) : "./growth-edit.html";
+
+    if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
+    if (el.viewLink) el.viewLink.href = viewHref;
+    if (el.recordLink) {
+      el.recordLink.href = recordHref;
+      el.recordLink.textContent = wanted ? "このエリアの記録を追加・編集" : "記録の追加・編集";
+    }
+    if (el.growthLink) {
+      el.growthLink.href = recordHref;
+      el.growthLink.textContent = wanted ? "このエリアの記録を追加・編集へ" : "記録の追加・編集へ";
+    }
+  }
   function onAreaChange() {
     var id = el.area && el.area.value;
     if (!id) return;
@@ -527,7 +544,6 @@
     var crumbEl = $("area-edit-breadcrumb-current");
     var titleEl = $("area-edit-page-title");
     var contextEl = $("area-edit-context-line");
-    if (!crumbEl && !titleEl && !contextEl) return;
 
     var wanted = areaId ? String(areaId).trim() : "";
     var area = null;
@@ -540,14 +556,18 @@
       }
     }
 
+
+    syncAreaEditLinks(area ? area.id : wanted);
+    if (!crumbEl && !titleEl && !contextEl) return;
+
     if (area) {
-      if (crumbEl) crumbEl.textContent = "エリア時系列の編集";
-      if (titleEl) titleEl.textContent = area.label + " を編集";
+      if (crumbEl) crumbEl.textContent = "エリアを編集";
+      if (titleEl) titleEl.textContent = area.label + "の写真・メモを編集";
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = "このエリアの説明・写真・メモを編集します。";
       }
-      document.title = area.label + " を編集 — 植栽メモ";
+      document.title = area.label + "の写真・メモを編集 — 植栽メモ";
       return;
     }
 
@@ -557,7 +577,7 @@
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "植栽メモ — エリアを編集";
+    document.title = "植栽メモ — エリアの写真・メモを編集";
   }
 
   function init() {
@@ -577,6 +597,10 @@
     el.photoQueueEl = $("area-edit-photo-queue");
     el.photoQueueEmpty = $("area-edit-photo-queue-empty");
     el.save = $("area-edit-save");
+    el.detailBreadcrumbLink = $("area-edit-detail-breadcrumb-link");
+    el.recordLink = $("area-edit-record-link");
+    el.viewLink = $("area-edit-view-link");
+    el.growthLink = $("area-edit-growth-link");
 
     if (el.cloudToken) {
       el.cloudToken.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";

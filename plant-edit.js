@@ -232,7 +232,7 @@
   }
 
   function syncLinks(areaId, plantName) {
-    var detailHref = plantName ? buildQuery("./plant.html", areaId, plantName) : "./plant.html";
+    var detailHref = plantName ? buildQuery("./plant-detail.html", areaId, plantName) : "./plant-detail.html";
     var recordHref = plantName ? buildQuery("./growth-edit.html", areaId, plantName) : "./growth-edit.html";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = detailHref;

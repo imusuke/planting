@@ -273,73 +273,6 @@
     return out;
   }
 
-  function renderStaticAreaPhotosSection(areaLabel, images) {
-    var section = document.createElement("section");
-    section.className = "plant-detail-photos area-detail-static-photos";
-    var h = document.createElement("h2");
-    h.className = "plant-detail-photos-heading";
-    h.textContent = "エリア全体の写真（登録データ）";
-    section.appendChild(h);
-
-    var list = [];
-    if (Array.isArray(images)) {
-      for (var i = 0; i < images.length; i++) {
-        var slot = normalizeStaticImageSlot(images[i]);
-        if (!slot) continue;
-        var url = growthImageSrcFromSlot(slot);
-        if (!url) continue;
-        list.push({ url: url, caption: slot.caption, slot: slot });
-      }
-    }
-
-    if (list.length === 0) {
-      var empty = document.createElement("p");
-      empty.className = "plant-detail-photos-empty";
-      empty.textContent =
-        "まだ登録がありません。本番では area-edit.html から写真をアップロードできます。リポジトリのみのときは data/area-details.json の images を編集し、npm run embed:plants で埋め込みを更新してください。";
-      section.appendChild(empty);
-      return section;
-    }
-
-    var grid = document.createElement("div");
-    grid.className = "plant-detail-photos-grid";
-    for (var k = 0; k < list.length; k++) {
-      (function (it) {
-        var fig = document.createElement("figure");
-        fig.className = "plant-detail-photo-figure";
-        var img = document.createElement("img");
-        img.className = "plant-detail-photo-img";
-        img.src = it.url;
-        img.alt = (areaLabel || "エリア") + "の全体写真";
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.referrerPolicy = "no-referrer";
-        img.addEventListener("error", function onStaticErr() {
-          img.removeEventListener("error", onStaticErr);
-          if (img.dataset.areaPhotoFb === "1") return;
-          var sl = it.slot;
-          if (!sl || !sl.localSnapshotImage) return;
-          var fb = sl.imageUrl || "";
-          if (!fb && sl.imagePathname) {
-            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
-          }
-          if (fb) {
-            img.dataset.areaPhotoFb = "1";
-            img.src = fb;
-          }
-        });
-        fig.appendChild(img);
-        var cap = document.createElement("figcaption");
-        cap.className = "plant-detail-photo-date";
-        cap.textContent = it.caption || "—";
-        fig.appendChild(cap);
-        grid.appendChild(fig);
-      })(list[k]);
-    }
-    section.appendChild(grid);
-    return section;
-  }
-
   function renderPhotoRecordsSection(areaLabel, areaId, records, options) {
     var opts = options || {};
     var section = document.createElement("section");
@@ -536,7 +469,7 @@
         span.appendChild(document.createTextNode(" "));
         var g = document.createElement("a");
         g.href =
-          "plant.html?area=" +
+          "plant-detail.html?area=" +
           encodeURIComponent(area.id) +
           "&plant=" +
           encodeURIComponent(pname);
@@ -952,13 +885,10 @@
     var areaPhotoGroup = document.createElement("div");
     areaPhotoGroup.className = "area-photo-group area-photo-group-area";
     areaPhotoGroup.appendChild(
-      renderStaticAreaPhotosSection(label, entry && entry.images ? entry.images : [])
-    );
-    areaPhotoGroup.appendChild(
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
-        ctaText: "エリア写真を編集する",
+        ctaText: "このエリアを編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -970,7 +900,7 @@
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
         emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
-        ctaText: "植栽写真を編集する",
+        ctaText: "このエリアの記録を追加・編集",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1006,7 +936,7 @@
     var aRecord = document.createElement("a");
     aRecord.className = "plant-detail-cta";
     aRecord.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-    aRecord.textContent = "このエリアの写真記録を追加する";
+    aRecord.textContent = "このエリアを編集";
     actions.appendChild(aRecord);
     root.appendChild(actions);
   }

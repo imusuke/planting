@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 植栽</title>
+  <title>植栽メモ — 植栽詳細</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
@@ -15,18 +15,20 @@
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">ホーム</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
-        <li aria-current="page" id="plant-detail-breadcrumb-current">植栽</li>
+        <li><a href="./plant.html" id="plant-detail-timeline-link">植栽</a></li>
+        <li aria-current="page" id="plant-detail-breadcrumb-current">植栽詳細</li>
       </ol>
       <div class="growth-nav-extra">
   <a href="./sitemap.html">サイトマップ</a>
-  <a href="./plant-detail.html" id="plant-detail-edit-link">この植栽詳細を見る</a>
+  <a href="./plant.html" id="plant-detail-page-link">この植栽を見る</a>
+  <a href="./plant-edit.html" id="plant-detail-edit-link">この植栽詳細を編集</a>
   <a href="./growth-edit.html" id="plant-detail-record-edit-link">この植栽の記録を追加・編集</a>
 </div>
     </nav>
 
     <header class="page-header plant-detail-header">
       <p class="eyebrow">Planting</p>
-      <h1 id="plant-detail-title">植栽</h1>
+      <h1 id="plant-detail-title">植栽詳細</h1>
       <p id="plant-detail-area-line" class="lead plant-detail-area-line" hidden></p>
     </header>
 
@@ -409,6 +411,6 @@
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
-  <script src="./plant.js" defer></script>
+  <script src="./plant-detail.js" defer></script>
 </body>
 </html>

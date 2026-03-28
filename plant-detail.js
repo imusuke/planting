@@ -13,6 +13,7 @@
   var crumbEl = document.getElementById("plant-detail-breadcrumb-current");
   var detailEditLinkEl = document.getElementById("plant-detail-edit-link");
   var recordEditLinkEl = document.getElementById("plant-detail-record-edit-link");
+  var plantPageLinkEl = document.getElementById("plant-detail-page-link");
   if (!root || !titleEl) return;
 
   function readEmbeddedPlants() {
@@ -289,13 +290,13 @@
   }
 
   function renderError(message) {
-    document.title = "植栽 — 植栽メモ";
+    document.title = "植栽詳細 — 植栽メモ";
     clearRoot();
     var p = document.createElement("p");
     p.className = "plant-detail-error";
     p.textContent = message;
     root.appendChild(p);
-    titleEl.textContent = "植栽";
+    titleEl.textContent = "植栽詳細";
     if (crumbEl) crumbEl.textContent = "エラー";
     if (areaLineEl) {
       areaLineEl.hidden = true;
@@ -324,7 +325,7 @@
       wMulti.className = "plant-detail-warning";
       wMulti.setAttribute("role", "status");
       wMulti.textContent =
-        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、成長記録にエリアが紐づいている状態にするか、植栽一覧からエリア付きで開いてください。";
+        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、成長記録にエリアが紐づいている状態にするか、植栽ページから開いてください。";
       root.appendChild(wMulti);
     }
     if (options.warnNotInMaster) {
@@ -337,17 +338,30 @@
         "」が見つかりませんでした（表記の違い、または一覧へ未反映の可能性があります）。成長記録の名前と植栽一覧を照合してください。";
       root.appendChild(warn);
     }
-    document.title = plantName + " — 植栽メモ";
-    titleEl.textContent = plantName;
+    document.title = plantName + "の詳細 — 植栽メモ";
+    titleEl.textContent = plantName + "の詳細";
 
-    if (crumbEl) crumbEl.textContent = plantName;
+    var plantPageHref =
+      "./plant.html?area=" +
+      encodeURIComponent(area.id) +
+      "&plant=" +
+      encodeURIComponent(plantName);
+    if (timelineCrumbLinkEl) {
+      timelineCrumbLinkEl.href = plantPageHref;
+      timelineCrumbLinkEl.textContent = plantName;
+    }
+    if (plantPageLinkEl) {
+      plantPageLinkEl.href = plantPageHref;
+      plantPageLinkEl.textContent = "この植栽を見る";
+    }
+    if (crumbEl) crumbEl.textContent = "植栽詳細";
     if (detailEditLinkEl) {
       detailEditLinkEl.href =
-        "./plant-detail.html?area=" +
+        "./plant-edit.html?area=" +
         encodeURIComponent(area.id) +
         "&plant=" +
         encodeURIComponent(plantName);
-      detailEditLinkEl.textContent = "この植栽詳細を見る";
+      detailEditLinkEl.textContent = "この植栽詳細を編集";
     }
     if (recordEditLinkEl) {
       recordEditLinkEl.href =
@@ -379,23 +393,30 @@
       renderGrowthPhotosSection(plantName, area.id, options.growthRecords || [])
     );
 
-    var detailNote = document.createElement("p");
-    detailNote.className = "plant-detail-placeholder";
-    detailNote.textContent = entry && (entry.summary || entry.body)
-      ? "詳しい説明や手入れメモは「この植栽詳細を見る」から確認できます。"
-      : "この植栽の説明はまだ登録されていません。詳しい内容は植栽詳細ページから追加・確認できます。";
-    root.appendChild(detailNote);
+    var bodyWrap = document.createElement("div");
+    bodyWrap.className = "plant-detail-body";
+    if (entry && entry.body) {
+      renderBody(bodyWrap, entry.body);
+    }
+    if (!bodyWrap.childElementCount) {
+      var hint = document.createElement("p");
+      hint.className = "plant-detail-placeholder";
+      hint.textContent =
+        "この植栽の解説や手入れメモは、まだ登録されていません。植栽詳細を編集から追加できます。段落は空行で区切って表示されます。";
+      bodyWrap.appendChild(hint);
+    }
+    root.appendChild(bodyWrap);
 
     var actions = document.createElement("p");
     actions.className = "plant-detail-actions";
     var aDetail = document.createElement("a");
     aDetail.className = "plant-detail-cta";
     aDetail.href =
-      "./plant-detail.html?area=" +
+      "./plant-edit.html?area=" +
       encodeURIComponent(area.id) +
       "&plant=" +
       encodeURIComponent(plantName);
-    aDetail.textContent = "この植栽詳細を見る";
+    aDetail.textContent = "この植栽詳細を編集";
     actions.appendChild(aDetail);
     var aRecord = document.createElement("a");
     aRecord.className = "plant-detail-cta";
@@ -420,7 +441,7 @@
 
   if (!plantName) {
     renderError(
-      "URL に植栽名が必要です。例: plant.html?area=entrance&plant=" +
+      "URL に植栽名が必要です。例: plant-detail.html?area=entrance&plant=" +
         encodeURIComponent("ノリウツギ") +
         " （エリア省略時は名前が一覧に1件だけのときに自動で特定します）"
     );
