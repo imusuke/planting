@@ -251,19 +251,6 @@
     }
     section.appendChild(grid);
 
-    var more = document.createElement("p");
-    more.className = "plant-detail-photos-more";
-    var a = document.createElement("a");
-    a.href =
-      "./index.html?view=timeline&plant=" +
-      encodeURIComponent(plantName) +
-      "&area=" +
-      encodeURIComponent(areaId);
-    a.className = "plant-detail-link";
-    a.textContent = "植栽時系列を開く";
-    more.appendChild(a);
-    section.appendChild(more);
-
     return section;
   }
 
@@ -352,14 +339,7 @@
     }
     document.title = plantName + "の詳細 — 植栽メモ";
     titleEl.textContent = plantName + "の詳細";
-    if (timelineCrumbLinkEl) {
-      timelineCrumbLinkEl.href =
-        "./index.html?view=timeline&area=" +
-        encodeURIComponent(area.id) +
-        "&plant=" +
-        encodeURIComponent(plantName);
-      timelineCrumbLinkEl.textContent = plantName + "の時系列";
-    }
+
     if (crumbEl) crumbEl.textContent = "植栽詳細";
     if (detailEditLinkEl) {
       detailEditLinkEl.href =

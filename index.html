@@ -27,37 +27,14 @@
     <header class="page-header">
       <p class="eyebrow">Home</p>
       <h1 id="growth-home-title">ホーム</h1>
-      <p id="growth-home-lead" class="lead lead--with-info">
-        このサイト全体の入り口です。植栽一覧・サイトマップ・記録の閲覧と編集へ進めます。
-        <button
-          type="button"
-          class="info-icon-btn"
-          data-open-dialog="growth-view-info-dialog"
-          aria-label="このページについて（説明を開く）"
-          title="説明"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-        </button>
+      <p id="growth-home-lead" class="lead">
+        このサイト全体の入り口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。
       </p>
     </header>
 
     <section class="growth-section" aria-labelledby="list-heading">
       <h2 id="list-heading">記録一覧</h2>
       <p id="growth-view-status" class="growth-hint growth-status" aria-live="polite"></p>
-      <div class="growth-view-mode" role="radiogroup" aria-label="表示形式">
-        <span class="growth-view-mode-label">表示</span>
-        <label class="growth-view-mode-option">
-          <input type="radio" name="growth-view-mode" id="growth-view-mode-grid" value="grid" checked />
-          記録一覧
-        </label>
-        <label class="growth-view-mode-option">
-          <input type="radio" name="growth-view-mode" id="growth-view-mode-timeline" value="timeline" />
-          植栽別・時系列
-        </label>
-      </div>
       <div class="growth-filters">
         <label>
           エリア
@@ -65,7 +42,7 @@
         </label>
         <label>
           植栽
-          <select id="filter-plant" aria-label="記録の絞り込み・時系列で見る植栽"></select>
+          <select id="filter-plant" aria-label="記録の絞り込み・植栽"></select>
         </label>
         <label>
           サムネイル
@@ -83,44 +60,10 @@
           </select>
         </label>
       </div>
-      <div class="growth-timeline-lead-wrap" id="growth-timeline-lead" hidden>
-        <button type="button" id="growth-back-to-grid-btn" class="growth-secondary growth-timeline-back-btn">
-          記録一覧に戻る
-        </button>
-        <p class="growth-hint growth-timeline-lead-text">
-          選んだ植栽が含まれる記録だけを表示します。記録日の並びは上の「<strong>並び順</strong>」で<strong>新しい順</strong>／<strong>古い順</strong>を選べます。エリアの絞り込みも使えます。
-        </p>
-      </div>
       <div id="growth-feed" class="growth-feed"></div>
-      <div id="growth-plant-timeline" class="growth-plant-timeline" hidden></div>
     </section>
 
-    <section class="growth-section" aria-labelledby="backup-heading">
-      <h2 id="backup-heading">バックアップ</h2>
-      <p class="growth-hint">
-        記録はサーバーに保存されています。必要なら一覧の内容を JSON ファイルでダウンロードできます（画像はリンクのまま含まれます）。
-      </p>
-      <div class="growth-backup-row growth-backup-row--spaced">
-        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
-      </div>
-    </section>
 
-    <dialog id="growth-view-info-dialog" class="info-dialog" aria-labelledby="growth-view-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="growth-view-info-title" class="info-dialog-title">ホームについて</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>このページがサイトのトップ（<code>index.html</code>）です。ここから <strong>エリア一覧</strong> と <strong>植栽一覧</strong> に進み、各ページの時系列や詳細をたどれます。</p>
-          <p><strong>植栽時系列</strong>では、マスタや過去の記録にだけ出ている名前も含めて植栽を選び、その植栽が載っている記録を日付順に並べます。表示形式の選択はこのブラウザに記憶されます。</p>
-          <p>新しい記録の追加や編集・削除、植栽名マスタの変更は「記録を追加・編集」から行います。エリア写真の整理は各エリア時系列ページやエリア管理ページから行えます。</p>
-          <p>ブラウザのアドレスが <code>http</code> や <code>https</code> で始まる形で開いている必要があります。</p>
-        </div>
-      </div>
-    </dialog>
 
     <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title-growth">
       <div class="info-dialog-inner">
@@ -234,7 +177,7 @@
   </script>
   <script src="./data/growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>
-  <script src="./ui-info.js" defer></script>
+
   <script src="./growth.js" defer></script>
 </body>
 </html>

@@ -224,25 +224,21 @@
     return el.plant ? normalizePlantName(el.plant.value) : "";
   }
 
-  function buildQuery(pathname, areaId, plantName, timeline) {
+  function buildQuery(pathname, areaId, plantName) {
     var params = [];
-    if (timeline) params.push("view=timeline");
     if (plantName) params.push("plant=" + encodeURIComponent(plantName));
     if (areaId) params.push("area=" + encodeURIComponent(areaId));
     return pathname + (params.length ? "?" + params.join("&") : "");
   }
 
   function syncLinks(areaId, plantName) {
-    var detailHref = plantName ? buildQuery("./plant.html", areaId, plantName, false) : "./plant.html";
-    var timelineHref = plantName ? buildQuery("./index.html", areaId, plantName, true) : "./index.html?view=timeline";
-    var recordHref = plantName ? buildQuery("./growth-edit.html", areaId, plantName, false) : "./growth-edit.html";
+    var detailHref = plantName ? buildQuery("./plant.html", areaId, plantName) : "./plant.html";
+    var recordHref = plantName ? buildQuery("./growth-edit.html", areaId, plantName) : "./growth-edit.html";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = detailHref;
     if (el.detailLink) el.detailLink.href = detailHref;
     if (el.leadDetailLink) el.leadDetailLink.href = detailHref;
     if (el.openDetail) el.openDetail.href = detailHref;
-    if (el.timelineLink) el.timelineLink.href = timelineHref;
-    if (el.openTimeline) el.openTimeline.href = timelineHref;
     if (el.recordLink) el.recordLink.href = recordHref;
   }
 
@@ -383,9 +379,7 @@
     el.detailLink = $("plant-edit-detail-link");
     el.leadDetailLink = $("plant-edit-lead-detail-link");
     el.recordLink = $("plant-edit-record-link");
-    el.timelineLink = $("plant-edit-timeline-link");
     el.openDetail = $("plant-edit-open-detail");
-    el.openTimeline = $("plant-edit-open-timeline");
 
     if (!el.form || !el.area || !el.plant) return;
 

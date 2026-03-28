@@ -1,8 +1,130 @@
 {
   "version": 2,
   "source": "snapshot",
-  "exportedAt": "2026-03-23T12:23:36.094Z",
+  "exportedAt": "2026-03-28T05:33:01.250Z",
   "records": [
+    {
+      "id": "1c3e2586-49dc-401b-8c43-53018646f54d",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "yatsu-hatake",
+      "areaLabel": "谷津畑",
+      "plants": [
+        "枝豆"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1c3e2586-49dc-401b-8c43-53018646f54d/0.jpg",
+          "imagePathname": "growth/1c3e2586-49dc-401b-8c43-53018646f54d/0.jpg",
+          "memo": "枝豆を1/3畝に種まき",
+          "localSnapshotImage": "./data/growth-images/1c3e2586-49dc-401b-8c43-53018646f54d-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1c3e2586-49dc-401b-8c43-53018646f54d/0.jpg",
+      "imagePathname": "growth/1c3e2586-49dc-401b-8c43-53018646f54d/0.jpg",
+      "createdAt": "2026-03-28T02:59:09.750Z",
+      "localSnapshotImage": "./data/growth-images/1c3e2586-49dc-401b-8c43-53018646f54d-0.jpg"
+    },
+    {
+      "id": "ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "yatsu-hatake",
+      "areaLabel": "谷津畑",
+      "plants": [
+        "スナップエンドウ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25/0.jpg",
+          "imagePathname": "growth/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25/0.jpg",
+          "memo": "支柱を立てる",
+          "localSnapshotImage": "./data/growth-images/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25/0.jpg",
+      "imagePathname": "growth/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25/0.jpg",
+      "createdAt": "2026-03-28T03:01:19.514Z",
+      "localSnapshotImage": "./data/growth-images/ff5c6703-c5d0-4eb4-b4ef-10b6259f7a25-0.jpg"
+    },
+    {
+      "id": "26abbada-2c1f-45d5-9991-b02a8e7715f5",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "yatsu-hatake",
+      "areaLabel": "谷津畑",
+      "plants": [
+        "ソラマメ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/0.jpg",
+          "imagePathname": "growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/26abbada-2c1f-45d5-9991-b02a8e7715f5-0.jpg"
+        },
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/1.jpg",
+          "imagePathname": "growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/1.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/26abbada-2c1f-45d5-9991-b02a8e7715f5-1.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/0.jpg",
+      "imagePathname": "growth/26abbada-2c1f-45d5-9991-b02a8e7715f5/0.jpg",
+      "createdAt": "2026-03-28T03:02:04.489Z",
+      "localSnapshotImage": "./data/growth-images/26abbada-2c1f-45d5-9991-b02a8e7715f5-0.jpg"
+    },
+    {
+      "id": "e25b53e1-53cf-411b-a660-90a79e5ce126",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "deck",
+      "areaLabel": "ウッドデッキ",
+      "plants": [
+        "ユーフォルビア・アスコットレインボー"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/e25b53e1-53cf-411b-a660-90a79e5ce126/0.jpg",
+          "imagePathname": "growth/e25b53e1-53cf-411b-a660-90a79e5ce126/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/e25b53e1-53cf-411b-a660-90a79e5ce126-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/e25b53e1-53cf-411b-a660-90a79e5ce126/0.jpg",
+      "imagePathname": "growth/e25b53e1-53cf-411b-a660-90a79e5ce126/0.jpg",
+      "createdAt": "2026-03-28T04:30:31.809Z",
+      "localSnapshotImage": "./data/growth-images/e25b53e1-53cf-411b-a660-90a79e5ce126-0.jpg"
+    },
+    {
+      "id": "3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "yatsu-hatake",
+      "areaLabel": "谷津畑",
+      "plants": [
+        "アジサイ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/0.jpg",
+          "imagePathname": "growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f-0.jpg"
+        },
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/1.jpg",
+          "imagePathname": "growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/1.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f-1.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/0.jpg",
+      "imagePathname": "growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/0.jpg",
+      "createdAt": "2026-03-28T04:31:13.232Z",
+      "localSnapshotImage": "./data/growth-images/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f-0.jpg"
+    },
     {
       "id": "827d749a-68c7-41de-a3dc-a2cb33c359ad",
       "recordedAt": "2026-03-23T12:00:00.000Z",
@@ -529,28 +651,6 @@
         }
       ],
       "localSnapshotImage": "./data/growth-images/3d59fff5-9d20-4dc0-97d2-8e756b5749f0-0.jpg"
-    },
-    {
-      "id": "16318ad6-d5d4-49c1-a9af-5d26cf50b60a",
-      "recordedAt": "2026-03-22T12:00:00.000Z",
-      "areaId": "yatsu-hatake",
-      "areaLabel": "谷津畑",
-      "plants": [
-        "畑全体"
-      ],
-      "note": "左から、畝１はなし、畝２はビーツ、畝３はパクチー、ルッコラ、アスパラ菜、虹いろ菜、畝４はビーツ、畝５はソラマメとスナップエンドウ",
-      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/16318ad6-d5d4-49c1-a9af-5d26cf50b60a.jpg",
-      "imagePathname": "growth/16318ad6-d5d4-49c1-a9af-5d26cf50b60a.jpg",
-      "createdAt": "2026-03-22T04:11:14.460Z",
-      "updatedAt": "2026-03-22T05:05:18.787Z",
-      "images": [
-        {
-          "imagePathname": "growth/16318ad6-d5d4-49c1-a9af-5d26cf50b60a.jpg",
-          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/16318ad6-d5d4-49c1-a9af-5d26cf50b60a.jpg",
-          "localSnapshotImage": "./data/growth-images/16318ad6-d5d4-49c1-a9af-5d26cf50b60a-0.jpg"
-        }
-      ],
-      "localSnapshotImage": "./data/growth-images/16318ad6-d5d4-49c1-a9af-5d26cf50b60a-0.jpg"
     },
     {
       "id": "12859d9d-7ce1-43f6-86bd-d37cb16211c0",

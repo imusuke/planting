@@ -165,41 +165,8 @@ h1 {
   text-decoration: underline;
 }
 
-.lead--with-info {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 6px 10px;
-  max-width: 40rem;
-}
 
-.info-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.65);
-  color: var(--green);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
 
-.info-icon-btn:hover,
-.info-icon-btn:focus-visible {
-  background: rgba(116, 198, 157, 0.2);
-  border-color: rgba(45, 106, 79, 0.25);
-  outline: none;
-}
-
-.info-icon-btn:focus-visible {
-  box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.35);
-}
 
 .section-heading-row {
   display: flex;
@@ -905,16 +872,7 @@ a.plant-detail-cta:focus-visible {
   padding: 0 24px 24px;
 }
 
-.sitemap-section-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 10px 16px;
-}
-
-.sitemap-tree-shell,
-.sitemap-area-tree {
+.sitemap-tree-shell {
   padding: 18px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.54);
@@ -1008,43 +966,11 @@ a.plant-detail-cta:focus-visible {
   text-transform: uppercase;
 }
 
-.sitemap-node p,
-.sitemap-inline-note {
+.sitemap-node p {
   margin: 8px 0 0;
   color: var(--muted);
   line-height: 1.55;
   font-size: 0.92rem;
-}
-
-.sitemap-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.sitemap-link-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(45, 106, 79, 0.18);
-  background: rgba(255, 255, 255, 0.84);
-  color: var(--green);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.sitemap-link-chip:hover,
-.sitemap-link-chip:focus-visible {
-  background: rgba(236, 248, 240, 0.92);
-  text-decoration: none;
-}
-
-.sitemap-status {
-  margin: 0;
 }
 
 @media (max-width: 640px) {
@@ -1052,8 +978,7 @@ a.plant-detail-cta:focus-visible {
     padding: 0 18px 18px;
   }
 
-  .sitemap-tree-shell,
-  .sitemap-area-tree {
+  .sitemap-tree-shell {
     padding: 14px;
     border-radius: 20px;
   }

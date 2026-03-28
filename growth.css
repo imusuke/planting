@@ -109,10 +109,6 @@ main.growth-panel .growth-section:last-of-type {
   gap: 6px 8px;
 }
 
-.info-icon-btn--small {
-  width: 1.45rem;
-  height: 1.45rem;
-}
 
 .growth-form {
   display: grid;

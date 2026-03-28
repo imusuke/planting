@@ -29,57 +29,18 @@
       <p class="eyebrow">Growth log</p>
       <h1 id="growth-edit-page-title">記録の追加・編集</h1>
       <p id="growth-edit-context-line" class="lead plant-detail-area-line" hidden></p>
-      <p id="growth-edit-page-lead" class="lead lead--with-info">
-        下のタブで<strong>記録の追加・編集</strong>と<strong>エリア</strong>・<strong>植栽名</strong>のマスタ編集を切り替えられます。一覧の閲覧は<strong>閲覧ページ</strong>から。
-        <button
-          type="button"
-          class="info-icon-btn"
-          data-open-dialog="growth-page-info-dialog"
-          aria-label="このページについて（説明を開く）"
-          title="説明"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-        </button>
+      <p id="growth-edit-page-lead" class="lead">
+        下のタブで<strong>記録の追加・編集</strong>と<strong>エリア</strong>・<strong>植栽名</strong>のマスタ編集を切り替えられます。バックアップもこのページから行えます。
       </p>
     </header>
 
     <section class="growth-section growth-section--composer" aria-labelledby="growth-storage-h2">
-      <div class="section-heading-row">
-        <h2 id="growth-storage-h2">保存先への接続</h2>
-        <button
-          type="button"
-          class="info-icon-btn"
-          data-open-dialog="growth-connection-info-dialog"
-          aria-label="接続状態とトークンについて（説明を開く）"
-          title="説明"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-        </button>
-      </div>
+      <h2 id="growth-storage-h2">保存先への接続</h2>
+      <p class="growth-hint">保存や編集を行うときだけ、必要に応じてトークンを入力します。閲覧だけなら不要です。</p>
       <p id="cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div class="growth-token-row">
         <label class="block growth-token-field">
-          <span class="growth-label-with-info">
-            アップロード用トークン（任意）
-            <button
-              type="button"
-              class="info-icon-btn info-icon-btn--small"
-              data-open-dialog="growth-token-info-dialog"
-              aria-label="トークンについて（説明を開く）"
-              title="トークンとは"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
-            </button>
-          </span>
+          <span>アップロード用トークン（任意）</span>
           <input id="cloud-token" type="password" autocomplete="off" placeholder="サイト管理者が設定した文字列" />
         </label>
         <button type="button" id="cloud-token-save" class="growth-secondary">
@@ -236,18 +197,6 @@
       <div class="section-heading-row plants-catalog-heading-tabs">
         <h2 id="plants-catalog-heading" class="plants-catalog-heading-swap plants-catalog-heading-swap--areas">エリア</h2>
         <h2 class="plants-catalog-heading-swap plants-catalog-heading-swap--plants">植栽名（マスタ）</h2>
-        <button
-          type="button"
-          class="info-icon-btn"
-          data-open-dialog="plants-catalog-info-dialog"
-          aria-label="マスタの編集について（説明を開く）"
-          title="説明"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-        </button>
       </div>
       <p id="plants-catalog-source" class="growth-hint" aria-live="polite"></p>
       <div id="plants-catalog-editor" class="plants-catalog-editor" hidden></div>
@@ -288,74 +237,9 @@
     </section>
     </div>
 
-    <dialog id="plants-catalog-info-dialog" class="info-dialog" aria-labelledby="plants-catalog-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="plants-catalog-info-title" class="info-dialog-title">エリア・植栽名マスタ</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>
-            画面上部の<strong>エリア</strong>タブと<strong>植栽名</strong>タブで、それぞれエリアの追加・削除・ID と、チェックボックス用の植栽名の行を編集します。保存内容は植栽一覧ページと成長記録フォームの両方に反映されます。データはサーバー（KV）に保存され、リポジトリの <code>data/plants.json</code> より優先されます。
-          </p>
-          <p>
-            <strong>エリア</strong>は「エリアを追加」で増やしたり、表示名・エリアIDの編集、「このエリアを削除」で減らせます（エリアは最低1つ必要です）。エリアIDを変えて保存すると、紐づく成長記録のエリアIDも更新されます。
-          </p>
-          <p>
-            既存の成長記録に載っている植栽名を変えたときは、<strong>同じエリア</strong>（変更後のID）の記録だけ、旧名を新名に置き換えます。行の追加・削除や並べ替えだけでは、記録側の名前は自動では変わりません。
-          </p>
-        </div>
-      </div>
-    </dialog>
 
-    <dialog id="growth-page-info-dialog" class="info-dialog" aria-labelledby="growth-page-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="growth-page-info-title" class="info-dialog-title">このページについて</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>入力した写真やメモはサーバーに保存されます。閲覧だけならトークン不要の<strong>ホーム</strong>（<code>index.html</code>）を使えます。</p>
-          <p><strong>記録の閲覧と写真の表示</strong>はどの端末からでも行えます。<strong>このページでの保存・編集・削除・マスタの保存</strong>だけ、トークンが設定されている場合は上の欄への入力が必要です。作業はタブ（記録／エリア／植栽名）で切り替えられます。</p>
-          <p>ブラウザのアドレスが <code>http</code> や <code>https</code> で始まる形で開いている必要があります。</p>
-        </div>
-      </div>
-    </dialog>
 
-    <dialog id="growth-connection-info-dialog" class="info-dialog" aria-labelledby="growth-conn-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="growth-conn-info-title" class="info-dialog-title">保存先への接続</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>この欄の下に表示されるメッセージが、サーバーとのつながり具合を示します。</p>
-          <p>写真は公開URLまたは画像用API経由で配信されるため、閲覧だけならトークンは不要です。トークンはこのページの書き込み用です。</p>
-        </div>
-      </div>
-    </dialog>
 
-    <dialog id="growth-token-info-dialog" class="info-dialog" aria-labelledby="growth-token-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="growth-token-info-title" class="info-dialog-title">アップロード用トークンとは</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>サイトの管理者がサーバー側で設定した「合い言葉」のようなものです。設定されている場合は、ここに<strong>同じ文字列</strong>を入力して「トークンを保存」してください。知らない人が勝手に記録を書き換えるのを防げます。</p>
-          <p>入力した内容はこのブラウザにだけ保存され、サーバーには自動では送られません（保存や表示のときに必要な通信で使われます）。</p>
-          <p>管理者がトークンを設定していない場合は、この欄は<strong>空のまま</strong>でかまいません。</p>
-        </div>
-      </div>
-    </dialog>
 
     <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title-edit">
       <div class="info-dialog-inner">
@@ -468,7 +352,7 @@
     window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
-  <script src="./ui-info.js" defer></script>
+
   <script src="./growth.js" defer></script>
 </body>
 </html>

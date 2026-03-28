@@ -222,11 +222,11 @@
           var link = document.createElement("a");
           link.className = "plant-record-link plant-record-link--with-thumb";
           link.href =
-            "index.html?view=timeline&area=" +
+            "plant.html?area=" +
             encodeURIComponent(area.id) +
             "&plant=" +
             encodeURIComponent(plantName);
-          link.setAttribute("title", plantName + " の成長記録（時系列）を開く");
+          link.setAttribute("title", plantName + " のページを開く");
 
           var name = document.createElement("span");
           name.className = "plant-record-name";

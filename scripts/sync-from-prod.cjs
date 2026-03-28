@@ -2,7 +2,7 @@
 
 /**
  * 本番（デプロイ先）の公開 GET API から植栽マスタと成長記録を取り込み、
- * data/plants.json と data/growth-snapshot.json を更新します（トークン不要）。
+ * data/plants.json と data/growth-snapshot.json と data/area-growth-snapshot.json を更新します（トークン不要）。
  *
  *   npm run sync:prod -- https://your-planting.vercel.app
  *
@@ -11,8 +11,8 @@
  *
  * オプション:
  *   --plants-only … data/plants.json のみ（あわせて HTML 内 plants-embed も更新）
- *   --growth-only … data/growth-snapshot.json のみ
- *   --no-images … 成長記録 JSON のみ（写真は data/growth-images に落とさない）
+ *   --growth-only … data/growth-snapshot.json と data/area-growth-snapshot.json のみ
+ *   --no-images … 成長記録 JSON のみ（写真は data/growth-images / data/area-growth-images に落とさない）
  */
 
 var fs = require("fs");
@@ -69,7 +69,10 @@ var doPlants = plantsOnlyFlag || !growthOnlyFlag;
 var root = path.join(__dirname, "..");
 var plantsPath = path.join(root, "data", "plants.json");
 var growthPath = path.join(root, "data", "growth-snapshot.json");
+var areaGrowthPath = path.join(root, "data", "area-growth-snapshot.json");
 var downloadImages = require("./download-growth-snapshot-images.cjs")
+  .downloadSnapshotImages;
+var downloadAreaImages = require("./download-area-growth-snapshot-images.cjs")
   .downloadSnapshotImages;
 
 function syncPlants() {
@@ -140,6 +143,52 @@ function syncGrowth() {
     });
 }
 
+function syncAreaGrowth() {
+  var url = base + "/api/area-growth";
+  return syncFetch(url)
+    .then(function (res) {
+      if (!res.ok) {
+        throw new Error("GET /api/area-growth HTTP " + res.status);
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      var records = data && Array.isArray(data.records) ? data.records : [];
+      var cleaned = records.map(function (r) {
+        var c = Object.assign({}, r);
+        delete c.localSnapshotImage;
+        if (c.images && Array.isArray(c.images)) {
+          c.images = c.images.map(function (im) {
+            var x = Object.assign({}, im);
+            delete x.localSnapshotImage;
+            return x;
+          });
+        }
+        return c;
+      });
+      var writePayload = function (finalRecords) {
+        var payload = {
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          source: url,
+          records: finalRecords,
+        };
+        fs.writeFileSync(areaGrowthPath, JSON.stringify(payload, null, 2), "utf8");
+        console.log("書き出しました: " + areaGrowthPath);
+        console.log("エリア記録件数: " + finalRecords.length);
+      };
+      if (noImagesFlag) {
+        writePayload(cleaned);
+        require("./write-area-growth-snapshot-boot.cjs").run();
+        return;
+      }
+      console.log("エリア写真を data/area-growth-images に取得中…");
+      return downloadAreaImages(base, cleaned).then(function (withImages) {
+        writePayload(withImages);
+        require("./write-area-growth-snapshot-boot.cjs").run();
+      });
+    });
+}
 var chain = Promise.resolve();
 if (doPlants) {
   chain = chain.then(function () {
@@ -147,15 +196,19 @@ if (doPlants) {
   });
 }
 if (doGrowth) {
-  chain = chain.then(function () {
-    return syncGrowth();
-  });
+  chain = chain
+    .then(function () {
+      return syncGrowth();
+    })
+    .then(function () {
+      return syncAreaGrowth();
+    });
 }
 
 chain
   .then(function () {
     console.log(
-      "\n次: git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html plant.html && git commit && git push"
+      "\n次: git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images data/area-growth-snapshot.json data/area-growth-snapshot.boot.js data/area-growth-images index.html growth-edit.html plants.html plant.html area.html areas.html && git commit && git push"
     );
     console.log(
       "（plants を同期した場合は plants-embed 入り HTML も add してください。片方だけのときは不要なファイルを外す）"

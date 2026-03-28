@@ -31,6 +31,31 @@
     }
   }
 
+  function readSnapshotRecords(globalName, embedId) {
+    var snap = window[globalName];
+    if (snap && Array.isArray(snap.records)) return snap.records;
+    if (!embedId) return [];
+    var embedded = readEmbeddedJson(embedId);
+    if (embedded && Array.isArray(embedded.records)) return embedded.records;
+    return [];
+  }
+
+  function extractAreas(data) {
+    if (data && Array.isArray(data.areas)) return { areas: data.areas };
+    throw new Error("bad shape");
+  }
+
+  function extractRecords(data) {
+    if (data && Array.isArray(data.records)) return data.records;
+    if (Array.isArray(data)) return data;
+    throw new Error("bad shape");
+  }
+
+  function extractEntries(data) {
+    if (data && Array.isArray(data.entries)) return data.entries;
+    throw new Error("bad shape");
+  }
+
   function hardcodedFallback() {
     return {
       areas: [
@@ -144,61 +169,64 @@
     return wrap;
   }
 
+  function createAreaCard(area, areaPhotoMap) {
+    var card = document.createElement("a");
+    card.className = "card growthlog area-list-card";
+    card.href = "./area.html?area=" + encodeURIComponent(area.id);
+
+    var photo = areaPhotoMap[String(area.id || "").trim()];
+    var thumb = createThumb(area, photo);
+    if (thumb) card.appendChild(thumb);
+
+    var label = document.createElement("span");
+    label.className = "card-label";
+    label.textContent = "Area";
+    card.appendChild(label);
+
+    var title = document.createElement("h2");
+    title.textContent = area.label || area.id;
+    card.appendChild(title);
+
+    var count = Array.isArray(area.plants) ? area.plants.length : 0;
+    var desc = document.createElement("p");
+    desc.textContent = "植栽数: " + count + " / エリア時系列を開く";
+    card.appendChild(desc);
+
+    var open = document.createElement("span");
+    open.className = "open";
+    open.textContent = "Open";
+    card.appendChild(open);
+
+    return card;
+  }
+
+  function renderError(message) {
+    root.innerHTML = "";
+    var p = document.createElement("p");
+    p.className = "plant-load-error";
+    p.textContent = message;
+    root.appendChild(p);
+  }
+
   function renderAreas(data, areaPhotoMap) {
     root.innerHTML = "";
     var areas = data && Array.isArray(data.areas) ? data.areas : [];
     if (!areas.length) {
-      var p = document.createElement("p");
-      p.className = "plant-load-error";
-      p.textContent = "エリアが見つかりませんでした。";
-      root.appendChild(p);
+      renderError("エリアが見つかりませんでした。");
       return;
     }
 
     areas.forEach(function (area) {
       if (!area || !area.id) return;
-      var card = document.createElement("a");
-      card.className = "card growthlog area-list-card";
-      card.href = "./area.html?area=" + encodeURIComponent(area.id);
-
-      var photo = areaPhotoMap[String(area.id || "").trim()];
-      var thumb = createThumb(area, photo);
-      if (thumb) card.appendChild(thumb);
-
-      var label = document.createElement("span");
-      label.className = "card-label";
-      label.textContent = "Area";
-      card.appendChild(label);
-
-      var title = document.createElement("h2");
-      title.textContent = area.label || area.id;
-      card.appendChild(title);
-
-      var count = Array.isArray(area.plants) ? area.plants.length : 0;
-      var desc = document.createElement("p");
-      desc.textContent = "植栽数: " + count + " / エリア時系列を開く";
-      card.appendChild(desc);
-
-      var open = document.createElement("span");
-      open.className = "open";
-      open.textContent = "Open";
-      card.appendChild(open);
-
-      root.appendChild(card);
+      root.appendChild(createAreaCard(area, areaPhotoMap));
     });
   }
 
   function loadPlantsData() {
     return loadJson(API_PLANTS)
-      .then(function (data) {
-        if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
-        return { areas: data.areas };
-      })
+      .then(extractAreas)
       .catch(function () {
-        return loadJson(PLANTS_JSON).then(function (data) {
-          if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
-          return data;
-        });
+        return loadJson(PLANTS_JSON).then(extractAreas);
       })
       .catch(function () {
         var embedded = readEmbeddedJson("plants-embed");
@@ -209,57 +237,31 @@
 
   function loadGrowthRecords() {
     return loadJson(API_GROWTH)
-      .then(function (data) {
-        if (data && Array.isArray(data.records)) return data.records;
-        if (Array.isArray(data)) return data;
-        throw new Error("bad shape");
+      .then(extractRecords)
+      .catch(function () {
+        return loadJson(GROWTH_SNAPSHOT_JSON).then(extractRecords);
       })
       .catch(function () {
-        return loadJson(GROWTH_SNAPSHOT_JSON).then(function (data) {
-          if (data && Array.isArray(data.records)) return data.records;
-          throw new Error("bad snapshot");
-        });
-      })
-      .catch(function () {
-        var snap = window.__PLANTING_GROWTH_SNAPSHOT__;
-        if (snap && Array.isArray(snap.records)) return snap.records;
-        return [];
+        return readSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__", "");
       });
   }
 
   function loadAreaGrowthRecords() {
     return loadJson(API_AREA_GROWTH)
-      .then(function (data) {
-        if (data && Array.isArray(data.records)) return data.records;
-        if (Array.isArray(data)) return data;
-        throw new Error("bad shape");
+      .then(extractRecords)
+      .catch(function () {
+        return loadJson(AREA_GROWTH_SNAPSHOT_JSON).then(extractRecords);
       })
       .catch(function () {
-        return loadJson(AREA_GROWTH_SNAPSHOT_JSON).then(function (data) {
-          if (data && Array.isArray(data.records)) return data.records;
-          throw new Error("bad snapshot");
-        });
-      })
-      .catch(function () {
-        var snap = window.__PLANTING_AREA_GROWTH_SNAPSHOT__;
-        if (snap && Array.isArray(snap.records)) return snap.records;
-        var embedded = readEmbeddedJson("area-growth-embed");
-        if (embedded && Array.isArray(embedded.records)) return embedded.records;
-        return [];
+        return readSnapshotRecords("__PLANTING_AREA_GROWTH_SNAPSHOT__", "area-growth-embed");
       });
   }
 
   function loadAreaDetailEntries() {
     return loadJson(API_AREA_DETAILS)
-      .then(function (data) {
-        if (data && Array.isArray(data.entries)) return data.entries;
-        throw new Error("bad shape");
-      })
+      .then(extractEntries)
       .catch(function () {
-        return loadJson(AREA_DETAILS_JSON).then(function (data) {
-          if (data && Array.isArray(data.entries)) return data.entries;
-          throw new Error("bad shape");
-        });
+        return loadJson(AREA_DETAILS_JSON).then(extractEntries);
       })
       .catch(function () {
         var embedded = readEmbeddedJson("area-details-embed");
@@ -288,10 +290,6 @@
       renderAreas(plantsData, areaPhotoMap);
     })
     .catch(function () {
-      root.innerHTML = "";
-      var p = document.createElement("p");
-      p.className = "plant-load-error";
-      p.textContent = "エリア一覧の読み込みに失敗しました。";
-      root.appendChild(p);
+      renderError("エリア一覧の読み込みに失敗しました。");
     });
 })();

@@ -27,20 +27,8 @@
     <header class="page-header">
       <p class="eyebrow">Planting</p>
       <h1>植栽一覧</h1>
-      <p class="lead lead--with-info">
-        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すと植栽時系列を開き、そこから植栽詳細へ進めます。名前の横には最新の写真サムネイルを表示します。
-        <button
-          type="button"
-          class="info-icon-btn"
-          data-open-dialog="index-page-info-dialog"
-          aria-label="この一覧について（説明を開く）"
-          title="説明"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-        </button>
+      <p class="lead">
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すとその植栽のページを開き、写真や説明を確認できます。名前の横には最新の写真サムネイルを表示します。
       </p>
     </header>
 
@@ -51,7 +39,7 @@
           <thead>
             <tr>
               <th scope="col">エリア</th>
-              <th scope="col">植栽（クリックで時系列）</th>
+              <th scope="col">植栽</th>
             </tr>
           </thead>
           <tbody id="plant-table-body">
@@ -63,21 +51,6 @@
       </div>
     </section>
 
-    <dialog id="index-page-info-dialog" class="info-dialog" aria-labelledby="index-info-title">
-      <div class="info-dialog-inner">
-        <div class="info-dialog-head">
-          <h2 id="index-info-title" class="info-dialog-title">この一覧について</h2>
-          <form method="dialog">
-            <button type="submit" class="info-dialog-close">閉じる</button>
-          </form>
-        </div>
-        <div class="info-dialog-body">
-          <p>表示している植栽のリストは、サイト用のデータファイルから読み込んでいます。</p>
-          <p>データを書き換えたあとは、<strong>ファイル本体</strong>と、各ページ内の <strong>コピー用データ</strong>（<code>plants-embed</code>）を同じ内容にしておくと、どこで開いてもずれません（<code>npm run embed:plants</code> で一括更新）。<code>plant.html</code>・<code>area.html</code> にも同じ植栽マスタの埋め込みがあります。エリアの文章・画像は <code>data/area-details.json</code> です。</p>
-          <p>パソコンで HTML をダブルクリックして開いているだけのときは、ブラウザの仕組み上、ファイルではなく埋め込みのコピーが使われることがあります。ウェブサーバー経由（アドレスが <code>http</code> や <code>https</code> で始まる）で開くと、ファイルから最新を読み込めます。</p>
-        </div>
-      </div>
-    </dialog>
 
     <dialog id="hub-link-setup-dialog" class="info-dialog" aria-labelledby="hub-link-setup-title">
       <div class="info-dialog-inner">
@@ -234,7 +207,7 @@
   </script>
   <script src="./data/growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>
-  <script src="./ui-info.js" defer></script>
+
   <script src="./index.js" defer></script>
 </body>
 </html>

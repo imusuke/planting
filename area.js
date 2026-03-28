@@ -6,6 +6,7 @@
   var API_AREA_GROWTH = "/api/area-growth";
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
+  var AREA_GROWTH_SNAPSHOT_JSON = "./data/area-growth-snapshot.json";
 
   var root = document.getElementById("area-detail-root");
   var titleEl = document.getElementById("area-detail-title");
@@ -38,6 +39,22 @@
       if (!res.ok) throw new Error("bad status");
       return res.json();
     });
+  }
+
+  function loadSnapshotRecords(path) {
+    return fetch(path, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("snapshot bad");
+        return res.json();
+      })
+      .then(function (data) {
+        return data && Array.isArray(data.records) ? data.records : [];
+      });
+  }
+
+  function readWindowSnapshotRecords(key) {
+    var data = window[key];
+    return data && Array.isArray(data.records) ? data.records : [];
   }
 
   function loadPlantsData() {
@@ -133,7 +150,13 @@
         return Array.isArray(data.records) ? data.records : [];
       })
       .catch(function () {
-        return [];
+        return loadSnapshotRecords(AREA_GROWTH_SNAPSHOT_JSON)
+          .catch(function () {
+            return readWindowSnapshotRecords("__PLANTING_AREA_GROWTH_SNAPSHOT__");
+          })
+          .catch(function () {
+            return [];
+          });
       });
   }
 
@@ -150,13 +173,9 @@
         return Array.isArray(data.records) ? data.records : [];
       })
       .catch(function () {
-        return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
-          .then(function (res) {
-            if (!res.ok) return null;
-            return res.json();
-          })
-          .then(function (data) {
-            return data && Array.isArray(data.records) ? data.records : [];
+        return loadSnapshotRecords(GROWTH_SNAPSHOT_JSON)
+          .catch(function () {
+            return readWindowSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__");
           })
           .catch(function () {
             return [];
@@ -505,7 +524,7 @@
         var li = document.createElement("li");
         var a = document.createElement("a");
         a.href =
-          "index.html?view=timeline&area=" +
+          "plant.html?area=" +
           encodeURIComponent(area.id) +
           "&plant=" +
           encodeURIComponent(pname);

@@ -1926,18 +1926,9 @@
   }
 
   function applyViewQueryFilters() {
-    if (!IS_VIEW || !el.filterArea) return;
+    if (!IS_VIEW || !el.filterArea) return false;
     var params = new URLSearchParams(window.location.search);
-    var view = params.get("view");
-    if (view === "timeline") {
-      state.viewLayout = "timeline";
-      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = true;
-      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = false;
-    } else if (view === "grid") {
-      state.viewLayout = "grid";
-      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = true;
-      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = false;
-    }
+    if (redirectLegacyGrowthView(params)) return true;
 
     var areaId = params.get("area");
     var plantName = params.get("plant");
@@ -1946,47 +1937,7 @@
         plantName = decodeURIComponent(plantName);
       } catch (e) {}
     }
-    if (areaId && state.areas.some(function (a) {
-      return a.id === areaId;
-    })) {
-      el.filterArea.value = areaId;
-    }
-    updateFilterPlantOptions();
-    if (plantName && state.viewLayout === "timeline") {
-      state.pendingTimelinePlant = plantName;
-    } else if (plantName && el.filterPlant) {
-      var opts = el.filterPlant.querySelectorAll("option");
-      for (var i = 0; i < opts.length; i++) {
-        if (opts[i].value === plantName) {
-          el.filterPlant.value = plantName;
-          break;
-        }
-      }
-    }
-  }
 
-  /**
-   * 閲覧ページ: 現在の location.search から表示モード・絞り込みを同期（戻る／進む・ボタン用）。
-   * view パラメータが無い・grid のときは記録一覧表示にする。
-   */
-  function applyGrowthViewFromLocationSearch() {
-    if (!IS_VIEW || !el.filterArea) return;
-    var params = new URLSearchParams(window.location.search);
-    var view = params.get("view");
-    if (view === "timeline") {
-      state.viewLayout = "timeline";
-      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = true;
-      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = false;
-    } else {
-      state.viewLayout = "grid";
-      if (el.viewModeGridRadio) el.viewModeGridRadio.checked = true;
-      if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = false;
-    }
-    try {
-      localStorage.setItem("growthViewLayout", state.viewLayout);
-    } catch (eLs) {}
-
-    var areaId = params.get("area");
     if (
       areaId &&
       state.areas.some(function (a) {
@@ -2000,27 +1951,12 @@
 
     updateFilterPlantOptions();
 
-    var plantName = params.get("plant");
-    if (plantName) {
-      try {
-        plantName = decodeURIComponent(plantName);
-      } catch (eDec) {}
-    }
-
-    state.pendingTimelinePlant = null;
-    if (state.viewLayout === "timeline") {
+    if (el.filterPlant) {
       if (plantName) {
-        state.pendingTimelinePlant = plantName;
-        applyPendingTimelinePlant();
-      } else if (el.filterPlant) {
-        el.filterPlant.value = "";
-      }
-    } else if (el.filterPlant) {
-      if (plantName) {
-        var opts2 = el.filterPlant.querySelectorAll("option");
+        var opts = el.filterPlant.querySelectorAll("option");
         var matched = false;
-        for (var pi = 0; pi < opts2.length; pi++) {
-          if (opts2[pi].value === plantName) {
+        for (var i = 0; i < opts.length; i++) {
+          if (opts[i].value === plantName) {
             el.filterPlant.value = plantName;
             matched = true;
             break;
@@ -2032,9 +1968,21 @@
       }
     }
 
+    return false;
+  }
+
+  /**
+   * 閲覧ページ: 現在の location.search から表示モード・絞り込みを同期（戻る／進む・ボタン用）。
+   * view パラメータが無い・grid のときは記録一覧表示にする。
+   */
+  function applyGrowthViewFromLocationSearch() {
+    if (!IS_VIEW || !el.filterArea) return false;
+    state.viewLayout = "grid";
+    if (applyViewQueryFilters()) return true;
     syncViewModeUi();
     renderViewMain(state.lastGrowthRecords);
     applyThumbFeedClass();
+    return false;
   }
 
   function goGrowthViewGridInPlace() {
@@ -2189,14 +2137,34 @@
     return "./plant.html?plant=" + encodeURIComponent(name);
   }
 
-  /** 閲覧トップで植栽別・時系列に切り替える URL（plant は記録上の表記と一致させる） */
+  /** 旧ホーム時系列 URL の代わりに、植栽ページを返す。 */
   function growthTimelineBrowseHref(plantName, areaId) {
-    var q = new URLSearchParams();
-    q.set("view", "timeline");
-    q.set("plant", plantName);
-    var aid = areaId && String(areaId).trim();
-    if (aid) q.set("area", aid);
-    return "./index.html?" + q.toString();
+    return plantDetailHref(areaId, plantName);
+  }
+
+  function areaTimelineHref(areaId) {
+    var aid = normalizeLooseString(areaId);
+    return aid ? "./area.html?area=" + encodeURIComponent(aid) : "./areas.html";
+  }
+
+  function redirectLegacyGrowthView(params) {
+    if (!IS_VIEW || !params || params.get("view") !== "timeline") return false;
+    var areaId = normalizeLooseString(params.get("area"));
+    var plantName = params.get("plant") || "";
+    try {
+      plantName = decodeURIComponent(plantName);
+    } catch (e) {}
+    plantName = normalizeLooseString(plantName);
+    var nextHref = "";
+    if (plantName) nextHref = plantDetailHref(areaId, plantName);
+    else if (areaId) nextHref = areaTimelineHref(areaId);
+    else nextHref = "./plants.html";
+    try {
+      window.location.replace(nextHref);
+    } catch (eNav) {
+      window.location.href = nextHref;
+    }
+    return true;
   }
 
   function createGrowthCardArticle(r, opts) {
@@ -2363,9 +2331,9 @@
           tlLink.href = growthTimelineBrowseHref(tln, r.areaId);
           tlLink.setAttribute("data-growth-timeline-plant", tln);
           if (r.areaId) tlLink.setAttribute("data-growth-timeline-area", String(r.areaId));
-          tlLink.setAttribute("aria-label", tln + "の成長記録を植栽別・時系列で見る");
+          tlLink.setAttribute("aria-label", tln + "のページを見る");
           tlLink.textContent =
-            plantNames.length === 1 ? "時系列で見る" : "時系列（" + tln + "）";
+            plantNames.length === 1 ? "植栽を見る" : "植栽（" + tln + "）";
           actions.appendChild(tlLink);
         }
         if (cardAreaId) {
@@ -2462,11 +2430,11 @@
 
   function syncViewModeUi() {
     if (!IS_VIEW) return;
-    var tl = state.viewLayout === "timeline";
-    if (el.feed) el.feed.hidden = tl;
-    if (el.plantTimeline) el.plantTimeline.hidden = !tl;
+    state.viewLayout = "grid";
+    if (el.feed) el.feed.hidden = false;
+    if (el.plantTimeline) el.plantTimeline.hidden = true;
     var lead = $("growth-timeline-lead");
-    if (lead) lead.hidden = !tl;
+    if (lead) lead.hidden = true;
   }
 
   function findAreaById(areaId) {
@@ -2535,7 +2503,6 @@
     if (!titleEl && !leadEl && !currentActionsEl) return;
 
     var areaId = el.filterArea ? String(el.filterArea.value || "").trim() : "";
-    var plantName = el.filterPlant ? String(el.filterPlant.value || "").trim() : "";
     var area = findAreaById(areaId);
     var quickEl = document.querySelector(".home-quick");
 
@@ -2543,46 +2510,6 @@
     var currentTertiaryEl = $("growth-context-tertiary");
     if (currentTertiaryEl) currentTertiaryEl.hidden = true;
     syncViewBreadcrumb([{ label: "ホーム", current: true }]);
-
-    if (state.viewLayout === "timeline" && plantName) {
-      var links = ensureViewContextActions();
-      var actionsEl = links.actionsEl;
-      var primaryEl = links.primaryEl;
-      var secondaryEl = links.secondaryEl;
-      var tertiaryEl = links.tertiaryEl;
-      var plantQuery = "./plant.html?plant=" + encodeURIComponent(plantName);
-      var growthEditQuery = "./growth-edit.html?plant=" + encodeURIComponent(plantName);
-      if (areaId) {
-        plantQuery += "&area=" + encodeURIComponent(areaId);
-        growthEditQuery += "&area=" + encodeURIComponent(areaId);
-      }
-      if (quickEl) quickEl.hidden = true;
-      if (actionsEl) actionsEl.hidden = false;
-      syncViewBreadcrumb([
-        { label: "ホーム", href: "./index.html" },
-        { label: "植栽一覧", href: "./plants.html" },
-        { label: plantName + "の時系列", current: true },
-      ]);
-      if (titleEl) titleEl.textContent = plantName + "の時系列";
-      if (leadEl) {
-        setLeadTextKeepingButton(
-          leadEl,
-          area
-            ? area.label + "の「" + plantName + "」の記録を時系列で見ています。"
-            : "「" + plantName + "」の記録を時系列で見ています。"
-        );
-      }
-      if (primaryEl) {
-        primaryEl.href = growthEditQuery;
-        primaryEl.textContent = "この植栽の記録を追加・編集";
-      }
-      if (secondaryEl) {
-        secondaryEl.href = plantQuery;
-        secondaryEl.textContent = "この植栽詳細を見る";
-      }
-      document.title = plantName + " — ホーム";
-      return;
-    }
 
     if (area) {
       var areaLinks = ensureViewContextActions();
@@ -2595,13 +2522,13 @@
       syncViewBreadcrumb([
         { label: "ホーム", href: "./index.html" },
         { label: "エリア一覧", href: "./areas.html" },
-        { label: area.label + "の時系列", current: true },
+        { label: area.label + "の記録一覧", current: true },
       ]);
-      if (titleEl) titleEl.textContent = area.label + "の時系列";
+      if (titleEl) titleEl.textContent = area.label + "の記録一覧";
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
-          "「" + area.label + "」の写真と記録を時系列で見ています。"
+          "「" + area.label + "」の記録を一覧で見ています。必要に応じてエリア時系列ページへ進めます。"
         );
       }
       if (areaPrimaryEl) {
@@ -2617,7 +2544,7 @@
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
         areaTertiaryEl.textContent = "このエリアの記録を追加・編集";
       }
-      document.title = area.label + "の時系列 — ホーム";
+      document.title = area.label + "の記録一覧 — ホーム";
       return;
     }
 
@@ -2629,7 +2556,7 @@
     if (leadEl) {
       setLeadTextKeepingButton(
         leadEl,
-        "このサイト全体の入り口です。植栽一覧・サイトマップ・記録の閲覧と編集へ進めます。"
+        "このサイト全体の入り口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。"
       );
     }
     document.title = "植栽メモ — ホーム";
@@ -2700,17 +2627,12 @@
   function renderViewMain(records) {
     if (!IS_VIEW) return;
     state.lastGrowthRecords = records || [];
+    state.viewLayout = "grid";
     updateFilterPlantOptions();
-    applyPendingTimelinePlant();
     syncViewModeUi();
     syncViewHomeContext();
-    if (state.viewLayout === "timeline") {
-      if (el.feed) el.feed.innerHTML = "";
-      renderPlantTimeline(state.lastGrowthRecords);
-    } else {
-      if (el.plantTimeline) el.plantTimeline.innerHTML = "";
-      renderFeed(state.lastGrowthRecords);
-    }
+    if (el.plantTimeline) el.plantTimeline.innerHTML = "";
+    renderFeed(state.lastGrowthRecords);
   }
 
   function renderFeed(records) {
@@ -3160,26 +3082,6 @@
         details.appendChild(filters);
       }
     }
-
-    var backupSection = main.querySelector('section[aria-labelledby="backup-heading"]');
-    if (backupSection && !backupSection.querySelector("details.home-advanced-controls")) {
-      var heading = backupSection.querySelector("#backup-heading");
-      var hint = backupSection.querySelector(".growth-hint");
-      var row = backupSection.querySelector(".growth-backup-row");
-      var box = document.createElement("details");
-      box.className = "home-advanced-controls";
-      var sum = document.createElement("summary");
-      sum.id = "backup-heading";
-      sum.textContent = "バックアップ";
-      box.appendChild(sum);
-      if (hint) box.appendChild(hint);
-      if (row) box.appendChild(row);
-      backupSection.innerHTML = "";
-      backupSection.appendChild(box);
-      if (heading && heading.parentNode) {
-        heading.parentNode.removeChild(heading);
-      }
-    }
   }
 
   function initViewPage() {
@@ -3199,39 +3101,8 @@
     if (!el.feed) return;
 
     var urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("view") === "timeline") {
-      state.viewLayout = "timeline";
-    } else if (urlParams.get("view") === "grid") {
-      state.viewLayout = "grid";
-    } else {
-      try {
-        var sv = localStorage.getItem("growthViewLayout");
-        state.viewLayout = sv === "timeline" ? "timeline" : "grid";
-      } catch (e) {
-        state.viewLayout = "grid";
-      }
-    }
-
-    if (el.viewModeGridRadio && el.viewModeTimelineRadio) {
-      el.viewModeGridRadio.checked = state.viewLayout !== "timeline";
-      el.viewModeTimelineRadio.checked = state.viewLayout === "timeline";
-    }
-
-    function onViewModeChange() {
-      state.viewLayout =
-        el.viewModeTimelineRadio && el.viewModeTimelineRadio.checked ? "timeline" : "grid";
-      try {
-        localStorage.setItem("growthViewLayout", state.viewLayout);
-      } catch (e2) {}
-      renderViewMain(state.lastGrowthRecords);
-    }
-
-    if (el.viewModeGridRadio) {
-      el.viewModeGridRadio.addEventListener("change", onViewModeChange);
-    }
-    if (el.viewModeTimelineRadio) {
-      el.viewModeTimelineRadio.addEventListener("change", onViewModeChange);
-    }
+    if (redirectLegacyGrowthView(urlParams)) return;
+    state.viewLayout = "grid";
 
     if (el.thumbSize) {
       var saved = localStorage.getItem(LS_THUMB_SIZE) || "sm";
@@ -3266,13 +3137,8 @@
       .then(function (pack) {
         state.areas = pack.areas || [];
         populateAreaSelects();
-        applyViewQueryFilters();
+        if (applyViewQueryFilters()) return;
         syncViewHomeContext();
-        if (el.viewModeGridRadio && el.viewModeTimelineRadio) {
-          el.viewModeGridRadio.checked = state.viewLayout !== "timeline";
-          el.viewModeTimelineRadio.checked = state.viewLayout === "timeline";
-        }
-        syncViewModeUi();
         return refreshFeed();
       })
       .catch(function (err) {
@@ -3281,66 +3147,15 @@
 
     if (el.filterArea) {
       el.filterArea.addEventListener("change", function () {
-        if (el.filterPlant && state.viewLayout === "grid") el.filterPlant.value = "";
+        if (el.filterPlant) el.filterPlant.value = "";
         updateFilterPlantOptions();
-        if (state.viewLayout === "timeline") {
-          renderPlantTimeline(state.lastGrowthRecords);
-        } else {
-          refreshFeed();
-        }
+        refreshFeed();
       });
     }
 
     if (el.filterPlant) {
       el.filterPlant.addEventListener("change", function () {
-        if (state.viewLayout === "timeline") {
-          renderPlantTimeline(state.lastGrowthRecords);
-        } else {
-          refreshFeed();
-        }
-      });
-    }
-
-    var viewMain = document.querySelector("main.growth-panel");
-    if (viewMain) {
-      viewMain.addEventListener("click", function (e) {
-        var a = e.target.closest("a.growth-card-timeline-link");
-        if (!a || !a.getAttribute("data-growth-timeline-plant")) return;
-        if (e.defaultPrevented) return;
-        if (e.button !== 0) return;
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        var plantPick = a.getAttribute("data-growth-timeline-plant");
-        if (!plantPick) return;
-        var areaPick = a.getAttribute("data-growth-timeline-area") || "";
-        e.preventDefault();
-        state.viewLayout = "timeline";
-        try {
-          localStorage.setItem("growthViewLayout", "timeline");
-        } catch (xSt) {}
-        if (el.viewModeTimelineRadio) el.viewModeTimelineRadio.checked = true;
-        if (el.viewModeGridRadio) el.viewModeGridRadio.checked = false;
-        if (areaPick && el.filterArea) {
-          var okA = state.areas.some(function (ar) {
-            return ar.id === areaPick;
-          });
-          if (okA) el.filterArea.value = areaPick;
-        }
-        updateFilterPlantOptions();
-        if (el.filterPlant) el.filterPlant.value = plantPick;
-        syncViewModeUi();
-        renderViewMain(state.lastGrowthRecords);
-        try {
-          var u = new URL(window.location.href);
-          u.searchParams.set("view", "timeline");
-          u.searchParams.set("plant", plantPick);
-          if (areaPick) u.searchParams.set("area", areaPick);
-          else u.searchParams.delete("area");
-          history.pushState({ growthTimelineFromCard: true }, "", u.pathname + u.search + u.hash);
-        } catch (xUrl) {}
-        requestAnimationFrame(function () {
-          var tlEl = el.plantTimeline || document.getElementById("growth-plant-timeline");
-          if (tlEl) tlEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
+        refreshFeed();
       });
     }
 
@@ -3348,17 +3163,6 @@
       if (!IS_VIEW || !el.filterArea) return;
       applyGrowthViewFromLocationSearch();
     });
-
-    el.backToGridBtn = $("growth-back-to-grid-btn");
-    if (el.backToGridBtn) {
-      el.backToGridBtn.addEventListener("click", function () {
-        if (window.history.state && window.history.state.growthTimelineFromCard) {
-          history.back();
-        } else {
-          goGrowthViewGridInPlace();
-        }
-      });
-    }
 
     if (el.exportBtn) el.exportBtn.addEventListener("click", onExport);
   }
