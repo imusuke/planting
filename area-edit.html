@@ -82,6 +82,15 @@
       <p class="growth-hint">最大 12 枚。保存すると Blob にアップロードされます（差し替え時は既存分も含めて再アップロードされます）。</p>
       <div class="growth-photo-pick-row">
         <input
+          id="area-edit-photo-camera"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="growth-file-input-hidden"
+          tabindex="-1"
+        />
+        <label for="area-edit-photo-camera" class="growth-secondary growth-photo-pick-label">カメラで撮る</label>
+        <input
           id="area-edit-photo-library"
           type="file"
           accept="image/*"
@@ -89,7 +98,7 @@
           class="growth-file-input-hidden"
           tabindex="-1"
         />
-        <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">写真を追加</label>
+        <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
         <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
       </div>
       <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">

@@ -235,9 +235,15 @@
     };
   }
 
+  function clearPhotoInputs() {
+    if (el.photoCamera) el.photoCamera.value = "";
+    if (el.photoLibrary) el.photoLibrary.value = "";
+  }
+
   function resetPhotoQueue() {
     state.photoQueue = [];
     state.photosTouched = false;
+    clearPhotoInputs();
     renderPhotoQueueUi();
   }
 
@@ -565,6 +571,7 @@
     el.recordNote = $("area-edit-record-note");
     el.summary = $("area-edit-summary");
     el.body = $("area-edit-body");
+    el.photoCamera = $("area-edit-photo-camera");
     el.photoLibrary = $("area-edit-photo-library");
     el.photoClear = $("area-edit-photo-clear");
     el.photoQueueEl = $("area-edit-photo-queue");
@@ -589,6 +596,14 @@
           : "GET /api/area-details でエリア情報を読み込みます。";
     }
 
+    if (el.photoCamera) {
+      el.photoCamera.addEventListener("change", function () {
+        if (el.photoCamera.files && el.photoCamera.files.length) {
+          appendFilesToQueue(el.photoCamera.files);
+        }
+        el.photoCamera.value = "";
+      });
+    }
     if (el.photoLibrary) {
       el.photoLibrary.addEventListener("change", function () {
         if (el.photoLibrary.files && el.photoLibrary.files.length) {
@@ -601,6 +616,7 @@
       el.photoClear.addEventListener("click", function () {
         state.photoQueue = [];
         state.photosTouched = true;
+        clearPhotoInputs();
         renderPhotoQueueUi();
       });
     }

@@ -939,12 +939,8 @@
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
-        ctaText: "エリア写真を追加する",
+        ctaText: "エリア写真を編集する",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
-        allowMoveToPlant: true,
-        onMovePhoto: moveAreaPhotoToPlant,
-        allowDeletePhoto: true,
-        onDeletePhoto: deleteAreaPhoto,
       })
     );
 
@@ -955,12 +951,8 @@
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
         emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
-        ctaText: "植栽写真を追加する",
+        ctaText: "植栽写真を編集する",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
-        allowImportFromPlant: true,
-        onImportPhoto: importPlantPhotoToArea,
-        allowDeletePhoto: true,
-        onDeletePhoto: deletePlantPhoto,
       })
     );
 

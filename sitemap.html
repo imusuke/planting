@@ -17,8 +17,8 @@
         <li aria-current="page">サイトマップ</li>
       </ol>
       <div class="growth-nav-extra">
+        <a href="./areas.html">エリア一覧</a>
         <a href="./plants.html">植栽一覧</a>
-        <a href="./area-edit.html">エリアを編集</a>
         <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
       </div>
     </nav>
@@ -27,7 +27,7 @@
       <p class="eyebrow">Site map</p>
       <h1>サイトマップ</h1>
       <p class="lead">
-        このサイトのページ構成と、エリア・植栽へのつながりを確認できます。
+        一覧・時系列・詳細・編集のつながりを、できるだけシンプルに確認できます。
       </p>
     </header>
 
@@ -41,7 +41,7 @@
                 <a href="./index.html">ホーム</a>
                 <span class="sitemap-node-label">root</span>
               </div>
-              <p>サイト全体の入口です。各一覧や詳細ページへの導線をまとめる起点です。</p>
+              <p>サイト全体の入口です。エリア一覧と植栽一覧から、時系列・詳細・編集へ進みます。</p>
             </div>
             <ul class="sitemap-tree">
               <li>
@@ -50,45 +50,34 @@
                     <a href="./areas.html">エリア一覧</a>
                     <span class="sitemap-node-label">browse</span>
                   </div>
-                  <p>エリアを選ぶと、エリア時系列へ進みます。</p>
+                  <p>エリアごとの入口です。各エリアの時系列へ進みます。</p>
                 </div>
                 <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <span>エリア時系列</span>
-                        <span class="sitemap-node-label">timeline</span>
+                        <a href="./growth-edit.html#areas">エリア一覧編集</a>
+                        <span class="sitemap-node-label">edit</span>
                       </div>
-                      <p>エリア写真と植栽写真を時系列で確認できます。</p>
+                      <p>一覧全体のエリア名やエリアIDを編集します。</p>
                     </div>
                   </li>
-                </ul>
-              </li>
-              <li>
-                <div class="sitemap-node">
-                  <div class="sitemap-node-title">
-                    <a href="./plants.html">植栽一覧</a>
-                    <span class="sitemap-node-label">browse</span>
-                  </div>
-                  <p>植栽を選ぶと、まず植栽時系列へ進み、そこから植栽詳細を見られます。</p>
-                </div>
-                <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <span>植栽時系列</span>
+                        <a href="./area.html">エリア時系列</a>
                         <span class="sitemap-node-label">timeline</span>
                       </div>
-                      <p>植栽ごとの写真記録を時系列で見られます。</p>
+                      <p>各エリアの写真と記録を時系列で閲覧します。</p>
                     </div>
                     <ul class="sitemap-tree">
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <span>植栽詳細</span>
-                            <span class="sitemap-node-label">detail</span>
+                            <a href="./area-edit.html">エリア時系列編集</a>
+                            <span class="sitemap-node-label">edit</span>
                           </div>
-                          <p>植栽ごとの説明やメモを確認できます。</p>
+                          <p>エリア写真やメモを編集します。</p>
                         </div>
                       </li>
                     </ul>
@@ -98,20 +87,62 @@
               <li>
                 <div class="sitemap-node">
                   <div class="sitemap-node-title">
-                    <a href="./growth-edit.html">記録の追加・編集</a>
-                    <span class="sitemap-node-label">edit</span>
+                    <a href="./plants.html">植栽一覧</a>
+                    <span class="sitemap-node-label">browse</span>
                   </div>
-                  <p>写真・日付・メモを登録して記録を作ります。</p>
+                  <p>植栽ごとの入口です。植栽時系列と植栽詳細へ進みます。</p>
                 </div>
-              </li>
-              <li>
-                <div class="sitemap-node">
-                  <div class="sitemap-node-title">
-                    <a href="./area-edit.html">エリア管理</a>
-                    <span class="sitemap-node-label">edit</span>
-                  </div>
-                  <p>エリアの説明や写真をまとめて整理します。</p>
-                </div>
+                <ul class="sitemap-tree">
+                  <li>
+                    <div class="sitemap-node">
+                      <div class="sitemap-node-title">
+                        <a href="./growth-edit.html#plants">植栽一覧編集</a>
+                        <span class="sitemap-node-label">edit</span>
+                      </div>
+                      <p>一覧全体の植栽名を編集します。</p>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="sitemap-node">
+                      <div class="sitemap-node-title">
+                        <a href="./index.html?view=timeline">植栽時系列</a>
+                        <span class="sitemap-node-label">timeline</span>
+                      </div>
+                      <p>各植栽の写真と記録を時系列で閲覧します。</p>
+                    </div>
+                    <ul class="sitemap-tree">
+                      <li>
+                        <div class="sitemap-node">
+                          <div class="sitemap-node-title">
+                            <a href="./growth-edit.html">植栽時系列編集</a>
+                            <span class="sitemap-node-label">edit</span>
+                          </div>
+                          <p>その植栽の記録や写真を追加・編集します。</p>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="sitemap-node">
+                          <div class="sitemap-node-title">
+                            <a href="./plant.html">植栽詳細</a>
+                            <span class="sitemap-node-label">detail</span>
+                          </div>
+                          <p>その植栽の説明や概要を確認します。</p>
+                        </div>
+                        <ul class="sitemap-tree">
+                          <li>
+                            <div class="sitemap-node">
+                              <div class="sitemap-node-title">
+                                <a href="./plant-edit.html">植栽詳細編集</a>
+                                <span class="sitemap-node-label">edit</span>
+                              </div>
+                              <p>植栽詳細の説明文や概要を編集します。</p>
+                            </div>
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
               </li>
               <li>
                 <div class="sitemap-node sitemap-node--current">
@@ -119,7 +150,7 @@
                     <span>サイトマップ</span>
                     <span class="sitemap-node-label">guide</span>
                   </div>
-                  <p>ページのつながりをひと目で確認できます。</p>
+                  <p>ページのつながりを確認するための案内ページです。</p>
                 </div>
               </li>
             </ul>
@@ -127,103 +158,6 @@
         </ul>
       </div>
     </section>
-
-    <section class="sitemap-section" aria-labelledby="sitemap-areas-heading">
-      <div class="sitemap-section-head">
-        <h2 id="sitemap-areas-heading">エリアと植栽のツリー</h2>
-        <p id="sitemap-status" class="growth-hint sitemap-status" aria-live="polite">読み込み中...</p>
-      </div>
-      <div id="sitemap-area-tree" class="sitemap-area-tree"></div>
-    </section>
   </main>
-  <script type="application/json" id="plants-embed">
-{
-  "areas": [
-    {
-      "id": "entrance",
-      "label": "玄関前",
-      "plants": [
-        "ノリウツギ",
-        "カシワバアジサイ（柏葉紫陽花）",
-        "ユーカリ",
-        "ムスカリ（ブドウヒヤシンス）",
-        "レウコトエ・アクシラリス（セイヨウイワナンテン）",
-        "スイートアリッサム（庭薺/ニワナズナ）",
-        "コデマリ（小手毬）？",
-        "ラベンダー（イングリッシュ系？）",
-        "ネモフィラ",
-        "スイートアリッサム",
-        "シルバータイム",
-        "ヒューケラ（ツボサンゴ）",
-        "ハツユキカズラ（初雪カズラ）"
-      ]
-    },
-    {
-      "id": "parking",
-      "label": "駐車場脇",
-      "plants": [
-        "シルバープリペット",
-        "シダ",
-        "アジュガ",
-        "クリスマスローズ（ヘレボルス）"
-      ]
-    },
-    {
-      "id": "deck",
-      "label": "ウッドデッキ",
-      "plants": [
-        "落葉ヤマボウシ（日本固有種）",
-        "ミモザ・アカシア",
-        "コルジリネ（コルジリネ・オーストラリス）",
-        "ウエストリンギア（オーストラリアンローズマリー）",
-        "キャットミント シックスヒルズ ジャイアント",
-        "ネペタ チューベローサ",
-        "ユーフォルビア・アスコットレインボー",
-        "エレモフィラ・ニベア",
-        "グレヴィレア・プーリンダ・ロイヤルマントル",
-        "リューカデンドロン",
-        "グレヴィレア・バイレヤナ",
-        "オリーブの木",
-        "ヒューケラ（ツボサンゴ）"
-      ]
-    },
-    {
-      "id": "corner",
-      "label": "角庭",
-      "plants": [
-        "アナベル",
-        "ローズマリー",
-        "ヤマアジサイ",
-        "サルビア スペルバ　ボルドー　ディープブルー",
-        "オリヅルラン（折鶴蘭）",
-        "ノースポール（クリサンセマム・パルドラム）"
-      ]
-    },
-    {
-      "id": "indoor",
-      "label": "室内",
-      "plants": [
-        "ドラセナ・コンシンナ",
-        "フィカス・ウンベラータ",
-        "ゴムの木",
-        "ペペロミア・カペラータ",
-        "ホヤ・カルノーサ　クリムゾン・クイーン",
-        "サンスベリア（サンセベリア）　ローレンティ（Laurentii）"
-      ]
-    },
-    {
-      "id": "yatsu-hatake",
-      "label": "谷津畑",
-      "plants": [
-        "アジサイ",
-        "ソラマメ",
-        "スナップエンドウ",
-        "畑全体"
-      ]
-    }
-  ]
-}
-  </script>
-  <script src="./sitemap.js" defer></script>
 </body>
 </html>

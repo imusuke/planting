@@ -2201,6 +2201,7 @@
 
   function createGrowthCardArticle(r, opts) {
     var inTimeline = opts && opts.inTimeline;
+    var suppressBrowseActions = opts && opts.suppressBrowseActions;
     var card = document.createElement("article");
     card.className = "growth-card" + (inTimeline ? " growth-card--in-timeline" : "");
 
@@ -2320,9 +2321,16 @@
     areaIcon.setAttribute("aria-hidden", "true");
     areaIcon.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 21s-7-4.35-7-11a7 7 0 1 1 14 0c0 6.65-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
-    var areaLabel = document.createElement("span");
+    var cardAreaId = resolveGrowthRecordAreaId(r);
+    var areaLabel = cardAreaId
+      ? document.createElement("a")
+      : document.createElement("span");
     areaLabel.className = "growth-card-area-label";
     areaLabel.textContent = r.areaLabel || "—";
+    if (cardAreaId) {
+      areaLabel.href = "./area.html?area=" + encodeURIComponent(cardAreaId);
+      areaLabel.setAttribute("title", (r.areaLabel || "このエリア") + "の時系列へ");
+    }
     areaRow.appendChild(areaIcon);
     areaRow.appendChild(areaLabel);
     body.appendChild(areaRow);
@@ -2347,7 +2355,7 @@
       plantNames.push(plantName);
     });
     if (IS_VIEW) {
-      if (!inTimeline) {
+      if (!inTimeline && !suppressBrowseActions) {
         for (var tli = 0; tli < plantNames.length; tli++) {
           var tln = plantNames[tli];
           var tlLink = document.createElement("a");
@@ -2360,10 +2368,10 @@
             plantNames.length === 1 ? "時系列で見る" : "時系列（" + tln + "）";
           actions.appendChild(tlLink);
         }
-        if (r.areaId) {
+        if (cardAreaId) {
           var areaLink = document.createElement("a");
           areaLink.className = "growth-card-view-link";
-          areaLink.href = "./area.html?area=" + encodeURIComponent(r.areaId);
+          areaLink.href = "./area.html?area=" + encodeURIComponent(cardAreaId);
           areaLink.setAttribute(
             "aria-label",
             (r.areaLabel || "このエリア") + "のページを見る"
@@ -2529,6 +2537,7 @@
     var areaId = el.filterArea ? String(el.filterArea.value || "").trim() : "";
     var plantName = el.filterPlant ? String(el.filterPlant.value || "").trim() : "";
     var area = findAreaById(areaId);
+    var quickEl = document.querySelector(".home-quick");
 
     if (currentActionsEl) currentActionsEl.hidden = true;
     var currentTertiaryEl = $("growth-context-tertiary");
@@ -2542,13 +2551,12 @@
       var secondaryEl = links.secondaryEl;
       var tertiaryEl = links.tertiaryEl;
       var plantQuery = "./plant.html?plant=" + encodeURIComponent(plantName);
-      var plantEditQuery = "./plant-edit.html?plant=" + encodeURIComponent(plantName);
       var growthEditQuery = "./growth-edit.html?plant=" + encodeURIComponent(plantName);
       if (areaId) {
         plantQuery += "&area=" + encodeURIComponent(areaId);
-        plantEditQuery += "&area=" + encodeURIComponent(areaId);
         growthEditQuery += "&area=" + encodeURIComponent(areaId);
       }
+      if (quickEl) quickEl.hidden = true;
       if (actionsEl) actionsEl.hidden = false;
       syncViewBreadcrumb([
         { label: "ホーム", href: "./index.html" },
@@ -2572,11 +2580,6 @@
         secondaryEl.href = plantQuery;
         secondaryEl.textContent = "この植栽詳細を見る";
       }
-      if (tertiaryEl) {
-        tertiaryEl.hidden = false;
-        tertiaryEl.href = plantEditQuery;
-        tertiaryEl.textContent = "この植栽詳細を編集";
-      }
       document.title = plantName + " — ホーム";
       return;
     }
@@ -2587,6 +2590,7 @@
       var areaPrimaryEl = areaLinks.primaryEl;
       var areaSecondaryEl = areaLinks.secondaryEl;
       var areaTertiaryEl = areaLinks.tertiaryEl;
+      if (quickEl) quickEl.hidden = true;
       if (areaActionsEl) areaActionsEl.hidden = false;
       syncViewBreadcrumb([
         { label: "ホーム", href: "./index.html" },
@@ -2617,6 +2621,7 @@
       return;
     }
 
+    if (quickEl) quickEl.hidden = false;
     if (currentActionsEl && currentActionsEl.parentNode) {
       currentActionsEl.parentNode.removeChild(currentActionsEl);
     }
@@ -2733,7 +2738,7 @@
     }
 
     filtered.forEach(function (r) {
-      el.feed.appendChild(createGrowthCardArticle(r));
+      el.feed.appendChild(createGrowthCardArticle(r, { suppressBrowseActions: true }));
     });
   }
 
@@ -3125,8 +3130,9 @@
     if (!main) return;
 
     var header = main.querySelector("header.page-header");
-    if (header && !main.querySelector(".home-quick")) {
-      var quick = document.createElement("section");
+    var quick = main.querySelector(".home-quick");
+    if (header && !quick) {
+      quick = document.createElement("section");
       quick.className = "growth-section home-quick";
       quick.setAttribute("aria-labelledby", "home-quick-heading");
       quick.innerHTML =
@@ -3134,8 +3140,6 @@
         '<div class="home-quick-grid">' +
         '<a class="card growthlog" href="./areas.html"><span class="card-label">Areas</span><h2>エリア一覧を見る</h2><p>エリアごとの時系列へ進みます。</p><span class="open">Open</span></a>' +
         '<a class="card growthlog" href="./plants.html"><span class="card-label">Browse</span><h2>植栽一覧を見る</h2><p>植栽とエリアの関係から入ります。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./sitemap.html"><span class="card-label">Map</span><h2>サイトマップを見る</h2><p>ページ構成とツリーを確認できます。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">Edit</span><h2>記録を追加・編集</h2><p>写真とメモを登録します。</p><span class="open">Open</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);
