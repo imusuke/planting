@@ -13,15 +13,11 @@ var root = path.join(__dirname, "..");
 var plantsPath = path.join(root, "data", "plants.json");
 var detailsPath = path.join(root, "data", "plant-details.json");
 var areaDetailsPath = path.join(root, "data", "area-details.json");
-var plantHtmlPath = path.join(root, "plant.html");
-var areaHtmlPath = path.join(root, "area.html");
 var snapPath = path.join(root, "data", "growth-snapshot.json");
 
 var plants = JSON.parse(fs.readFileSync(plantsPath, "utf8"));
 var det = JSON.parse(fs.readFileSync(detailsPath, "utf8"));
 var areaDet = JSON.parse(fs.readFileSync(areaDetailsPath, "utf8"));
-var html = fs.readFileSync(plantHtmlPath, "utf8");
-var areaHtml = fs.readFileSync(areaHtmlPath, "utf8");
 
 var issues = [];
 
@@ -50,46 +46,6 @@ var seen = {};
   seen[k] = true;
 });
 
-var startMark = 'id="plant-details-embed">';
-var start = html.indexOf(startMark);
-var end = html.indexOf("</script>", start);
-var emb = null;
-if (start >= 0 && end > start) {
-  var jsonStr = html.slice(start + startMark.length, end).trim();
-  try {
-    emb = JSON.parse(jsonStr);
-  } catch (err) {
-    issues.push("plant.html plant-details-embed JSON parse error: " + err.message);
-  }
-} else {
-  issues.push("plant.html: plant-details-embed script block not found");
-}
-
-if (emb && Array.isArray(emb.entries)) {
-  if (emb.entries.length !== (det.entries || []).length) {
-    issues.push(
-      "embed entry count " +
-        emb.entries.length +
-        " != plant-details.json " +
-        (det.entries || []).length
-    );
-  }
-  var fset = {};
-  (det.entries || []).forEach(function (e) {
-    if (e && e.areaId && e.name) fset[key(e)] = true;
-  });
-  var eset = {};
-  emb.entries.forEach(function (e) {
-    if (e && e.areaId && e.name) eset[key(e)] = true;
-  });
-  Object.keys(fset).forEach(function (k) {
-    if (!eset[k]) issues.push("embed missing: " + k.replace(/\t/g, " / "));
-  });
-  Object.keys(eset).forEach(function (k) {
-    if (!fset[k]) issues.push("embed has extra: " + k.replace(/\t/g, " / "));
-  });
-}
-
 var masterAreaIds = {};
 (plants.areas || []).forEach(function (a) {
   if (a && a.id) masterAreaIds[a.id] = true;
@@ -117,35 +73,6 @@ var areaSeen = {};
 Object.keys(masterAreaIds).forEach(function (id) {
   if (!areaSeen[id]) issues.push("area-details: missing entry for area " + id);
 });
-
-var areaStartMark = 'id="area-details-embed">';
-var areaStart = areaHtml.indexOf(areaStartMark);
-var areaEnd = areaHtml.indexOf("</script>", areaStart);
-var areaEmb = null;
-if (areaStart >= 0 && areaEnd > areaStart) {
-  var areaJsonStr = areaHtml.slice(areaStart + areaStartMark.length, areaEnd).trim();
-  try {
-    areaEmb = JSON.parse(areaJsonStr);
-  } catch (err2) {
-    issues.push("area.html area-details-embed JSON parse error: " + err2.message);
-  }
-} else {
-  issues.push("area.html: area-details-embed script block not found");
-}
-
-if (areaEmb && Array.isArray(areaEmb.entries) && areaDet && Array.isArray(areaDet.entries)) {
-  if (areaEmb.entries.length !== areaDet.entries.length) {
-    issues.push(
-      "area embed entry count " +
-        areaEmb.entries.length +
-        " != area-details.json " +
-        areaDet.entries.length
-    );
-  }
-  if (!util.isDeepStrictEqual(areaEmb, areaDet)) {
-    issues.push("area.html: area-details-embed が data/area-details.json と一致しません（npm run embed:plants を実行）");
-  }
-}
 
 if (fs.existsSync(snapPath)) {
   var snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
@@ -176,36 +103,87 @@ if (fs.existsSync(snapPath)) {
     });
 }
 
+function readEmbeddedJson(file, id) {
+  var fp = path.join(root, file);
+  if (!fs.existsSync(fp)) {
+    issues.push("missing file: " + file);
+    return null;
+  }
+  var h = fs.readFileSync(fp, "utf8");
+  var re = new RegExp('id="' + id + '">([\\s\\S]*?)<\\/script>');
+  var mm = h.match(re);
+  if (!mm) {
+    issues.push(file + ": " + id + " ブロックなし");
+    return null;
+  }
+  try {
+    return JSON.parse(mm[1].trim());
+  } catch (err) {
+    issues.push(file + ": " + id + " JSON 解析失敗 — " + err.message);
+    return null;
+  }
+}
+
+function verifyEmbeddedExact(files, id, expected, mismatchHint) {
+  files.forEach(function (file) {
+    var embedded = readEmbeddedJson(file, id);
+    if (embedded == null) return;
+    if (!util.isDeepStrictEqual(embedded, expected)) {
+      issues.push(file + ": " + mismatchHint);
+    }
+  });
+}
+
 var plantsPayload = { areas: plants.areas };
+verifyEmbeddedExact(
+  [
+    "index.html",
+    "growth-edit.html",
+    "plants.html",
+    "plant.html",
+    "plant-edit.html",
+    "area.html",
+    "areas.html",
+    "area-edit.html",
+  ],
+  "plants-embed",
+  plantsPayload,
+  "plants-embed が data/plants.json と一致しません（npm run embed:plants を実行）"
+);
+
+verifyEmbeddedExact(
+  ["plant.html", "plant-edit.html"],
+  "plant-details-embed",
+  det,
+  "plant-details-embed が data/plant-details.json と一致しません（npm run embed:plants を実行）"
+);
+
+verifyEmbeddedExact(
+  ["area.html", "areas.html"],
+  "area-details-embed",
+  areaDet,
+  "area-details-embed が data/area-details.json と一致しません（npm run embed:plants を実行）"
+);
+
 [
   "index.html",
   "growth-edit.html",
   "plants.html",
   "plant.html",
+  "plant-edit.html",
   "area.html",
+  "areas.html",
   "area-edit.html",
 ].forEach(function (f) {
   var fp = path.join(root, f);
   if (!fs.existsSync(fp)) {
-    issues.push("missing file: " + f);
     return;
   }
   var h = fs.readFileSync(fp, "utf8");
   var re = /id="plants-embed">([\s\S]*?)<\/script>/;
   var mm = h.match(re);
   if (!mm) {
-    issues.push(f + ": plants-embed ブロックなし");
     return;
-  }
-  var pe;
-  try {
-    pe = JSON.parse(mm[1].trim());
-  } catch (e2) {
-    issues.push(f + ": plants-embed JSON 解析失敗 — " + e2.message);
-    return;
-  }
-  if (!util.isDeepStrictEqual(pe, plantsPayload)) {
-    issues.push(f + ": plants-embed が data/plants.json と一致しません（npm run embed:plants を実行）");
   }
 });
 
@@ -218,5 +196,5 @@ if (issues.length) {
 }
 
 console.log(
-  "点検 OK: 植栽マスタと plant-details / area-details は整合、plant.html・area.html の詳細埋め込み一致、各 HTML の plants-embed が plants.json と一致、成長記録の植栽名はマスタ外なし。"
+  "点検 OK: 植栽マスタと plant-details / area-details は整合、各詳細埋め込み一致、各 HTML の plants-embed が plants.json と一致、成長記録の植栽名はマスタ外なし。"
 );

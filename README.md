@@ -5,9 +5,9 @@
 ## 公開サイト向け
 
 - **`index.html`** … サイトの**トップ**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
-- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**、植栽名から **`plant.html`**（植栽ページ）、そこから **`plant-detail.html`**（植栽詳細）へ進めます。
-- **`plant.html`** + **`plant.js`** … **各植栽のページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。成長記録の写真と概要を表示し、**`plant-detail.html`** の植栽詳細へ進めます。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。`data/plant-details.json` の `summary` があればここでも概要として表示します。
-- **`plant-detail.html`** + **`plant-detail.js`** … **各植栽の詳細ページ**。URL は `plant-detail.html?area=（エリアid）&plant=（植栽名）`。本文は **`data/plant-details.json`** の `entries`（`areaId`・`name`・`summary`・`body`）から表示します。マスタに無い名前・エリアの組み合わせはエラーになります。パンくずから **`plant.html`** の植栽ページへ戻れます。
+- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**、植栽名から **`plant.html`**（植栽ページ）へ進めます。
+- **`plant.html`** + **`plant.js`** … **各植栽のページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。**概要・詳しいメモ・成長記録の時系列と写真** を 1 ページで表示します。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。
+- **`plant-detail.html`** … 旧URL互換。`plant.html` に転送します。
 - **`area.html`** + **`area.js`** … **エリア単位のページ**（複数植栽がまとまっているゾーン全体）。URL は `area.html?area=（エリアid）`。文章・写真は **`data/area-details.json`** と **GET `/api/area-details`**（本番で KV があればマージ）を反映。**成長記録**でそのエリアに紐づいた写真も一覧表示します。
 - **`area-edit.html`** + **`area-edit.js`** … エリア全体の **概要・本文・写真** をブラウザから保存（**POST `/api/area-details`**、成長記録と同じ **アップロード用トークン** `x-growth-token`）。`?area=（id）` でエリアを選択できます。
 - **`api/area-details.js`** … エリア詳細の上書きを **KV** に保存し、写真は **Vercel Blob**（パス `area-details/{areaId}/{n}.jpg`）。**GET はトークン不要**、POST は `GROWTH_UPLOAD_TOKEN` と一致するトークンが必要です。プライベート Blob は **`/api/growth-image`** から配信（パス許可を拡張済み）。
@@ -35,11 +35,15 @@
 **`git pull` は GitHub 上のファイルしか更新しません。** 本番サイトで編集した **植栽マスタ（KV）** と **成長記録（KV）** は、誰かが一度 **同期スクリプトで `data/` に書き出して commit / push** しない限り、リポジトリにも他の PC の `git pull` にも反映されません。
 
 1. **Node.js 18 以上**で、プロジェクト直下（`planting`）に移動する。
-2. 本番の**ベース URL**（`https://…`、末尾 `/` なし）を付けて、**GET `/api/plants` と GET `/api/growth`** をまとめて取り込む（**トークン不要**）:
+2. 本番の**ベース URL**（`https://…`、末尾 `/` なし）を付けて、**GET `/api/plants` と GET `/api/growth`** をまとめて取り込む（**アップロード用トークン不要**。ただしサイト全体に Basic 認証をかけている場合は後述の認証環境変数が必要）:
    - **`npm run sync:prod -- https://あなたのサイト.vercel.app`**
    - または環境変数 **`PLANTING_BASE_URL`** または **`GROWTH_SNAPSHOT_URL`** に同じ URL を設定して `npm run sync:prod`
-3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**（写真）、および **`index.html` / `growth-edit.html` / `plants.html` / `plant.html` / `area.html`**（**`plants-embed`** および **`plant-details-embed` / `area-details-embed`** の自動更新）を `git add` → `commit` → `push` する。
+3. 更新された **`data/plants.json`**・**`data/growth-snapshot.json`**・**`data/growth-images/*.jpg`**・**`data/area-growth-snapshot.json`**・**`data/area-growth-images/*.jpg`**、および **`index.html` / `growth-edit.html` / `plants.html` / `plant.html` / `plant-detail.html` / `plant-edit.html` / `area.html` / `areas.html` / `area-edit.html`**（**`plants-embed`** および **`plant-details-embed` / `area-details-embed`** の自動更新）を `git add` → `commit` → `push` する。
 4. 他の環境では **`git pull`** で同じ `data/` と画像が揃います。スナップショットの各記録には **`localSnapshotImage`**（例: `./data/growth-images/{id}.jpg`）が付き、閲覧時は **ローカルファイルを優先**して表示します（オフラインや API 失敗時のフォールバック向け）。
+
+**Basic 認証付きサイトを同期するとき:** 次をセットしてから `npm run sync:prod` を実行します。
+- PowerShell 例: `$env:PLANTING_BASIC_AUTH_USER='閲覧用ID'; $env:PLANTING_BASIC_AUTH_PASSWORD='閲覧用パスワード'; npm run sync:prod -- https://あなたのサイト.vercel.app`
+- GitHub Actions 例: `PLANTING_BASIC_AUTH_USER` と `PLANTING_BASIC_AUTH_PASSWORD` を repository secrets に追加
 
 **個別に取り込む場合:** `npm run sync:plants -- <URL>`（マスタのみ・**plants-embed 付き HTML も更新**）、`npm run sync:growth -- <URL>`（成長記録＋**写真ダウンロード**）。**JSON だけ欲しいとき:** `npm run sync:growth -- <URL> --no-images`
 
@@ -69,11 +73,10 @@
    - **`BLOB_PUT_ACCESS=public`** にすると Blob の **公開 URL** をそのまま記録に保存できます（ストアが公開アップロードに対応している必要があります）。上書き時は **`allowOverwrite`** を付けているため、同じ `growth/{id}.jpg` への差し替えも失敗しにくくなっています。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、**投稿・編集・削除・植栽マスタの保存**だけが保護されます。**記録一覧の取得（GET）はトークンなし**で行えるため、どの端末でも一覧と写真を閲覧できます。**トークン未設定のままだと、公開 URL では誰でも書き込める**状態になります。
-5. 必要なら、閲覧にも共通 ID / パスワードをかける。環境変数 **`SITE_BASIC_AUTH_USER`** と **`SITE_BASIC_AUTH_PASSWORD`** の両方を設定すると、`middleware.js` がサイト全体（HTML と API）に **Basic 認証** をかけます。
+5. 閲覧には共通 ID / パスワードを必ず設定する。環境変数 **`SITE_BASIC_AUTH_USER`** / **`SITE_BASIC_AUTH_PASSWORD`** または **`BASIC_AUTH_USER`** / **`BASIC_AUTH_PASSWORD`** のどちらか 1 組を設定すると、`middleware.js` がサイト全体（HTML と API）に **Basic 認証** をかけます。
    - ブラウザには標準の ID / パスワード入力ダイアログが表示されます。
-   - どちらか片方だけ設定すると **500** で止まるため、必ず 2 つセットで入れてください。
-   - 未設定なら、これまで通り認証なしで閲覧できます。
-6. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、一覧取得と保存ができるか確認します。
+   - どちらか片方だけ設定した場合や、両方とも未設定のままデプロイした場合は **500** で止まるため、必ず 2 つセットで入れてください。
+6. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、Basic 認証のダイアログが出たうえで一覧取得と保存ができるか確認します。
 
 ローカルで API を試す場合は `npm install` のあと `vercel dev`（Vercel CLI）を使うと `/api/growth` にアクセスできます。`file://` で HTML を開いただけでは API は使えません。
 

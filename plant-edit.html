@@ -14,16 +14,16 @@
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">ホーム</a></li>
+        <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
-        <li><a href="./plant-detail.html" id="plant-edit-detail-breadcrumb-link">植栽詳細</a></li>
+        <li><a href="./plant.html" id="plant-edit-detail-breadcrumb-link">植栽</a></li>
         <li aria-current="page" id="plant-edit-breadcrumb-current">植栽詳細を編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
 
         <a href="./growth-edit.html" id="plant-edit-record-link">この植栽の記録を追加・編集</a>
-        <a href="./plant-detail.html" id="plant-edit-detail-link">この植栽詳細を見る</a>
+        <a href="./plant.html" id="plant-edit-detail-link">この植栽を見る</a>
       </div>
     </nav>
 
@@ -35,7 +35,7 @@
       <p id="plant-edit-context-line" class="lead plant-detail-area-line" hidden></p>
       <p class="lead">
         植栽の要約と本文を編集します。閲覧は
-        <a href="./plant-detail.html" id="plant-edit-lead-detail-link" class="plant-detail-link">植栽詳細</a>
+        <a href="./plant.html" id="plant-edit-lead-detail-link" class="plant-detail-link">植栽ページ</a>
         から確認できます。
       </p>
     </header>
@@ -79,7 +79,7 @@
 
       <p class="growth-actions">
         <button type="submit" id="plant-edit-save" class="growth-primary">保存する</button>
-        <a href="./plant-detail.html" id="plant-edit-open-detail" class="plant-detail-link">植栽詳細を見る</a>
+        <a href="./plant.html" id="plant-edit-open-detail" class="plant-detail-link">植栽を見る</a>
 
       </p>
     </form>
@@ -103,7 +103,9 @@
         "スイートアリッサム",
         "シルバータイム",
         "ヒューケラ（ツボサンゴ）",
-        "ハツユキカズラ（初雪カズラ）"
+        "ハツユキカズラ（初雪カズラ）",
+        "ハナニラ（イフェイオン）",
+        "アジサイ"
       ]
     },
     {
@@ -132,7 +134,9 @@
         "リューカデンドロン",
         "グレヴィレア・バイレヤナ",
         "オリーブの木",
-        "ヒューケラ（ツボサンゴ）"
+        "ヒューケラ（ツボサンゴ）",
+        "ブーゲンビリア",
+        "アイビー（ヘデラ）"
       ]
     },
     {
@@ -144,7 +148,9 @@
         "ヤマアジサイ",
         "サルビア スペルバ　ボルドー　ディープブルー",
         "オリヅルラン（折鶴蘭）",
-        "ノースポール（クリサンセマム・パルドラム）"
+        "ノースポール（クリサンセマム・パルドラム）",
+        "ベロニカ（スピードウェル）",
+        "アジサイ"
       ]
     },
     {
@@ -166,6 +172,7 @@
         "アジサイ",
         "ソラマメ",
         "スナップエンドウ",
+        "枝豆",
         "畑全体"
       ]
     }
@@ -436,6 +443,12 @@
     },
     {
       "areaId": "yatsu-hatake",
+      "name": "枝豆",
+      "summary": "初夏に育てやすい豆類。日当たりと水はけを確保すると安定しやすいです。",
+      "body": "種まき直後は土を乾かしすぎないようにしつつ、過湿は避けます。本葉が増えてきたら株元を軽く寄せ土すると倒伏を防ぎやすいです。\n\nマメ科なので連作は避け、莢がふくらむ時期は乾燥しすぎないように管理すると実つきが安定します。"
+    },
+    {
+      "areaId": "yatsu-hatake",
       "name": "ソラマメ",
       "summary": "春まきの豆科一年草。支柱を立てて風倒れを防ぎます。",
       "body": "日当たりのよい場所と、水はけのよい肥沃な土を好みます。花がついたら適度な灌水で莢の充実を助けます。\n\n連作障害を避けるため、同じ場所への連年栽培は避け、土壌を休ませるか輪作するとよいです。"
@@ -451,12 +464,45 @@
       "name": "畑全体",
       "summary": "谷津畑エリアの野菜・花壇などをまとめて指すメモ用の項目です。",
       "body": "区画ごとに日照・風・水はけが異なるため、作物や季節に合わせて灌水と土づくりを調整してください。\n\n連作・病害虫の記録を残しておくと、翌年の配置換えがしやすくなります。この説明文は data/plant-details.json で自由に書き換えられます。"
+    },
+    {
+      "areaId": "entrance",
+      "name": "ハナニラ（イフェイオン）",
+      "summary": "春先に星形の花を咲かせる球根植物で、足元を明るく見せてくれます。",
+      "body": "細い葉が株立ちになり、やわらかな日差しが当たる場所でよく育ちます。\n\n花後は葉をすぐ切らず、しばらく光合成させると翌年の開花につながります。密になってきたら休眠期に株分けして更新してください。"
+    },
+    {
+      "areaId": "entrance",
+      "name": "アジサイ",
+      "summary": "梅雨どきに花色の変化を楽しめる低木で、入口まわりの季節感をつくる主役です。",
+      "body": "水切れしやすい時期は朝のうちにたっぷり灌水し、強い西日が続く日は葉焼けに注意してください。\n\n花後の剪定は翌年の花芽を落としすぎない位置で軽めに行い、古枝の整理と風通しの確保を意識すると状態が安定します。"
+    },
+    {
+      "areaId": "deck",
+      "name": "ブーゲンビリア",
+      "summary": "鮮やかな苞が目を引くつる性植物で、デッキまわりに明るい印象を加えます。",
+      "body": "日当たりと風通しを好むため、枝が混み合う前に軽く誘引しながら形を整えてください。\n\n水を与えすぎると枝葉ばかり伸びやすいので、表土が乾いてから灌水するくらいの管理が向いています。寒さが強い時期は冷たい風を避けると安心です。"
+    },
+    {
+      "areaId": "deck",
+      "name": "アイビー（ヘデラ）",
+      "summary": "壁際や鉢縁からやわらかく垂れる常緑つる植物で、植栽どうしのつなぎ役になります。",
+      "body": "丈夫ですが、伸びすぎると内部が蒸れやすいので、ときどき切り戻して風通しを確保してください。\n\n節から発根しやすいため、空いた場所を埋めたいときは挿し穂で増やしながら更新できます。ほかの株にかぶさりすぎないよう広がり方を見て整えると扱いやすいです。"
+    },
+    {
+      "areaId": "corner",
+      "name": "ベロニカ（スピードウェル）",
+      "summary": "細長い花穂が立ち上がる多年草で、角の花壇に縦のリズムをつくります。",
+      "body": "日当たりと水はけのよい場所でまとまりやすく、咲き終わった花穂を早めに切ると株姿を保ちやすくなります。\n\n蒸れが続くと弱りやすいので、梅雨前に混み合った茎を軽く間引いておくと管理しやすいです。"
+    },
+    {
+      "areaId": "corner",
+      "name": "アジサイ",
+      "summary": "角の植栽帯で季節の移ろいを伝える低木で、周囲の草花との対比が楽しめます。",
+      "body": "乾燥しすぎると葉がしおれやすいため、表土の乾き具合を見ながらこまめに水分を補ってください。\n\n花後は株の外向きの芽を残して軽く切り戻し、古枝や細枝を整理しておくと翌年も見やすい姿を保てます。"
     }
   ]
 }
-  </script>
-  <script>
-    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./hub-link.js" defer></script>
   <script src="./plant-edit.js" defer></script>

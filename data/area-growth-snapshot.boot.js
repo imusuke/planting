@@ -1,8 +1,46 @@
 window.__PLANTING_AREA_GROWTH_SNAPSHOT__ = {
   "version": 2,
-  "exportedAt": "2026-03-28T05:33:07.228Z",
-  "source": "https://planting-three.vercel.app/api/area-growth",
+  "source": "storage-direct",
+  "exportedAt": "2026-04-04T12:13:00.520Z",
   "records": [
+    {
+      "id": "0d1e64c3-1014-4f1c-b87c-48560f000acd",
+      "areaId": "parking",
+      "areaLabel": "駐車場脇",
+      "recordedAt": "2026-03-28",
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/area-growth/0d1e64c3-1014-4f1c-b87c-48560f000acd/0.jpg",
+          "imagePathname": "area-growth/0d1e64c3-1014-4f1c-b87c-48560f000acd/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/area-growth-images/0d1e64c3-1014-4f1c-b87c-48560f000acd-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/area-growth/0d1e64c3-1014-4f1c-b87c-48560f000acd/0.jpg",
+      "imagePathname": "area-growth/0d1e64c3-1014-4f1c-b87c-48560f000acd/0.jpg",
+      "createdAt": "2026-03-28T06:06:33.546Z",
+      "localSnapshotImage": "./data/area-growth-images/0d1e64c3-1014-4f1c-b87c-48560f000acd-0.jpg"
+    },
+    {
+      "id": "f791689b-530f-45d4-893d-bba058d83705",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "recordedAt": "2026-03-28",
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/area-growth/f791689b-530f-45d4-893d-bba058d83705/0.jpg",
+          "imagePathname": "area-growth/f791689b-530f-45d4-893d-bba058d83705/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/area-growth-images/f791689b-530f-45d4-893d-bba058d83705-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/area-growth/f791689b-530f-45d4-893d-bba058d83705/0.jpg",
+      "imagePathname": "area-growth/f791689b-530f-45d4-893d-bba058d83705/0.jpg",
+      "createdAt": "2026-03-28T06:05:53.570Z",
+      "localSnapshotImage": "./data/area-growth-images/f791689b-530f-45d4-893d-bba058d83705-0.jpg"
+    },
     {
       "id": "007276bb-42bb-4584-95e6-abc864dacbea",
       "areaId": "corner",

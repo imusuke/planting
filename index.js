@@ -8,6 +8,7 @@
   var PLANTS_JSON = "data/plants.json";
   var AREA_DETAILS_JSON = "data/area-details.json";
   var GROWTH_SNAPSHOT_JSON = "data/growth-snapshot.json";
+  var AREA_GROWTH_SNAPSHOT_JSON = "data/area-growth-snapshot.json";
 
   var tbody = document.getElementById("plant-table-body");
   if (!tbody) return;
@@ -76,6 +77,55 @@
     var bTime = Date.parse((b && (b.recordedAt || b.createdAt)) || "") || 0;
     if (aTime !== bTime) return bTime - aTime;
     return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
+  }
+
+  function countPhotoSlots(record) {
+    var slots = growthImageSlots(record);
+    var count = 0;
+    for (var i = 0; i < slots.length; i++) {
+      if (growthImageSrcFromSlot(slots[i])) count += 1;
+    }
+    return count;
+  }
+
+  function buildPlantPhotoCountMap(records) {
+    var map = Object.create(null);
+    if (!Array.isArray(records) || !records.length) return map;
+
+    records.forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slotCount = countPhotoSlots(record);
+      if (!areaId || !slotCount) return;
+
+      var plants = Array.isArray(record.plants) ? record.plants : [];
+      var seen = Object.create(null);
+      plants.forEach(function (plantName) {
+        var normalized = normalizePlantName(plantName);
+        if (!normalized || seen[normalized]) return;
+        seen[normalized] = true;
+        var key = areaId + "::" + normalized;
+        map[key] = (map[key] || 0) + slotCount;
+      });
+    });
+
+    return map;
+  }
+
+  function buildAreaTimelinePhotoCountMap(areaRecords) {
+    var map = Object.create(null);
+    if (!Array.isArray(areaRecords)) return map;
+
+    areaRecords.forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slotCount = countPhotoSlots(record);
+      if (!areaId || !slotCount) return;
+      map[areaId] = (map[areaId] || 0) + slotCount;
+    });
+    return map;
+  }
+
+  function photoCountSuffix(count) {
+    return "（" + String(count || 0) + "枚）";
   }
 
   function buildLatestPlantPhotoMap(records) {
@@ -148,7 +198,7 @@
     return tr;
   }
 
-  function renderTable(data, plantPhotoMap, areaPhotoMap) {
+  function renderTable(data, plantPhotoMap, areaPhotoMap, plantPhotoCountMap, areaPhotoCountMap) {
     tbody.innerHTML = "";
 
     var areas = data && Array.isArray(data.areas) ? data.areas : [];
@@ -173,7 +223,9 @@
 
       var areaName = document.createElement("span");
       areaName.className = "plant-area-name";
-      areaName.textContent = area.label;
+      areaName.textContent =
+        (area.label || area.id) +
+        photoCountSuffix((areaPhotoCountMap || {})[String(area.id || "").trim()] || 0);
       areaPage.appendChild(areaName);
       areaWrap.appendChild(areaPage);
 
@@ -230,7 +282,13 @@
 
           var name = document.createElement("span");
           name.className = "plant-record-name";
-          name.textContent = plantName;
+          name.textContent =
+            plantName +
+            photoCountSuffix(
+              (plantPhotoCountMap || {})[
+                String(area.id || "").trim() + "::" + normalizePlantName(plantName)
+              ] || 0
+            );
           link.appendChild(name);
 
           var photo = plantPhotoMap[String(area.id || "").trim() + "::" + normalizePlantName(plantName)];
@@ -311,6 +369,14 @@
         throw new Error("bad shape");
       })
       .catch(function () {
+        return loadJson(AREA_GROWTH_SNAPSHOT_JSON).then(function (data) {
+          if (data && Array.isArray(data.records)) return data.records;
+          throw new Error("bad snapshot");
+        });
+      })
+      .catch(function () {
+        var snap = window.__PLANTING_AREA_GROWTH_SNAPSHOT__;
+        if (snap && Array.isArray(snap.records)) return snap.records;
         return [];
       });
   }
@@ -340,11 +406,19 @@
       var areaGrowthRecords = results[2];
       var areaDetailEntries = results[3];
       var plantPhotoMap = buildLatestPlantPhotoMap(growthRecords);
+      var plantPhotoCountMap = buildPlantPhotoCountMap(growthRecords);
+      var areaPhotoCountMap = buildAreaTimelinePhotoCountMap(areaGrowthRecords);
       var areaPhotoMap = mergeStaticAreaPhotoMap(
         areaDetailEntries,
         buildLatestAreaPhotoMap(areaGrowthRecords)
       );
-      renderTable(plantsData, plantPhotoMap, areaPhotoMap);
+      renderTable(
+        plantsData,
+        plantPhotoMap,
+        areaPhotoMap,
+        plantPhotoCountMap,
+        areaPhotoCountMap
+      );
     })
     .catch(function () {
       tbody.innerHTML = "";

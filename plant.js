@@ -9,7 +9,6 @@
   var root = document.getElementById("plant-detail-root");
   var titleEl = document.getElementById("plant-detail-title");
   var areaLineEl = document.getElementById("plant-detail-area-line");
-  var timelineCrumbLinkEl = document.getElementById("plant-detail-timeline-link");
   var crumbEl = document.getElementById("plant-detail-breadcrumb-current");
   var detailEditLinkEl = document.getElementById("plant-detail-edit-link");
   var recordEditLinkEl = document.getElementById("plant-detail-record-edit-link");
@@ -66,6 +65,11 @@
     });
   }
 
+  function readWindowSnapshotRecords(key) {
+    var data = window[key];
+    return data && Array.isArray(data.records) ? data.records : [];
+  }
+
   function loadPlantsData() {
     return loadJson("/api/plants")
       .then(function (data) {
@@ -91,6 +95,7 @@
           imageUrl: im.imageUrl || null,
           imagePathname: im.imagePathname || null,
           localSnapshotImage: im.localSnapshotImage || null,
+          memo: String(im.memo || "").trim(),
         };
       });
     }
@@ -100,6 +105,7 @@
           imageUrl: r.imageUrl || null,
           imagePathname: r.imagePathname || null,
           localSnapshotImage: r.localSnapshotImage || null,
+          memo: "",
         },
       ];
     }
@@ -146,7 +152,7 @@
             return data && Array.isArray(data.records) ? data.records : [];
           })
           .catch(function () {
-            return [];
+            return readWindowSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__");
           });
       });
   }
@@ -165,93 +171,20 @@
     return String(r.areaId || "").trim() === String(areaId).trim();
   }
 
-  function collectPhotosForPlant(records, plantName, areaId) {
+  function collectRecordsForPlant(records, plantName, areaId) {
     var rows = [];
     if (!Array.isArray(records)) return rows;
-    for (var ri = 0; ri < records.length; ri++) {
-      var r = records[ri];
+    for (var i = 0; i < records.length; i++) {
+      var r = records[i];
       if (!recordHasPlantInArea(r, plantName, areaId)) continue;
-      var slots = growthImageSlots(r);
-      for (var si = 0; si < slots.length; si++) {
-        var url = growthImageSrcFromSlot(slots[si]);
-        if (!url) continue;
-        rows.push({
-          recordedAt: r.recordedAt || "",
-          url: url,
-          slot: slots[si],
-        });
-      }
+      rows.push(r);
     }
     rows.sort(function (a, b) {
-      return (b.recordedAt || "").localeCompare(a.recordedAt || "");
+      var ad = String((a && (a.recordedAt || a.createdAt)) || "");
+      var bd = String((b && (b.recordedAt || b.createdAt)) || "");
+      return bd.localeCompare(ad);
     });
-    var seen = {};
-    var out = [];
-    for (var j = 0; j < rows.length; j++) {
-      var u = rows[j].url;
-      if (seen[u]) continue;
-      seen[u] = true;
-      out.push(rows[j]);
-    }
-    return out;
-  }
-
-  function renderGrowthPhotosSection(plantName, areaId, records) {
-    var section = document.createElement("section");
-    section.className = "plant-detail-photos";
-    var h = document.createElement("h2");
-    h.className = "plant-detail-photos-heading";
-    h.textContent = "成長記録の写真";
-    section.appendChild(h);
-
-    var items = collectPhotosForPlant(records, plantName, areaId);
-    if (items.length === 0) {
-      var empty = document.createElement("p");
-      empty.className = "plant-detail-photos-empty";
-      empty.textContent =
-        "この植栽・エリアの記録写真はまだありません。成長記録に写真を追加すると、ここに表示されます。";
-      section.appendChild(empty);
-      return section;
-    }
-
-    var grid = document.createElement("div");
-    grid.className = "plant-detail-photos-grid";
-    for (var k = 0; k < items.length; k++) {
-      (function (it) {
-        var fig = document.createElement("figure");
-        fig.className = "plant-detail-photo-figure";
-        var img = document.createElement("img");
-        img.className = "plant-detail-photo-img";
-        img.src = it.url;
-        img.alt = plantName + "の記録写真";
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.referrerPolicy = "no-referrer";
-        img.addEventListener("error", function onPlantPhotoErr() {
-          img.removeEventListener("error", onPlantPhotoErr);
-          if (img.dataset.plantPhotoFb === "1") return;
-          var sl = it.slot;
-          if (!sl || !sl.localSnapshotImage) return;
-          var fb = sl.imageUrl || "";
-          if (!fb && sl.imagePathname) {
-            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
-          }
-          if (fb) {
-            img.dataset.plantPhotoFb = "1";
-            img.src = fb;
-          }
-        });
-        fig.appendChild(img);
-        var cap = document.createElement("figcaption");
-        cap.className = "plant-detail-photo-date";
-        cap.textContent = (it.recordedAt || "").slice(0, 10) || "—";
-        fig.appendChild(cap);
-        grid.appendChild(fig);
-      })(items[k]);
-    }
-    section.appendChild(grid);
-
-    return section;
+    return rows;
   }
 
   function loadDetailsData() {
@@ -284,6 +217,33 @@
       });
   }
 
+  function buildQuery(pathname, params) {
+    var pairs = [];
+    if (params && params.id) pairs.push("id=" + encodeURIComponent(params.id));
+    if (params && params.area) pairs.push("area=" + encodeURIComponent(params.area));
+    if (params && params.plant) pairs.push("plant=" + encodeURIComponent(params.plant));
+    return pathname + (pairs.length ? "?" + pairs.join("&") : "");
+  }
+
+  function formatDateLabel(value) {
+    var text = String(value || "").trim();
+    if (!text) return "日付未設定";
+    return text.slice(0, 10) || text;
+  }
+
+  function renderBody(container, text) {
+    if (!text || !String(text).trim()) return;
+    var parts = String(text).split(/\n\n+/);
+    for (var i = 0; i < parts.length; i++) {
+      var chunk = parts[i].trim();
+      if (!chunk) continue;
+      var p = document.createElement("p");
+      p.className = "plant-detail-body-p";
+      p.textContent = chunk;
+      container.appendChild(p);
+    }
+  }
+
   function clearRoot() {
     root.innerHTML = "";
   }
@@ -303,28 +263,172 @@
     }
   }
 
-  function renderBody(container, text) {
-    if (!text || !String(text).trim()) return;
-    var parts = String(text).split(/\n\n+/);
-    for (var i = 0; i < parts.length; i++) {
-      var chunk = parts[i].trim();
-      if (!chunk) continue;
-      var p = document.createElement("p");
-      p.className = "plant-detail-body-p";
-      p.textContent = chunk;
-      container.appendChild(p);
+  function renderDetailSection(entry) {
+    var section = document.createElement("section");
+    section.className = "plant-detail-section";
+
+    var h = document.createElement("h2");
+    h.className = "plant-detail-section-heading";
+    h.textContent = "詳しいメモ";
+    section.appendChild(h);
+
+    var bodyWrap = document.createElement("div");
+    bodyWrap.className = "plant-detail-body";
+    if (entry && entry.body) {
+      renderBody(bodyWrap, entry.body);
     }
+    if (!bodyWrap.childElementCount) {
+      var hint = document.createElement("p");
+      hint.className = "plant-detail-placeholder";
+      hint.textContent =
+        "この植栽の解説や手入れメモは、まだ登録されていません。植栽の説明を編集から追加できます。";
+      bodyWrap.appendChild(hint);
+    }
+    section.appendChild(bodyWrap);
+
+    return section;
+  }
+
+  function renderTimelineSection(area, plantName, records) {
+    var section = document.createElement("section");
+    section.className = "plant-detail-section plant-timeline";
+
+    var h = document.createElement("h2");
+    h.className = "plant-detail-section-heading";
+    h.textContent = "記録の時系列";
+    section.appendChild(h);
+
+    var items = collectRecordsForPlant(records, plantName, area.id);
+    if (!items.length) {
+      var empty = document.createElement("p");
+      empty.className = "plant-detail-placeholder";
+      empty.textContent =
+        "この植栽の記録はまだありません。記録を追加すると、ここに時系列で並びます。";
+      section.appendChild(empty);
+      return section;
+    }
+
+    var list = document.createElement("div");
+    list.className = "plant-timeline-list";
+
+    for (var i = 0; i < items.length; i++) {
+      var record = items[i];
+      var card = document.createElement("article");
+      card.className = "plant-timeline-entry";
+
+      var head = document.createElement("div");
+      head.className = "plant-timeline-entry-head";
+      var dateEl = document.createElement("h3");
+      dateEl.className = "plant-timeline-entry-date";
+      dateEl.textContent = formatDateLabel(record.recordedAt);
+      head.appendChild(dateEl);
+
+      var companionPlants = [];
+      if (Array.isArray(record.plants)) {
+        for (var pi = 0; pi < record.plants.length; pi++) {
+          var companion = normalizePlantName(record.plants[pi]);
+          if (!companion || companion === plantName) continue;
+          companionPlants.push(companion);
+        }
+      }
+      if (companionPlants.length) {
+        var meta = document.createElement("p");
+        meta.className = "plant-timeline-entry-meta";
+        meta.textContent = "同じ記録に含まれる植栽: " + companionPlants.join(" / ");
+        head.appendChild(meta);
+      }
+      card.appendChild(head);
+
+      var note = String((record && record.note) || "").trim();
+      if (note) {
+        var noteEl = document.createElement("p");
+        noteEl.className = "plant-timeline-entry-note";
+        noteEl.textContent = note;
+        card.appendChild(noteEl);
+      }
+
+      var slots = growthImageSlots(record);
+      if (slots.length) {
+        var grid = document.createElement("div");
+        grid.className = "plant-timeline-media-grid";
+        for (var si = 0; si < slots.length; si++) {
+          (function (slot) {
+            var src = growthImageSrcFromSlot(slot);
+            if (!src) return;
+            var fig = document.createElement("figure");
+            fig.className = "plant-timeline-photo";
+            var img = document.createElement("img");
+            img.className = "plant-timeline-photo-img";
+            img.src = src;
+            img.alt = plantName + "の記録写真";
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.referrerPolicy = "no-referrer";
+            img.addEventListener("error", function onPlantPhotoErr() {
+              img.removeEventListener("error", onPlantPhotoErr);
+              if (img.dataset.plantPhotoFb === "1") return;
+              if (!slot || !slot.localSnapshotImage) return;
+              var fb = slot.imageUrl || "";
+              if (!fb && slot.imagePathname) {
+                fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+              }
+              if (fb) {
+                img.dataset.plantPhotoFb = "1";
+                img.src = fb;
+              }
+            });
+            fig.appendChild(img);
+            if (slot.memo) {
+              var cap = document.createElement("figcaption");
+              cap.className = "plant-timeline-photo-caption";
+              cap.textContent = slot.memo;
+              fig.appendChild(cap);
+            }
+            grid.appendChild(fig);
+          })(slots[si]);
+        }
+        if (grid.childElementCount) {
+          card.appendChild(grid);
+        }
+      }
+
+      if (!note && !slots.length) {
+        var emptyState = document.createElement("p");
+        emptyState.className = "plant-timeline-entry-empty";
+        emptyState.textContent = "この記録には写真やコメントがありません。";
+        card.appendChild(emptyState);
+      }
+
+      var actions = document.createElement("p");
+      actions.className = "plant-timeline-entry-actions";
+      var editLink = document.createElement("a");
+      editLink.className = "plant-detail-link";
+      editLink.href = buildQuery("./growth-edit.html", {
+        id: record.id || "",
+        area: area.id,
+        plant: plantName,
+      });
+      editLink.textContent = "この記録を編集";
+      actions.appendChild(editLink);
+      card.appendChild(actions);
+
+      list.appendChild(card);
+    }
+
+    section.appendChild(list);
+    return section;
   }
 
   function renderPage(area, plantName, entry, options) {
     options = options || {};
     clearRoot();
+
     if (options.warnMultipleAreaMatch) {
       var wMulti = document.createElement("p");
       wMulti.className = "plant-detail-warning";
       wMulti.setAttribute("role", "status");
       wMulti.textContent =
-        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、成長記録にエリアが紐づいている状態にするか、植栽一覧からエリア付きで開いてください。";
+        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、植栽一覧からエリア付きで開いてください。";
       root.appendChild(wMulti);
     }
     if (options.warnNotInMaster) {
@@ -337,26 +441,26 @@
         "」が見つかりませんでした（表記の違い、または一覧へ未反映の可能性があります）。成長記録の名前と植栽一覧を照合してください。";
       root.appendChild(warn);
     }
+
     document.title = plantName + " — 植栽メモ";
     titleEl.textContent = plantName;
-
     if (crumbEl) crumbEl.textContent = plantName;
+
     if (detailEditLinkEl) {
-      detailEditLinkEl.href =
-        "./plant-detail.html?area=" +
-        encodeURIComponent(area.id) +
-        "&plant=" +
-        encodeURIComponent(plantName);
-      detailEditLinkEl.textContent = "この植栽詳細を見る";
+      detailEditLinkEl.href = buildQuery("./plant-edit.html", {
+        area: area.id,
+        plant: plantName,
+      });
+      detailEditLinkEl.textContent = "この植栽の説明を編集";
     }
     if (recordEditLinkEl) {
-      recordEditLinkEl.href =
-        "./growth-edit.html?area=" +
-        encodeURIComponent(area.id) +
-        "&plant=" +
-        encodeURIComponent(plantName);
+      recordEditLinkEl.href = buildQuery("./growth-edit.html", {
+        area: area.id,
+        plant: plantName,
+      });
       recordEditLinkEl.textContent = "この植栽の記録を追加・編集";
     }
+
     if (areaLineEl) {
       areaLineEl.hidden = false;
       areaLineEl.innerHTML = "";
@@ -364,7 +468,7 @@
       areaLink.href = "./area.html?area=" + encodeURIComponent(area.id);
       areaLink.className = "plant-detail-area-link";
       areaLink.textContent = "エリア: " + (area.label || area.id);
-      areaLink.setAttribute("title", "このエリアの時系列ページへ");
+      areaLink.setAttribute("title", "このエリアのページへ");
       areaLineEl.appendChild(areaLink);
     }
 
@@ -375,37 +479,30 @@
       root.appendChild(sum);
     }
 
-    root.appendChild(
-      renderGrowthPhotosSection(plantName, area.id, options.growthRecords || [])
-    );
-
-    var detailNote = document.createElement("p");
-    detailNote.className = "plant-detail-placeholder";
-    detailNote.textContent = entry && (entry.summary || entry.body)
-      ? "詳しい説明や手入れメモは「この植栽詳細を見る」から確認できます。"
-      : "この植栽の説明はまだ登録されていません。詳しい内容は植栽詳細ページから追加・確認できます。";
-    root.appendChild(detailNote);
+    root.appendChild(renderDetailSection(entry));
+    root.appendChild(renderTimelineSection(area, plantName, options.growthRecords || []));
 
     var actions = document.createElement("p");
     actions.className = "plant-detail-actions";
+
     var aDetail = document.createElement("a");
     aDetail.className = "plant-detail-cta";
-    aDetail.href =
-      "./plant-detail.html?area=" +
-      encodeURIComponent(area.id) +
-      "&plant=" +
-      encodeURIComponent(plantName);
-    aDetail.textContent = "この植栽詳細を見る";
+    aDetail.href = buildQuery("./plant-edit.html", {
+      area: area.id,
+      plant: plantName,
+    });
+    aDetail.textContent = "この植栽の説明を編集";
     actions.appendChild(aDetail);
+
     var aRecord = document.createElement("a");
     aRecord.className = "plant-detail-cta";
-    aRecord.href =
-      "./growth-edit.html?area=" +
-      encodeURIComponent(area.id) +
-      "&plant=" +
-      encodeURIComponent(plantName);
+    aRecord.href = buildQuery("./growth-edit.html", {
+      area: area.id,
+      plant: plantName,
+    });
     aRecord.textContent = "この植栽の記録を追加・編集";
     actions.appendChild(aRecord);
+
     root.appendChild(actions);
   }
 

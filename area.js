@@ -118,6 +118,76 @@
     return slot.imageUrl || null;
   }
 
+  function normalizePlantName(name) {
+    return typeof name === "string" ? name.trim() : "";
+  }
+
+  function compareRecordsNewest(a, b) {
+    var ax = String((a && (a.recordedAt || a.createdAt)) || "");
+    var bx = String((b && (b.recordedAt || b.createdAt)) || "");
+    return bx.localeCompare(ax);
+  }
+
+  function buildLatestPlantPhotoMap(records) {
+    var map = Object.create(null);
+    if (!Array.isArray(records) || !records.length) return map;
+
+    records.slice().sort(compareRecordsNewest).forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slot = growthImageSlots(record)[0];
+      var src = growthImageSrcFromSlot(slot);
+      if (!src) return;
+
+      var plants = Array.isArray(record.plants) ? record.plants : [];
+      plants.forEach(function (plantName) {
+        var normalized = normalizePlantName(plantName);
+        if (!normalized) return;
+        var key = areaId + "::" + normalized;
+        if (!map[key]) {
+          map[key] = { src: src };
+        }
+      });
+    });
+
+    return map;
+  }
+
+  function countPhotoSlots(record) {
+    var slots = growthImageSlots(record);
+    var count = 0;
+    for (var i = 0; i < slots.length; i++) {
+      if (growthImageSrcFromSlot(slots[i])) count += 1;
+    }
+    return count;
+  }
+
+  function buildPlantPhotoCountMap(records) {
+    var map = Object.create(null);
+    if (!Array.isArray(records) || !records.length) return map;
+
+    records.forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slotCount = countPhotoSlots(record);
+      if (!areaId || !slotCount) return;
+
+      var plants = Array.isArray(record.plants) ? record.plants : [];
+      var seen = Object.create(null);
+      plants.forEach(function (plantName) {
+        var normalized = normalizePlantName(plantName);
+        if (!normalized || seen[normalized]) return;
+        seen[normalized] = true;
+        var key = areaId + "::" + normalized;
+        map[key] = (map[key] || 0) + slotCount;
+      });
+    });
+
+    return map;
+  }
+
+  function photoCountSuffix(count) {
+    return "（" + String(count || 0) + "枚）";
+  }
+
   function cloudHeadersForAreaWrite() {
     var h = { Accept: "application/json", "Content-Type": "application/json" };
     var t = "";
@@ -437,7 +507,7 @@
     }
   }
 
-  function renderPlantList(area) {
+  function renderPlantList(area, plantGrowthRecords) {
     var section = document.createElement("section");
     section.className = "area-detail-plants";
     var h = document.createElement("h2");
@@ -446,6 +516,8 @@
     section.appendChild(h);
     var ul = document.createElement("ul");
     ul.className = "area-detail-plants-list";
+    var plantPhotoMap = buildLatestPlantPhotoMap(plantGrowthRecords || []);
+    var plantPhotoCountMap = buildPlantPhotoCountMap(plantGrowthRecords || []);
     var plants = area.plants || [];
     if (plants.length === 0) {
       var li = document.createElement("li");
@@ -455,28 +527,50 @@
     } else {
       plants.forEach(function (pname) {
         var li = document.createElement("li");
+        li.className = "area-detail-plants-item";
         var a = document.createElement("a");
         a.href =
           "plant.html?area=" +
           encodeURIComponent(area.id) +
           "&plant=" +
           encodeURIComponent(pname);
-        a.textContent = pname;
-        a.className = "plant-detail-link";
+        a.className = "plant-record-link plant-record-link--with-thumb";
+        a.setAttribute("title", pname + " のページを開く");
+
+        var name = document.createElement("span");
+        name.className = "plant-record-name";
+        name.textContent =
+          pname +
+          photoCountSuffix(
+            plantPhotoCountMap[
+              String(area.id || "").trim() + "::" + normalizePlantName(pname)
+            ] || 0
+          );
+
+        var photo =
+          plantPhotoMap[String(area.id || "").trim() + "::" + normalizePlantName(pname)];
+        if (photo && photo.src) {
+          var thumb = document.createElement("span");
+          thumb.className = "plant-record-thumb";
+
+          var img = document.createElement("img");
+          img.className = "plant-record-thumb-img";
+          img.src = photo.src;
+          img.alt = pname + " の最新写真";
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.referrerPolicy = "no-referrer";
+          img.addEventListener("error", function () {
+            thumb.remove();
+          });
+
+          thumb.appendChild(img);
+          a.appendChild(thumb);
+        }
+
+        a.appendChild(name);
+
         li.appendChild(a);
-        var span = document.createElement("span");
-        span.className = "area-detail-plants-actions";
-        span.appendChild(document.createTextNode(" "));
-        var g = document.createElement("a");
-        g.href =
-          "plant-detail.html?area=" +
-          encodeURIComponent(area.id) +
-          "&plant=" +
-          encodeURIComponent(pname);
-        g.textContent = "詳細";
-        g.className = "plant-record-link";
-        span.appendChild(g);
-        li.appendChild(span);
         ul.appendChild(li);
       });
     }
@@ -929,7 +1023,7 @@
     }
     root.appendChild(bodyWrap);
 
-    root.appendChild(renderPlantList(area));
+    root.appendChild(renderPlantList(area, plantGrowthRecords || []));
 
     var actions = document.createElement("p");
     actions.className = "plant-detail-actions";

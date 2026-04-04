@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — ホーム</title>
+  <title>植栽メモ</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css" />
@@ -14,7 +14,7 @@
   <main class="panel growth-panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb" id="growth-breadcrumb">
-        <li aria-current="page">ホーム</li>
+        <li aria-current="page">植栽メモ</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
@@ -25,8 +25,8 @@
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
     <header class="page-header">
-      <p class="eyebrow">Home</p>
-      <h1 id="growth-home-title">ホーム</h1>
+      <p class="eyebrow">メニュー</p>
+      <h1 id="growth-home-title">植栽メモ</h1>
       <p id="growth-home-lead" class="lead">
         このサイト全体の入り口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。
       </p>
@@ -74,10 +74,9 @@
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>「リンク集へ戻る」は、入口のホームへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
+          <p>「リンク集へ戻る」は、この植栽メモへのリンクです。インターネット上の本番サイトでは、次の設定で先のアドレスを指定してください。</p>
           <ul>
             <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
-            <li>または、HTML の先頭付近の <code>window.__PLANTING_HUB_URL__</code> に同じURLを書く</li>
           </ul>
           <p>自分のパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開くようになっています。</p>
         </div>
@@ -103,7 +102,9 @@
         "スイートアリッサム",
         "シルバータイム",
         "ヒューケラ（ツボサンゴ）",
-        "ハツユキカズラ（初雪カズラ）"
+        "ハツユキカズラ（初雪カズラ）",
+        "ハナニラ（イフェイオン）",
+        "アジサイ"
       ]
     },
     {
@@ -132,7 +133,9 @@
         "リューカデンドロン",
         "グレヴィレア・バイレヤナ",
         "オリーブの木",
-        "ヒューケラ（ツボサンゴ）"
+        "ヒューケラ（ツボサンゴ）",
+        "ブーゲンビリア",
+        "アイビー（ヘデラ）"
       ]
     },
     {
@@ -144,7 +147,9 @@
         "ヤマアジサイ",
         "サルビア スペルバ　ボルドー　ディープブルー",
         "オリヅルラン（折鶴蘭）",
-        "ノースポール（クリサンセマム・パルドラム）"
+        "ノースポール（クリサンセマム・パルドラム）",
+        "ベロニカ（スピードウェル）",
+        "アジサイ"
       ]
     },
     {
@@ -166,14 +171,12 @@
         "アジサイ",
         "ソラマメ",
         "スナップエンドウ",
+        "枝豆",
         "畑全体"
       ]
     }
   ]
 }
-  </script>
-  <script>
-    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
   </script>
   <script src="./data/growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>

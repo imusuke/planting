@@ -441,7 +441,7 @@
 
   if (!plantName) {
     renderError(
-      "URL に植栽名が必要です。例: plant-detail.html?area=entrance&plant=" +
+      "URL に植栽名が必要です。例: plant.html?area=entrance&plant=" +
         encodeURIComponent("ノリウツギ") +
         " （エリア省略時は名前が一覧に1件だけのときに自動で特定します）"
     );

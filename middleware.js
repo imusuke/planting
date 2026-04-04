@@ -20,12 +20,9 @@ function misconfigured() {
 }
 
 export default function middleware(request) {
-  const user = process.env.SITE_BASIC_AUTH_USER || "";
-  const password = process.env.SITE_BASIC_AUTH_PASSWORD || "";
-
-  if (!user && !password) {
-    return next();
-  }
+  const user = process.env.SITE_BASIC_AUTH_USER || process.env.BASIC_AUTH_USER || "";
+  const password =
+    process.env.SITE_BASIC_AUTH_PASSWORD || process.env.BASIC_AUTH_PASSWORD || "";
 
   if (!user || !password) {
     return misconfigured();

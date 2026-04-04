@@ -232,7 +232,7 @@
   }
 
   function syncLinks(areaId, plantName) {
-    var detailHref = plantName ? buildQuery("./plant-detail.html", areaId, plantName) : "./plant-detail.html";
+    var detailHref = plantName ? buildQuery("./plant.html", areaId, plantName) : "./plant.html";
     var recordHref = plantName ? buildQuery("./growth-edit.html", areaId, plantName) : "./growth-edit.html";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = detailHref;
@@ -255,7 +255,7 @@
       el.breadcrumbCurrent.textContent = plantName ? plantName + "の詳細を編集" : "植栽詳細を編集";
     }
     if (el.detailBreadcrumbLink) {
-      el.detailBreadcrumbLink.textContent = plantName ? plantName + "の詳細" : "植栽詳細";
+      el.detailBreadcrumbLink.textContent = plantName ? plantName : "植栽";
     }
     if (el.contextLine) {
       if (area && plantName) {

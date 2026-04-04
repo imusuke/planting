@@ -112,6 +112,32 @@
     return String((b && b.id) || "").localeCompare(String((a && a.id) || ""));
   }
 
+  function countPhotoSlots(record) {
+    var slots = growthImageSlots(record);
+    var count = 0;
+    for (var i = 0; i < slots.length; i++) {
+      if (growthImageSrcFromSlot(slots[i])) count += 1;
+    }
+    return count;
+  }
+
+  function buildAreaTimelinePhotoCountMap(areaRecords) {
+    var map = Object.create(null);
+    if (!Array.isArray(areaRecords)) return map;
+
+    areaRecords.forEach(function (record) {
+      var areaId = String((record && record.areaId) || "").trim();
+      var slotCount = countPhotoSlots(record);
+      if (!areaId || !slotCount) return;
+      map[areaId] = (map[areaId] || 0) + slotCount;
+    });
+    return map;
+  }
+
+  function photoCountSuffix(count) {
+    return "（" + String(count || 0) + "枚）";
+  }
+
   function buildLatestAreaPhotoMap(records) {
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
@@ -169,7 +195,7 @@
     return wrap;
   }
 
-  function createAreaCard(area, areaPhotoMap) {
+  function createAreaCard(area, areaPhotoMap, areaPhotoCountMap) {
     var card = document.createElement("a");
     card.className = "card growthlog area-list-card";
     card.href = "./area.html?area=" + encodeURIComponent(area.id);
@@ -184,7 +210,9 @@
     card.appendChild(label);
 
     var title = document.createElement("h2");
-    title.textContent = area.label || area.id;
+    title.textContent =
+      (area.label || area.id) +
+      photoCountSuffix(areaPhotoCountMap[String(area.id || "").trim()] || 0);
     card.appendChild(title);
 
     var count = Array.isArray(area.plants) ? area.plants.length : 0;
@@ -208,7 +236,7 @@
     root.appendChild(p);
   }
 
-  function renderAreas(data, areaPhotoMap) {
+  function renderAreas(data, areaPhotoMap, areaPhotoCountMap) {
     root.innerHTML = "";
     var areas = data && Array.isArray(data.areas) ? data.areas : [];
     if (!areas.length) {
@@ -218,7 +246,7 @@
 
     areas.forEach(function (area) {
       if (!area || !area.id) return;
-      root.appendChild(createAreaCard(area, areaPhotoMap));
+      root.appendChild(createAreaCard(area, areaPhotoMap, areaPhotoCountMap || {}));
     });
   }
 
@@ -281,13 +309,14 @@
       var growthRecords = results[1];
       var areaGrowthRecords = results[2];
       var areaDetailEntries = results[3];
+      var areaPhotoCountMap = buildAreaTimelinePhotoCountMap(areaGrowthRecords);
       var areaPhotoMap = Object.assign(
         Object.create(null),
         buildStaticAreaPhotoMap(areaDetailEntries),
         buildLatestAreaPhotoMap(growthRecords),
         buildLatestAreaPhotoMap(areaGrowthRecords)
       );
-      renderAreas(plantsData, areaPhotoMap);
+      renderAreas(plantsData, areaPhotoMap, areaPhotoCountMap);
     })
     .catch(function () {
       renderError("エリア一覧の読み込みに失敗しました。");

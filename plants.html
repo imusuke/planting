@@ -13,7 +13,7 @@
   <main class="panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">ホーム</a></li>
+        <li><a href="./index.html">植栽メモ</a></li>
         <li aria-current="page">植栽一覧</li>
       </ol>
       <div class="growth-nav-extra">
@@ -28,7 +28,7 @@
       <p class="eyebrow">Planting</p>
       <h1>植栽一覧</h1>
       <p class="lead">
-        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すとその植栽ページを開き、写真や概要を確認できます。詳しい説明はそこから植栽詳細へ進めます。名前の横には最新の写真サムネイルを表示します。
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すとその植栽ページを開き、写真・記録・詳しいメモをまとめて確認できます。名前の横には最新の写真サムネイルを表示します。
       </p>
     </header>
 
@@ -61,10 +61,9 @@
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>「リンク集へ戻る」は、入口のホームへのリンクです。インターネット上の本番サイトでは、次のいずれかで先のアドレスを指定してください。</p>
+          <p>「リンク集へ戻る」は、この植栽メモへのリンクです。インターネット上の本番サイトでは、次の設定で先のアドレスを指定してください。</p>
           <ul>
             <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
-            <li>または、HTML の先頭付近の <code>window.__PLANTING_HUB_URL__</code> に同じURLを書く</li>
           </ul>
           <p>自分のパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開くようになっています。</p>
         </div>
@@ -90,7 +89,9 @@
         "スイートアリッサム",
         "シルバータイム",
         "ヒューケラ（ツボサンゴ）",
-        "ハツユキカズラ（初雪カズラ）"
+        "ハツユキカズラ（初雪カズラ）",
+        "ハナニラ（イフェイオン）",
+        "アジサイ"
       ]
     },
     {
@@ -119,7 +120,9 @@
         "リューカデンドロン",
         "グレヴィレア・バイレヤナ",
         "オリーブの木",
-        "ヒューケラ（ツボサンゴ）"
+        "ヒューケラ（ツボサンゴ）",
+        "ブーゲンビリア",
+        "アイビー（ヘデラ）"
       ]
     },
     {
@@ -131,7 +134,9 @@
         "ヤマアジサイ",
         "サルビア スペルバ　ボルドー　ディープブルー",
         "オリヅルラン（折鶴蘭）",
-        "ノースポール（クリサンセマム・パルドラム）"
+        "ノースポール（クリサンセマム・パルドラム）",
+        "ベロニカ（スピードウェル）",
+        "アジサイ"
       ]
     },
     {
@@ -153,6 +158,7 @@
         "アジサイ",
         "ソラマメ",
         "スナップエンドウ",
+        "枝豆",
         "畑全体"
       ]
     }
@@ -202,10 +208,8 @@
   ]
 }
   </script>
-  <script>
-    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
-  </script>
   <script src="./data/growth-snapshot.boot.js" defer></script>
+  <script src="./data/area-growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>
 
   <script src="./index.js" defer></script>

@@ -2,6 +2,9 @@
 # 使い方: リポジトリの Settings → Secrets and variables → Actions に
 #   PLANTING_BASE_URL = https://あなたのサイト.vercel.app
 # を追加してください（末尾の / は不要）。
+# Basic 認証付きサイトの場合は次も追加してください。
+#   PLANTING_BASIC_AUTH_USER = 閲覧用ID
+#   PLANTING_BASIC_AUTH_PASSWORD = 閲覧用パスワード
 
 name: Sync from Vercel
 
@@ -30,9 +33,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Sync plants, growth JSON, images, boot, plants-embed
+      - name: Sync plants, growth JSON, area growth JSON, images, boot, embeds
         env:
           PLANTING_BASE_URL: ${{ secrets.PLANTING_BASE_URL }}
+          PLANTING_BASIC_AUTH_USER: ${{ secrets.PLANTING_BASIC_AUTH_USER }}
+          PLANTING_BASIC_AUTH_PASSWORD: ${{ secrets.PLANTING_BASIC_AUTH_PASSWORD }}
         run: |
           set -e
           if [ -z "$PLANTING_BASE_URL" ]; then
@@ -46,7 +51,7 @@ jobs:
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images index.html growth-edit.html plants.html plant.html
+          git add data/plants.json data/growth-snapshot.json data/growth-snapshot.boot.js data/growth-images data/area-growth-snapshot.json data/area-growth-snapshot.boot.js data/area-growth-images index.html growth-edit.html plants.html plant.html plant-detail.html plant-edit.html area.html areas.html area-edit.html
           if git diff --staged --quiet; then
             echo "No changes to commit (already in sync with production)."
             exit 0

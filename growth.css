@@ -513,14 +513,21 @@ label.growth-photo-pick-label {
 }
 
 .growth-feed {
+  --growth-card-width: 240px;
+  --growth-thumb-height: 180px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  justify-content: center;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--growth-card-width)), var(--growth-card-width))
+  );
   gap: 16px;
 }
 
 /* サムネイル表示サイズ（トップ閲覧ページ） */
 .growth-feed.growth-feed--thumb-sm {
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  --growth-card-width: 160px;
+  --growth-thumb-height: 160px;
   gap: 12px;
 }
 
@@ -529,7 +536,8 @@ label.growth-photo-pick-label {
 }
 
 .growth-feed.growth-feed--thumb-lg {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  --growth-card-width: 340px;
+  --growth-thumb-height: 212px;
   gap: 22px;
 }
 
@@ -538,6 +546,7 @@ label.growth-photo-pick-label {
 }
 
 .growth-card {
+  width: 100%;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.55);
@@ -550,6 +559,12 @@ label.growth-photo-pick-label {
   aspect-ratio: 4 / 3;
   background: rgba(26, 46, 36, 0.06);
   position: relative;
+}
+
+.growth-feed .growth-card-img-wrap {
+  height: var(--growth-thumb-height);
+  aspect-ratio: auto;
+  overflow: hidden;
 }
 
 .growth-card-img-wrap img {
@@ -586,6 +601,25 @@ label.growth-photo-pick-label {
 .growth-card-img-wrap img.growth-card-img--zoomable:focus-visible {
   outline: 2px solid var(--green, #2d6a4f);
   outline-offset: 2px;
+}
+
+.growth-card-img-count {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.6rem;
+  padding: 0.24rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(12, 18, 14, 0.72);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
 }
 
 dialog.growth-photo-lightbox {

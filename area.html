@@ -13,7 +13,7 @@
   <main class="panel">
     <nav class="top growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">ホーム</a></li>
+        <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
         <li aria-current="page" id="area-detail-breadcrumb-current">エリア時系列</li>
       </ol>
@@ -53,7 +53,9 @@
         "スイートアリッサム",
         "シルバータイム",
         "ヒューケラ（ツボサンゴ）",
-        "ハツユキカズラ（初雪カズラ）"
+        "ハツユキカズラ（初雪カズラ）",
+        "ハナニラ（イフェイオン）",
+        "アジサイ"
       ]
     },
     {
@@ -82,7 +84,9 @@
         "リューカデンドロン",
         "グレヴィレア・バイレヤナ",
         "オリーブの木",
-        "ヒューケラ（ツボサンゴ）"
+        "ヒューケラ（ツボサンゴ）",
+        "ブーゲンビリア",
+        "アイビー（ヘデラ）"
       ]
     },
     {
@@ -94,7 +98,9 @@
         "ヤマアジサイ",
         "サルビア スペルバ　ボルドー　ディープブルー",
         "オリヅルラン（折鶴蘭）",
-        "ノースポール（クリサンセマム・パルドラム）"
+        "ノースポール（クリサンセマム・パルドラム）",
+        "ベロニカ（スピードウェル）",
+        "アジサイ"
       ]
     },
     {
@@ -116,6 +122,7 @@
         "アジサイ",
         "ソラマメ",
         "スナップエンドウ",
+        "枝豆",
         "畑全体"
       ]
     }
@@ -165,9 +172,7 @@
   ]
 }
   </script>
-  <script>
-    window.__PLANTING_HUB_URL__ = "https://imusasa-hub.vercel.app/";
-  </script>
+  <script src="./data/growth-snapshot.boot.js" defer></script>
   <script src="./data/area-growth-snapshot.boot.js" defer></script>
   <script src="./hub-link.js" defer></script>
   <script src="./area.js" defer></script>

@@ -37,15 +37,6 @@
     });
   }
 
-  var w =
-    typeof window.__PLANTING_HUB_URL__ === "string"
-      ? window.__PLANTING_HUB_URL__.trim()
-      : "";
-  if (w) {
-    applyHref(w);
-    return;
-  }
-
   fetch("data/hub-link.json", { cache: "no-store" })
     .then(function (r) {
       return r.ok ? r.json() : {};

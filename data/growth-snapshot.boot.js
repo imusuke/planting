@@ -1,8 +1,196 @@
 window.__PLANTING_GROWTH_SNAPSHOT__ = {
   "version": 2,
-  "source": "snapshot",
-  "exportedAt": "2026-03-28T05:33:01.250Z",
+  "source": "storage-direct",
+  "exportedAt": "2026-04-04T12:12:58.198Z",
   "records": [
+    {
+      "id": "64e79ac1-1a32-4f8d-910f-74bce1181fbb",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ノリウツギ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/64e79ac1-1a32-4f8d-910f-74bce1181fbb/0.jpg",
+          "imagePathname": "growth/64e79ac1-1a32-4f8d-910f-74bce1181fbb/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/64e79ac1-1a32-4f8d-910f-74bce1181fbb-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/64e79ac1-1a32-4f8d-910f-74bce1181fbb/0.jpg",
+      "imagePathname": "growth/64e79ac1-1a32-4f8d-910f-74bce1181fbb/0.jpg",
+      "createdAt": "2026-04-03T21:39:01.906Z",
+      "localSnapshotImage": "./data/growth-images/64e79ac1-1a32-4f8d-910f-74bce1181fbb-0.jpg"
+    },
+    {
+      "id": "37dd1a36-4cbe-4b3e-aea5-3ae62327cfee",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "アジサイ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee/0.jpg",
+          "imagePathname": "growth/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee/0.jpg",
+      "imagePathname": "growth/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee/0.jpg",
+      "createdAt": "2026-04-03T21:41:41.339Z",
+      "localSnapshotImage": "./data/growth-images/37dd1a36-4cbe-4b3e-aea5-3ae62327cfee-0.jpg"
+    },
+    {
+      "id": "74219287-f474-4c58-8280-613967ff7651",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ハナニラ（イフェイオン）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/74219287-f474-4c58-8280-613967ff7651/0.jpg",
+          "imagePathname": "growth/74219287-f474-4c58-8280-613967ff7651/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/74219287-f474-4c58-8280-613967ff7651-0.jpg"
+        },
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/74219287-f474-4c58-8280-613967ff7651/1.jpg",
+          "imagePathname": "growth/74219287-f474-4c58-8280-613967ff7651/1.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/74219287-f474-4c58-8280-613967ff7651-1.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/74219287-f474-4c58-8280-613967ff7651/0.jpg",
+      "imagePathname": "growth/74219287-f474-4c58-8280-613967ff7651/0.jpg",
+      "createdAt": "2026-04-03T21:43:02.090Z",
+      "localSnapshotImage": "./data/growth-images/74219287-f474-4c58-8280-613967ff7651-0.jpg"
+    },
+    {
+      "id": "9415ba3e-754f-4093-b36f-1b6d7f2d8fc6",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ヒューケラ（ツボサンゴ）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/0.jpg",
+          "imagePathname": "growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6-0.jpg"
+        },
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/1.jpg",
+          "imagePathname": "growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/1.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6-1.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/0.jpg",
+      "imagePathname": "growth/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6/0.jpg",
+      "createdAt": "2026-04-03T21:43:56.001Z",
+      "localSnapshotImage": "./data/growth-images/9415ba3e-754f-4093-b36f-1b6d7f2d8fc6-0.jpg"
+    },
+    {
+      "id": "7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ムスカリ（ブドウヒヤシンス）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1/0.jpg",
+          "imagePathname": "growth/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1/0.jpg",
+      "imagePathname": "growth/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1/0.jpg",
+      "createdAt": "2026-04-03T21:45:02.897Z",
+      "localSnapshotImage": "./data/growth-images/7ea9eb92-7cf1-4d04-8c46-7f31865cf8e1-0.jpg"
+    },
+    {
+      "id": "27fc7465-7023-4d1b-bf25-c10e0320488d",
+      "recordedAt": "2026-04-04T12:00:00.000Z",
+      "areaId": "corner",
+      "areaLabel": "角庭",
+      "plants": [
+        "アナベル"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/27fc7465-7023-4d1b-bf25-c10e0320488d/0.jpg",
+          "imagePathname": "growth/27fc7465-7023-4d1b-bf25-c10e0320488d/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/27fc7465-7023-4d1b-bf25-c10e0320488d-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/27fc7465-7023-4d1b-bf25-c10e0320488d/0.jpg",
+      "imagePathname": "growth/27fc7465-7023-4d1b-bf25-c10e0320488d/0.jpg",
+      "createdAt": "2026-04-03T21:46:11.208Z",
+      "localSnapshotImage": "./data/growth-images/27fc7465-7023-4d1b-bf25-c10e0320488d-0.jpg"
+    },
+    {
+      "id": "dbe06e99-ae6f-4552-ae6b-7c793c6f779d",
+      "recordedAt": "2026-03-29T12:00:00.000Z",
+      "areaId": "deck",
+      "areaLabel": "ウッドデッキ",
+      "plants": [
+        "オリーブの木"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/dbe06e99-ae6f-4552-ae6b-7c793c6f779d/0.jpg",
+          "imagePathname": "growth/dbe06e99-ae6f-4552-ae6b-7c793c6f779d/0.jpg",
+          "memo": "強剪定しました",
+          "localSnapshotImage": "./data/growth-images/dbe06e99-ae6f-4552-ae6b-7c793c6f779d-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/dbe06e99-ae6f-4552-ae6b-7c793c6f779d/0.jpg",
+      "imagePathname": "growth/dbe06e99-ae6f-4552-ae6b-7c793c6f779d/0.jpg",
+      "createdAt": "2026-03-29T00:03:45.528Z",
+      "localSnapshotImage": "./data/growth-images/dbe06e99-ae6f-4552-ae6b-7c793c6f779d-0.jpg"
+    },
+    {
+      "id": "6587ea23-c4fb-4f66-9240-9713b5c6ded9",
+      "recordedAt": "2026-03-29T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ムスカリ（ブドウヒヤシンス）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/6587ea23-c4fb-4f66-9240-9713b5c6ded9/0.jpg",
+          "imagePathname": "growth/6587ea23-c4fb-4f66-9240-9713b5c6ded9/0.jpg",
+          "memo": "２種類のムスカリ",
+          "localSnapshotImage": "./data/growth-images/6587ea23-c4fb-4f66-9240-9713b5c6ded9-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/6587ea23-c4fb-4f66-9240-9713b5c6ded9/0.jpg",
+      "imagePathname": "growth/6587ea23-c4fb-4f66-9240-9713b5c6ded9/0.jpg",
+      "createdAt": "2026-03-29T00:45:39.383Z",
+      "localSnapshotImage": "./data/growth-images/6587ea23-c4fb-4f66-9240-9713b5c6ded9-0.jpg"
+    },
     {
       "id": "1c3e2586-49dc-401b-8c43-53018646f54d",
       "recordedAt": "2026-03-28T12:00:00.000Z",
@@ -124,6 +312,144 @@ window.__PLANTING_GROWTH_SNAPSHOT__ = {
       "imagePathname": "growth/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f/0.jpg",
       "createdAt": "2026-03-28T04:31:13.232Z",
       "localSnapshotImage": "./data/growth-images/3a48e0d6-e1a4-49f2-8ded-4a21b62bab5f-0.jpg"
+    },
+    {
+      "id": "93f6bf85-c6cd-42eb-867f-e7aec7027df1",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ハナニラ（イフェイオン）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/93f6bf85-c6cd-42eb-867f-e7aec7027df1/0.jpg",
+          "imagePathname": "growth/93f6bf85-c6cd-42eb-867f-e7aec7027df1/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/93f6bf85-c6cd-42eb-867f-e7aec7027df1-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/93f6bf85-c6cd-42eb-867f-e7aec7027df1/0.jpg",
+      "imagePathname": "growth/93f6bf85-c6cd-42eb-867f-e7aec7027df1/0.jpg",
+      "createdAt": "2026-03-28T06:01:04.021Z",
+      "localSnapshotImage": "./data/growth-images/93f6bf85-c6cd-42eb-867f-e7aec7027df1-0.jpg"
+    },
+    {
+      "id": "1f647696-2da3-4f9e-ba1f-b3674c453d0a",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "entrance",
+      "areaLabel": "玄関前",
+      "plants": [
+        "ヒューケラ（ツボサンゴ）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1f647696-2da3-4f9e-ba1f-b3674c453d0a/0.jpg",
+          "imagePathname": "growth/1f647696-2da3-4f9e-ba1f-b3674c453d0a/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/1f647696-2da3-4f9e-ba1f-b3674c453d0a-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1f647696-2da3-4f9e-ba1f-b3674c453d0a/0.jpg",
+      "imagePathname": "growth/1f647696-2da3-4f9e-ba1f-b3674c453d0a/0.jpg",
+      "createdAt": "2026-03-28T06:04:13.778Z",
+      "localSnapshotImage": "./data/growth-images/1f647696-2da3-4f9e-ba1f-b3674c453d0a-0.jpg"
+    },
+    {
+      "id": "3e1728f8-19aa-4bd9-bad5-5d474f371c6e",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "deck",
+      "areaLabel": "ウッドデッキ",
+      "plants": [
+        "ブーゲンビリア"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/0.jpg",
+          "imagePathname": "growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/3e1728f8-19aa-4bd9-bad5-5d474f371c6e-0.jpg"
+        },
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/1.jpg",
+          "imagePathname": "growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/1.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/3e1728f8-19aa-4bd9-bad5-5d474f371c6e-1.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/0.jpg",
+      "imagePathname": "growth/3e1728f8-19aa-4bd9-bad5-5d474f371c6e/0.jpg",
+      "createdAt": "2026-03-28T06:12:20.522Z",
+      "localSnapshotImage": "./data/growth-images/3e1728f8-19aa-4bd9-bad5-5d474f371c6e-0.jpg"
+    },
+    {
+      "id": "1de4213a-c627-4dee-9974-8c43d044b108",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "deck",
+      "areaLabel": "ウッドデッキ",
+      "plants": [
+        "アイビー（ヘデラ）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1de4213a-c627-4dee-9974-8c43d044b108/0.jpg",
+          "imagePathname": "growth/1de4213a-c627-4dee-9974-8c43d044b108/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/1de4213a-c627-4dee-9974-8c43d044b108-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/1de4213a-c627-4dee-9974-8c43d044b108/0.jpg",
+      "imagePathname": "growth/1de4213a-c627-4dee-9974-8c43d044b108/0.jpg",
+      "createdAt": "2026-03-28T06:14:36.304Z",
+      "localSnapshotImage": "./data/growth-images/1de4213a-c627-4dee-9974-8c43d044b108-0.jpg"
+    },
+    {
+      "id": "0964b411-d665-4123-bde4-5c3cca6525af",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "corner",
+      "areaLabel": "角庭",
+      "plants": [
+        "ベロニカ（スピードウェル）"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/0964b411-d665-4123-bde4-5c3cca6525af/0.jpg",
+          "imagePathname": "growth/0964b411-d665-4123-bde4-5c3cca6525af/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/0964b411-d665-4123-bde4-5c3cca6525af-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/0964b411-d665-4123-bde4-5c3cca6525af/0.jpg",
+      "imagePathname": "growth/0964b411-d665-4123-bde4-5c3cca6525af/0.jpg",
+      "createdAt": "2026-03-28T07:03:22.674Z",
+      "localSnapshotImage": "./data/growth-images/0964b411-d665-4123-bde4-5c3cca6525af-0.jpg"
+    },
+    {
+      "id": "c0696dae-ae8a-4050-bbef-362e36310b8d",
+      "recordedAt": "2026-03-28T12:00:00.000Z",
+      "areaId": "corner",
+      "areaLabel": "角庭",
+      "plants": [
+        "アジサイ"
+      ],
+      "note": "",
+      "images": [
+        {
+          "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/c0696dae-ae8a-4050-bbef-362e36310b8d/0.jpg",
+          "imagePathname": "growth/c0696dae-ae8a-4050-bbef-362e36310b8d/0.jpg",
+          "memo": "",
+          "localSnapshotImage": "./data/growth-images/c0696dae-ae8a-4050-bbef-362e36310b8d-0.jpg"
+        }
+      ],
+      "imageUrl": "https://rhutz0i9zqwjvp88.private.blob.vercel-storage.com/growth/c0696dae-ae8a-4050-bbef-362e36310b8d/0.jpg",
+      "imagePathname": "growth/c0696dae-ae8a-4050-bbef-362e36310b8d/0.jpg",
+      "createdAt": "2026-03-28T07:06:12.739Z",
+      "localSnapshotImage": "./data/growth-images/c0696dae-ae8a-4050-bbef-362e36310b8d-0.jpg"
     },
     {
       "id": "827d749a-68c7-41de-a3dc-a2cb33c359ad",
