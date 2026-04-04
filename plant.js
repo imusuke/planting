@@ -38,6 +38,13 @@
     return typeof p === "string" ? p.trim() : "";
   }
 
+  function bindLightboxImage(img, configOrFactory) {
+    if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
+      return;
+    }
+    window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+  }
+
   function areaHasPlant(area, plantName) {
     if (!area || !Array.isArray(area.plants)) return false;
     for (var i = 0; i < area.plants.length; i++) {
@@ -351,6 +358,8 @@
       if (slots.length) {
         var grid = document.createElement("div");
         grid.className = "plant-timeline-media-grid";
+        var galleryNodes = [];
+        var galleryCaptions = [];
         for (var si = 0; si < slots.length; si++) {
           (function (slot) {
             var src = growthImageSrcFromSlot(slot);
@@ -378,12 +387,31 @@
               }
             });
             fig.appendChild(img);
+            var captionText = formatDateLabel(record.recordedAt);
+            if (slot.memo) {
+              captionText += " — " + slot.memo;
+            }
             if (slot.memo) {
               var cap = document.createElement("figcaption");
               cap.className = "plant-timeline-photo-caption";
               cap.textContent = slot.memo;
               fig.appendChild(cap);
             }
+            var galleryIndex = galleryNodes.length;
+            galleryNodes.push(img);
+            galleryCaptions.push(captionText);
+            bindLightboxImage(img, function () {
+              return {
+                items: galleryNodes.map(function (node, idx) {
+                  return {
+                    src: node.currentSrc || node.src || "",
+                    alt: node.alt || "",
+                    caption: galleryCaptions[idx] || "",
+                  };
+                }),
+                index: galleryIndex,
+              };
+            });
             grid.appendChild(fig);
           })(slots[si]);
         }

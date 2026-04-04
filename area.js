@@ -122,6 +122,13 @@
     return typeof name === "string" ? name.trim() : "";
   }
 
+  function bindLightboxImage(img, configOrFactory) {
+    if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
+      return;
+    }
+    window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+  }
+
   function compareRecordsNewest(a, b) {
     var ax = String((a && (a.recordedAt || a.createdAt)) || "");
     var bx = String((b && (b.recordedAt || b.createdAt)) || "");
@@ -363,6 +370,8 @@
 
     var grid = document.createElement("div");
     grid.className = "plant-detail-photos-grid";
+    var galleryNodes = [];
+    var galleryCaptions = [];
     for (var k = 0; k < items.length; k++) {
       (function (it) {
         var fig = document.createElement("figure");
@@ -397,6 +406,21 @@
         var sub = memo || note || "";
         cap.textContent = sub ? line1 + " — " + sub : line1;
         fig.appendChild(cap);
+        var galleryIndex = galleryNodes.length;
+        galleryNodes.push(img);
+        galleryCaptions.push(cap.textContent || "");
+        bindLightboxImage(img, function () {
+          return {
+            items: galleryNodes.map(function (node, idx) {
+              return {
+                src: node.currentSrc || node.src || "",
+                alt: node.alt || "",
+                caption: galleryCaptions[idx] || "",
+              };
+            }),
+            index: galleryIndex,
+          };
+        });
 
         if (opts.allowImportFromPlant && typeof opts.onImportPhoto === "function") {
           var importBtn = document.createElement("button");
@@ -562,6 +586,18 @@
           img.referrerPolicy = "no-referrer";
           img.addEventListener("error", function () {
             thumb.remove();
+          });
+          bindLightboxImage(img, function () {
+            return {
+              items: [
+                {
+                  src: img.currentSrc || img.src || "",
+                  alt: img.alt || "",
+                  caption: pname + " の写真",
+                },
+              ],
+              index: 0,
+            };
           });
 
           thumb.appendChild(img);

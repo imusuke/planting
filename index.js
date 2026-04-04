@@ -231,8 +231,10 @@
 
       var areaPhoto = areaPhotoMap[String(area.id || "").trim()];
       if (areaPhoto && areaPhoto.src) {
-        var areaThumb = document.createElement("span");
+        var areaThumb = document.createElement("a");
         areaThumb.className = "plant-area-thumb";
+        areaThumb.href = areaPage.href;
+        areaThumb.setAttribute("title", areaPage.getAttribute("title") || "");
 
         var areaImg = document.createElement("img");
         areaImg.className = "plant-area-thumb-img";
