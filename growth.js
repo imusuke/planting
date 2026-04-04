@@ -11,6 +11,7 @@
   var LS_THUMB_SIZE = "growthThumbSize";
   var LS_FEED_SORT = "growthFeedSort";
   var API_GROWTH = "/api/growth";
+  var API_GROWTH_COMMENT = "/api/growth-photo-comment";
   var API_GROWTH_IMAGE = "/api/growth-image";
   /** 閲覧ページ: API 失敗時に試すリポジトリ内スナップショット（npm run sync:prod で更新） */
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
@@ -42,6 +43,8 @@
     photoQueue: [],
     /** 写真キューをユーザーが変更したか（保存時に imagesBase64 を送るか） */
     photosTouched: false,
+    /** 写真メモの AI 生成が進行中か */
+    photoAiBusy: false,
   };
 
   var el = {
@@ -54,6 +57,7 @@
     photoLibrary: null,
     photoStatus: null,
     photoClear: null,
+    photoAiStatus: null,
     photoQueueEl: null,
     photoQueueEmpty: null,
     submit: null,
@@ -930,6 +934,13 @@
     if (el.cloudStatus) el.cloudStatus.textContent = text || "";
   }
 
+  function setPhotoAiStatus(text, isError) {
+    if (!el.photoAiStatus) return;
+    el.photoAiStatus.textContent = text || "";
+    el.photoAiStatus.hidden = !text;
+    el.photoAiStatus.classList.toggle("growth-photo-ai-status--error", !!(text && isError));
+  }
+
   function uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
     return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
@@ -1116,7 +1127,7 @@
       if (state.photoQueue.length >= MAX_GROWTH_PHOTOS) break;
       var f = fileList[i];
       if (!growthFileLooksLikeImage(f)) continue;
-      state.photoQueue.push({ kind: "new", file: f, memo: "" });
+      state.photoQueue.push({ kind: "new", file: f, memo: "", aiState: "pending" });
       state.photosTouched = true;
       n++;
     }
@@ -1147,6 +1158,9 @@
     el.photoQueueEl.innerHTML = "";
     if (el.photoQueueEmpty) {
       el.photoQueueEmpty.hidden = state.photoQueue.length > 0;
+    }
+    if (!state.photoAiBusy && state.photoQueue.length === 0) {
+      setPhotoAiStatus("", false);
     }
     state.photoQueue.forEach(function (item, idx) {
       var tile = document.createElement("div");
@@ -1201,6 +1215,17 @@
       memoTa.value = item.memo != null ? item.memo : "";
       memoTa.addEventListener("input", function () {
         item.memo = memoTa.value;
+        if (item.kind === "new" && item.memo && (item.aiState === "pending" || item.aiState === "loading")) {
+          item.aiState = "manual";
+        }
+        if (item.memo && item.aiState !== "loading") {
+          item.aiState = "refresh_pending";
+          setPhotoAiStatus("写真メモの変更を受けて、AIコメントを更新します…", false);
+          schedulePhotoAiRefresh(900);
+        } else if (!item.memo && item.aiState !== "loading") {
+          item.aiState = "pending";
+          schedulePhotoAiRefresh(600);
+        }
       });
       row.appendChild(thumbWrap);
       row.appendChild(memoTa);
@@ -1227,7 +1252,7 @@
   function resetPhotoQueueFromRecord(r) {
     state.photoQueue = growthImageSlots(r).map(function (slot) {
       var m = typeof slot.memo === "string" ? slot.memo : "";
-      return { kind: "saved", slot: slot, memo: m };
+      return { kind: "saved", slot: slot, memo: m, aiState: "idle" };
     });
     state.photosTouched = false;
     renderPhotoQueueUi();
@@ -1247,6 +1272,303 @@
     if (el.photoCamera) el.photoCamera.value = "";
     if (el.photoLibrary) el.photoLibrary.value = "";
     renderPhotoQueueUi();
+    generateAiCommentsForPendingPhotos();
+  }
+
+  function buildPhotoQueueItemBase64(item) {
+    if (!item) return Promise.resolve(null);
+    if (item.kind === "new") {
+      return loadImageFile(item.file)
+        .then(imageToJpegBlob)
+        .then(blobToDataURL)
+        .then(dataUrlToBase64Part);
+    }
+    var url = growthImageSrcFromSlot(item.slot);
+    if (!url) return Promise.resolve(null);
+    return fetch(url, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("既存写真の読み込みに失敗しました");
+        return res.blob();
+      })
+      .then(loadImageFileFromBlob)
+      .then(imageToJpegBlob)
+      .then(blobToDataURL)
+      .then(dataUrlToBase64Part);
+  }
+
+  function getGrowthEditAreaContext() {
+    if (!el.area) return null;
+    var areaId = el.area.value || "";
+    for (var i = 0; i < state.areas.length; i++) {
+      var area = state.areas[i];
+      if (area && area.id === areaId) return area;
+    }
+    return null;
+  }
+
+  function getGrowthEditNoteValue() {
+    if (!el.form || !el.form.elements) return "";
+    var noteField = el.form.elements.note;
+    if (!noteField || typeof noteField.value !== "string") return "";
+    return noteField.value.trim();
+  }
+
+  function buildPhotoAiContext(photoIndex, item) {
+    var area = getGrowthEditAreaContext();
+    return {
+      recordedDate: el.date && el.date.value ? el.date.value : "",
+      areaId: area && area.id ? area.id : "",
+      areaLabel: area ? area.label || area.id || "" : "",
+      plantNames: getSelectedPlants(),
+      note: getGrowthEditNoteValue(),
+      currentPhotoMemo: item && item.memo != null ? String(item.memo).trim() : "",
+      photoIndex: photoIndex + 1,
+      photoCount: state.photoQueue.length,
+      mode: state.editRecord ? "edit" : "new",
+    };
+  }
+
+  function requestPhotoAiComment(item, idx) {
+    return buildPhotoQueueItemBase64(item).then(function (imageBase64) {
+      if (!imageBase64) {
+        throw new Error("写真データを読み込めませんでした。");
+      }
+      return fetch(API_GROWTH_COMMENT, {
+        method: "POST",
+        headers: cloudHeaders(true),
+        body: JSON.stringify({
+          imageBase64: imageBase64,
+          imageMimeType: "image/jpeg",
+          context: buildPhotoAiContext(idx, item),
+        }),
+      });
+    }).then(function (res) {
+      if (res.status === 401) {
+        throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+      }
+      if (!res.ok) {
+        return apiErrorMessage(res, "AIコメントの生成に失敗しました").then(function (msg) {
+          throw new Error(msg);
+        });
+      }
+      return res.json();
+    }).then(function (data) {
+      var comment = data && data.comment != null ? String(data.comment).trim() : "";
+      if (!comment) {
+        throw new Error("AIコメントが空でした。時間をおいてもう一度試してください。");
+      }
+      return comment;
+    });
+  }
+
+  function photoQueueContainsItem(item) {
+    return !!item && state.photoQueue.indexOf(item) !== -1;
+  }
+
+  function collectPendingPhotoAiTargets() {
+    var targets = [];
+    state.photoQueue.forEach(function (item, idx) {
+      if (!item) return;
+      var memo = item.memo != null ? String(item.memo).trim() : "";
+      if (item.aiState === "refresh_pending") {
+        targets.push(idx);
+        return;
+      }
+      if (memo) {
+        if (item.aiState === "pending" || item.aiState === "loading") {
+          item.aiState = "manual";
+        }
+        return;
+      }
+      if (item.aiState === "pending") targets.push(idx);
+    });
+    return targets;
+  }
+
+  function schedulePhotoAiRefresh(delayMs) {
+    clearTimeout(schedulePhotoAiRefresh._t);
+    schedulePhotoAiRefresh._t = setTimeout(function () {
+      generateAiCommentsForPendingPhotos();
+    }, typeof delayMs === "number" ? delayMs : 900);
+  }
+
+  function markPhotosForAiRefreshFromNoteChange() {
+    var changed = false;
+    state.photoQueue.forEach(function (item) {
+      if (!item) return;
+      var memo = item.memo != null ? String(item.memo).trim() : "";
+      if (!memo || item.aiGenerated) {
+        if (item.aiState !== "loading") {
+          item.aiState = memo ? "refresh_pending" : "pending";
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      setPhotoAiStatus("入力内容の変更を受けて、AIコメントを更新します…", false);
+      schedulePhotoAiRefresh(900);
+    }
+  }
+
+  function generateAiCommentsForPendingPhotos() {
+    if (state.photoAiBusy) return;
+
+    var targets = collectPendingPhotoAiTargets();
+    if (!targets.length) return;
+
+    state.photoAiBusy = true;
+
+    var successCount = 0;
+    var failedCount = 0;
+    var firstError = "";
+
+    function runNext(pos) {
+      if (pos >= targets.length) return Promise.resolve();
+      var idx = targets[pos];
+      var item = state.photoQueue[idx];
+      if (!item || (item.aiState !== "pending" && item.aiState !== "refresh_pending")) {
+        return runNext(pos + 1);
+      }
+      var requestSeed = item.memo != null ? String(item.memo) : "";
+      item.aiState = "loading";
+      setPhotoAiStatus(
+        "AIが写真コメントを自動生成しています（" + (pos + 1) + "/" + targets.length + "）",
+        false
+      );
+      renderPhotoQueueUi();
+      return requestPhotoAiComment(item, idx)
+        .then(function (comment) {
+          if (!photoQueueContainsItem(item)) return;
+          var currentMemoRaw = item.memo != null ? String(item.memo) : "";
+          if (currentMemoRaw !== requestSeed) {
+            item.aiState = currentMemoRaw.trim() ? "refresh_pending" : "pending";
+            schedulePhotoAiRefresh(900);
+            renderPhotoQueueUi();
+            return;
+          }
+          item.memo = comment;
+          item.aiState = "done";
+          item.aiGenerated = true;
+          successCount += 1;
+          renderPhotoQueueUi();
+        })
+        .catch(function (err) {
+          if (photoQueueContainsItem(item) && item.aiState === "loading") {
+            item.aiState = "error";
+          }
+          failedCount += 1;
+          if (!firstError) {
+            firstError = err && err.message ? String(err.message) : "AIコメントの自動生成に失敗しました。";
+          }
+          console.error("photo ai comment", err);
+        })
+        .then(function () {
+          return runNext(pos + 1);
+        });
+    }
+
+    runNext(0).finally(function () {
+      state.photoAiBusy = false;
+      renderPhotoQueueUi();
+      if (successCount && !failedCount) {
+        setPhotoAiStatus(
+          successCount + "枚の写真にAIコメント案を自動で追加しました。必要に応じて書き直してください。",
+          false
+        );
+      } else if (successCount) {
+        var mixedMessage =
+          successCount +
+          "枚にAIコメント案を自動で追加しました。失敗: " +
+          failedCount +
+          "枚" +
+          (firstError ? "（" + firstError + "）" : "");
+        setPhotoAiStatus(mixedMessage, true);
+        showToast(mixedMessage, true);
+      } else if (failedCount) {
+        var failedMessage = firstError || "AIコメントの自動生成に失敗しました。";
+        setPhotoAiStatus(failedMessage, true);
+        showToast(failedMessage, true);
+      }
+      if (collectPendingPhotoAiTargets().length) {
+        generateAiCommentsForPendingPhotos();
+      }
+    });
+  }
+
+  function generateAiCommentsForEmptyPhotos() {
+    if (state.photoAiBusy) return;
+
+    var targets = [];
+    state.photoQueue.forEach(function (item, idx) {
+      var memo = item && item.memo != null ? String(item.memo).trim() : "";
+      if (!memo) targets.push(idx);
+    });
+
+    if (!targets.length) {
+      setPhotoAiStatus(
+        "未入力の写真メモはありません。必要ならメモ欄を空にしてからもう一度実行してください。",
+        false
+      );
+      showToast("未入力の写真メモはありません。");
+      return;
+    }
+
+    state.photoAiBusy = true;
+    syncPhotoAiButtonState();
+
+    var successCount = 0;
+    var failedCount = 0;
+    var firstError = "";
+
+    function runNext(pos) {
+      if (pos >= targets.length) return Promise.resolve();
+      var idx = targets[pos];
+      setPhotoAiStatus(
+        "AIが写真コメントを作成しています（" + (pos + 1) + "/" + targets.length + "）",
+        false
+      );
+      return requestPhotoAiComment(state.photoQueue[idx], idx)
+        .then(function (comment) {
+          var item = state.photoQueue[idx];
+          if (item) item.memo = comment;
+          successCount += 1;
+          renderPhotoQueueUi();
+        })
+        .catch(function (err) {
+          failedCount += 1;
+          if (!firstError) {
+            firstError = err && err.message ? String(err.message) : "AIコメントの生成に失敗しました。";
+          }
+          console.error("photo ai comment", err);
+        })
+        .then(function () {
+          return runNext(pos + 1);
+        });
+    }
+
+    runNext(0).finally(function () {
+      state.photoAiBusy = false;
+      renderPhotoQueueUi();
+      if (successCount && !failedCount) {
+        setPhotoAiStatus(successCount + "枚の写真にAIコメント案を入れました。", false);
+        showToast(successCount + "枚の写真にAIコメント案を入れました。");
+        return;
+      }
+      if (successCount) {
+        var mixedMessage =
+          successCount +
+          "枚にAIコメント案を入れました。失敗: " +
+          failedCount +
+          "枚" +
+          (firstError ? "（" + firstError + "）" : "");
+        setPhotoAiStatus(mixedMessage, true);
+        showToast(mixedMessage, true);
+        return;
+      }
+      var failedMessage = firstError || "AIコメントの生成に失敗しました。";
+      setPhotoAiStatus(failedMessage, true);
+      showToast(failedMessage, true);
+    });
   }
 
   function onPhotoInputChange(source) {
@@ -2819,23 +3141,7 @@
     if (!q.length) return Promise.resolve([]);
     return Promise.all(
       q.map(function (item) {
-        if (item.kind === "new") {
-          return loadImageFile(item.file)
-            .then(imageToJpegBlob)
-            .then(blobToDataURL)
-            .then(dataUrlToBase64Part);
-        }
-        var url = growthImageSrcFromSlot(item.slot);
-        if (!url) return Promise.resolve(null);
-        return fetch(url, { cache: "no-store" })
-          .then(function (res) {
-            if (!res.ok) throw new Error("既存写真の読み込みに失敗しました");
-            return res.blob();
-          })
-          .then(loadImageFileFromBlob)
-          .then(imageToJpegBlob)
-          .then(blobToDataURL)
-          .then(dataUrlToBase64Part);
+        return buildPhotoQueueItemBase64(item);
       })
     ).then(function (parts) {
       var nonNull = parts.filter(Boolean);
@@ -3297,6 +3603,7 @@
     el.photoLibrary = $("field-photo-library");
     el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
+    el.photoAiStatus = $("photo-ai-status");
     el.photoQueueEl = $("growth-photo-queue");
     el.photoQueueEmpty = $("growth-photo-queue-empty");
     el.submit = $("growth-submit");
@@ -3433,6 +3740,12 @@
       el.photoClear.addEventListener("click", function () {
         clearPhotoQueueCompletely();
         clearPhotoInputs();
+      });
+    }
+
+    if (el.form && el.form.elements && el.form.elements.note) {
+      el.form.elements.note.addEventListener("input", function () {
+        markPhotosForAiRefreshFromNoteChange();
       });
     }
 
