@@ -14,7 +14,7 @@
 - **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
 - **`data/area-details.json`** … エリアごとの全体メモ・任意の画像（`images[].imageUrl` / `localSnapshotImage` / `caption` など）。マスタの各 `areaId` に 1 エントリずつあると運用しやすいです。
 - **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
-- **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。`GEMINI_API_KEY` を設定すると、写真メモ欄の空欄に **Gemini 3 Flash** のコメント案を入れられます。Gemini への送信は参考実装 `agentic vision` と同じく `x-goog-api-key` ヘッダー方式です。
+- **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。`GEMINI_API_KEY` を設定すると、保存時に **Gemini 3 Flash** が写真メモをサーバー側でバックグラウンド更新します。保存完了後は画面を離れても大丈夫です。Gemini への送信は参考実装 `agentic vision` と同じく `x-goog-api-key` ヘッダー方式です。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
 - **`package.json`** … `@vercel/blob`・`@vercel/kv` など。デプロイ前に `npm install` が必要です。
 - **`data/plants.json`** … 成長記録のエリア／植栽マスタ。**`plants.html` の表**および **`index.html` / `growth-edit.html` の embed** と植栽名を揃えると運用が楽です。本番でマスタを編集して KV に保存した内容は、**`git pull` だけでは入りません**。`npm run sync:prod`（後述）で本番 API から取り込んでから commit / push してください。
@@ -73,11 +73,11 @@
    - **`BLOB_PUT_ACCESS=public`** にすると Blob の **公開 URL** をそのまま記録に保存できます（ストアが公開アップロードに対応している必要があります）。上書き時は **`allowOverwrite`** を付けているため、同じ `growth/{id}.jpg` への差し替えも失敗しにくくなっています。
 3. **KV / Redis** を用意する。新規は [Marketplace の Redis（例: Upstash）](https://vercel.com/marketplace?category=storage&search=redis) をプロジェクトに接続し、`KV_REST_API_URL` と `KV_REST_API_TOKEN`（または統合が提供する環境変数）が入るようにする。`@vercel/kv` はこれらの変数を読みます。
 4. 環境変数 **`GROWTH_UPLOAD_TOKEN`** に、推測されにくい長い文字列を設定する（**推奨**）。成長記録ページの「アップロード用トークン」に**同じ値**を入力して保存すると、**投稿・編集・削除・植栽マスタの保存**だけが保護されます。**記録一覧の取得（GET）はトークンなし**で行えるため、どの端末でも一覧と写真を閲覧できます。**トークン未設定のままだと、公開 URL では誰でも書き込める**状態になります。
-5. 写真コメントの自動生成を使うなら、環境変数 **`GEMINI_API_KEY`** に Google AI Studio / Gemini API のキーを設定する。モデルは参考実装 `agentic vision` に合わせて **`GEMINI_MODEL`** を優先し、既定値は **`gemini-3-flash-preview`** です。互換用に **`GEMINI_PHOTO_COMMENT_MODEL`** も読めます。編集ページでは、写真を追加すると空欄メモに対して Gemini コメント案をバックグラウンドで自動生成します。さらに、写真メモや記録全体メモをユーザーが更新すると、その内容を踏まえて Gemini がコメント案を再更新します。API は `GROWTH_UPLOAD_TOKEN` と同じトークンで保護されます。
+5. 写真コメントの自動生成を使うなら、環境変数 **`GEMINI_API_KEY`** に Google AI Studio / Gemini API のキーを設定する。モデルは参考実装 `agentic vision` に合わせて **`GEMINI_MODEL`** を優先し、既定値は **`gemini-3-flash-preview`** です。互換用に **`GEMINI_PHOTO_COMMENT_MODEL`** も読めます。編集ページでは、写真追加やメモ更新の内容を保存すると、その保存済みデータに対して Gemini がサーバー側でコメント案をバックグラウンド更新します。必要なら `保存後にバックグラウンドで再生成` ボタンで全写真の再生成も予約できます。API は `GROWTH_UPLOAD_TOKEN` と同じトークンで保護されます。
 6. 閲覧には共通 ID / パスワードを必ず設定する。環境変数 **`SITE_BASIC_AUTH_USER`** / **`SITE_BASIC_AUTH_PASSWORD`** または **`BASIC_AUTH_USER`** / **`BASIC_AUTH_PASSWORD`** のどちらか 1 組を設定すると、`middleware.js` がサイト全体（HTML と API）に **Basic 認証** をかけます。
    - ブラウザには標準の ID / パスワード入力ダイアログが表示されます。
    - どちらか片方だけ設定した場合や、両方とも未設定のままデプロイした場合は **500** で止まるため、必ず 2 つセットで入れてください。
-7. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、Basic 認証のダイアログが出たうえで一覧取得と保存ができるか確認します。Gemini を有効にした場合は、写真を追加したあと空欄メモにコメント案が自動で入るかも確認します。
+7. 再デプロイ後、本番 URL のルート（`index.html`・閲覧）と `growth-edit.html`（編集）を開き、Basic 認証のダイアログが出たうえで一覧取得と保存ができるか確認します。Gemini を有効にした場合は、写真やメモを保存したあとにコメント案が数秒後に更新されるかも確認します。
 
 ローカルで API を試す場合は `npm install` のあと `vercel dev`（Vercel CLI）を使うと `/api/growth` にアクセスできます。`file://` で HTML を開いただけでは API は使えません。
 

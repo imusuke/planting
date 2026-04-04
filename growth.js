@@ -942,6 +942,48 @@
     el.photoAiStatus.classList.toggle("growth-photo-ai-status--error", !!(text && isError));
   }
 
+  function countQueuedPhotoAiTargets() {
+    var count = 0;
+    state.photoQueue.forEach(function (item) {
+      if (!item) return;
+      if (item.aiState === "pending" || item.aiState === "refresh_pending") count += 1;
+    });
+    return count;
+  }
+
+  function updateQueuedPhotoAiStatus() {
+    if (!state.photoQueue.length) {
+      setPhotoAiStatus("", false);
+      return;
+    }
+    var hasPending = false;
+    var hasRefresh = false;
+    state.photoQueue.forEach(function (item) {
+      if (!item) return;
+      if (item.aiState === "pending") hasPending = true;
+      if (item.aiState === "refresh_pending") hasRefresh = true;
+    });
+    if (!hasPending && !hasRefresh) return;
+    if (hasPending && hasRefresh) {
+      setPhotoAiStatus(
+        "保存するとサーバー側でAIコメントを追加・更新します。保存後は画面を離れても大丈夫です。",
+        false
+      );
+      return;
+    }
+    if (hasRefresh) {
+      setPhotoAiStatus(
+        "保存するとサーバー側でAIコメントを再生成します。保存後は画面を離れても大丈夫です。",
+        false
+      );
+      return;
+    }
+    setPhotoAiStatus(
+      "保存するとサーバー側でAIコメントを追加します。保存後は画面を離れても大丈夫です。",
+      false
+    );
+  }
+
   function syncPhotoAiButtonState() {
     if (!el.photoAiGenerate) return;
     el.photoAiGenerate.disabled = state.photoAiBusy || state.photoQueue.length === 0;
@@ -1253,6 +1295,7 @@
         el.photoStatus.hidden = true;
       }
     }
+    updateQueuedPhotoAiStatus();
     syncPhotoAiButtonState();
   }
 
@@ -1278,8 +1321,12 @@
   function clearPhotoInputs() {
     if (el.photoCamera) el.photoCamera.value = "";
     if (el.photoLibrary) el.photoLibrary.value = "";
+    setPhotoAiStatus(
+      "保存するとサーバー側でAIコメントを再生成します。保存後は画面を離れても大丈夫です。",
+      false
+    );
+    showToast("保存後にバックグラウンドで再生成するよう予約しました。");
     renderPhotoQueueUi();
-    generateAiCommentsForPendingPhotos();
   }
 
   function buildPhotoQueueItemBase64(item) {
@@ -1376,15 +1423,8 @@
     var targets = [];
     state.photoQueue.forEach(function (item, idx) {
       if (!item) return;
-      var memo = item.memo != null ? String(item.memo).trim() : "";
       if (item.aiState === "refresh_pending") {
         targets.push(idx);
-        return;
-      }
-      if (memo) {
-        if (item.aiState === "pending" || item.aiState === "loading") {
-          item.aiState = "manual";
-        }
         return;
       }
       if (item.aiState === "pending") targets.push(idx);
@@ -1395,7 +1435,7 @@
   function schedulePhotoAiRefresh(delayMs) {
     clearTimeout(schedulePhotoAiRefresh._t);
     schedulePhotoAiRefresh._t = setTimeout(function () {
-      generateAiCommentsForPendingPhotos();
+      updateQueuedPhotoAiStatus();
     }, typeof delayMs === "number" ? delayMs : 900);
   }
 
@@ -1404,15 +1444,17 @@
     state.photoQueue.forEach(function (item) {
       if (!item) return;
       var memo = item.memo != null ? String(item.memo).trim() : "";
-      if (!memo || item.aiGenerated) {
-        if (item.aiState !== "loading") {
-          item.aiState = memo ? "refresh_pending" : "pending";
-          changed = true;
-        }
+      if (item.aiState !== "loading") {
+        item.aiState = memo ? "refresh_pending" : "pending";
+        item.aiGenerated = false;
+        changed = true;
       }
     });
     if (changed) {
-      setPhotoAiStatus("入力内容の変更を受けて、AIコメントを更新します…", false);
+      setPhotoAiStatus(
+        "保存するとサーバー側でAIコメントを更新します。保存後は画面を離れても大丈夫です。",
+        false
+      );
       schedulePhotoAiRefresh(900);
     }
   }
@@ -1598,8 +1640,8 @@
 
     setPhotoAiStatus("バックグラウンドでAIコメントを再生成します…", false);
     showToast("バックグラウンドで再生成を開始しました。");
+    showToast("保存後にバックグラウンドで再生成するよう予約しました。");
     renderPhotoQueueUi();
-    generateAiCommentsForPendingPhotos();
   }
 
   function onPhotoInputChange(source) {
@@ -2096,7 +2138,7 @@
         }
         return res.json();
       })
-      .then(function () {
+      .then(function (saveResult) {
         var stored = collected.map(function (a) {
           return { id: a.id, label: a.label, plants: a.plants };
         });
@@ -3237,6 +3279,8 @@
       });
     }
 
+    var aiCommentTargets = collectPendingPhotoAiTargets();
+
     var attachImagesPromise;
     if (!wasEdit && state.photoQueue.length > 0) {
       attachImagesPromise = buildImagesBase64Payload().then(function (arr) {
@@ -3262,6 +3306,9 @@
 
     attachImagesPromise
       .then(function (payload) {
+        if (aiCommentTargets.length) {
+          payload.aiCommentTargets = aiCommentTargets.slice();
+        }
         return fetch(API_GROWTH, {
           method: "POST",
           headers: cloudHeaders(true),
@@ -3296,8 +3343,14 @@
           return res.json();
         });
       })
-      .then(function () {
-        showToast(wasEdit ? "更新しました" : "保存しました");
+      .then(function (saveResult) {
+        var saveMessage = wasEdit ? "更新しました" : "保存しました";
+        if (saveResult && saveResult.aiCommentsQueued) {
+          saveMessage += " AIコメントはサーバー側でバックグラウンド更新中です。保存後は画面を離れても大丈夫です。";
+        } else if (saveResult && saveResult.aiCommentTargetCount) {
+          saveMessage += " AIコメントの更新予約は作成しましたが、サーバー側で開始できませんでした。";
+        }
+        showToast(saveMessage);
         return loadPlantsData().catch(function () {
           return null;
         });

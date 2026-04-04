@@ -1,6 +1,8 @@
 const { put, del, get } = require("@vercel/blob");
+const { waitUntil } = require("@vercel/functions");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+const { generateGrowthPhotoComment } = require("../lib/growth-photo-ai");
 
 const KV_KEY = "planting_growth_records_v1";
 const KV_PLANTS = "planting_plants_catalog_v1";
@@ -225,6 +227,96 @@ async function readSourceImageBuffer(src, token) {
     throw new Error("source_image_empty");
   }
   return buf;
+}
+
+function normalizeAiCommentTargets(value, imageCount) {
+  if (!Array.isArray(value) || !value.length) return [];
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < value.length; i++) {
+    var n = parseInt(String(value[i]), 10);
+    if (isNaN(n) || n < 0 || n >= imageCount || seen[n]) continue;
+    seen[n] = true;
+    out.push(n);
+  }
+  return out;
+}
+
+function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount) {
+  return {
+    recordedDate: record && record.recordedAt ? String(record.recordedAt).slice(0, 10) : "",
+    areaId: record && record.areaId ? String(record.areaId) : "",
+    areaLabel: record && record.areaLabel ? String(record.areaLabel) : "",
+    plantNames: record && Array.isArray(record.plants) ? record.plants.slice() : [],
+    note: record && record.note ? String(record.note) : "",
+    currentPhotoMemo: currentMemo ? String(currentMemo) : "",
+    photoIndex: slotIndex + 1,
+    photoCount: photoCount,
+    mode: "edit",
+  };
+}
+
+async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
+  if (!record || !record.id) return { ok: false, skipped: "missing_record" };
+  if (!process.env.GEMINI_API_KEY) return { ok: false, skipped: "gemini_unavailable" };
+
+  var images = normalizeRecordImages(record);
+  var targets = normalizeAiCommentTargets(targetIndexes, images.length);
+  if (!targets.length) return { ok: false, skipped: "no_targets" };
+
+  var token = process.env.BLOB_READ_WRITE_TOKEN;
+  var expectedRevision = record.updatedAt || record.createdAt || "";
+  var generated = {};
+
+  for (var i = 0; i < targets.length; i++) {
+    var slotIndex = targets[i];
+    var slot = images[slotIndex];
+    if (!slot) continue;
+    var buf = await readSourceImageBuffer(slot, token);
+    var result = await generateGrowthPhotoComment({
+      imageBase64: buf.toString("base64"),
+      imageMimeType: "image/jpeg",
+      context: buildAiContextFromRecord(record, slotIndex, slot.memo || "", images.length),
+      timeoutMs: 30000,
+    });
+    generated[slotIndex] = result.comment;
+  }
+
+  var keys = Object.keys(generated);
+  if (!keys.length) return { ok: false, skipped: "no_results" };
+
+  var records = await readRecords();
+  if (records === null) {
+    throw new Error("kv_unavailable");
+  }
+
+  var idx = records.findIndex(function (r) {
+    return r && r.id === record.id;
+  });
+  if (idx < 0) return { ok: false, skipped: "record_deleted" };
+
+  var latest = records[idx];
+  var latestRevision = latest.updatedAt || latest.createdAt || "";
+  if (expectedRevision && latestRevision !== expectedRevision) {
+    return { ok: false, skipped: "record_changed" };
+  }
+
+  var latestImages = normalizeRecordImages(latest);
+  for (var k = 0; k < keys.length; k++) {
+    var key = Number(keys[k]);
+    if (!latestImages[key]) continue;
+    latestImages[key] = Object.assign({}, latestImages[key], {
+      memo: generated[key],
+    });
+  }
+
+  latest.images = latestImages;
+  latest.imageUrl = latestImages[0] ? latestImages[0].imageUrl : null;
+  latest.imagePathname = latestImages[0] ? latestImages[0].imagePathname : null;
+  latest.updatedAt = new Date().toISOString();
+  records[idx] = latest;
+  await writeRecords(records);
+  return { ok: true, updated: keys.length };
 }
 
 async function readJsonBody(req) {
@@ -461,7 +553,22 @@ module.exports = async function handler(req, res) {
       console.error("appendRecordPlantsToCatalog", catErr);
     }
 
-    return res.status(200).json({ ok: true, record: record });
+    var aiCommentTargets = normalizeAiCommentTargets(body.aiCommentTargets, finalImages.length);
+    var aiCommentsQueued = aiCommentTargets.length > 0 && !!process.env.GEMINI_API_KEY;
+    if (aiCommentsQueued) {
+      waitUntil(
+        refreshGrowthPhotoCommentsInBackground(record, aiCommentTargets).catch(function (err) {
+          console.error("refreshGrowthPhotoCommentsInBackground", err);
+        })
+      );
+    }
+
+    return res.status(200).json({
+      ok: true,
+      record: record,
+      aiCommentsQueued: aiCommentsQueued,
+      aiCommentTargetCount: aiCommentTargets.length,
+    });
     } catch (unexpected) {
       return jsonError(res, 500, "internal_error", unexpected);
     }
