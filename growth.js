@@ -57,6 +57,7 @@
     photoLibrary: null,
     photoStatus: null,
     photoClear: null,
+    photoAiGenerate: null,
     photoAiStatus: null,
     photoQueueEl: null,
     photoQueueEmpty: null,
@@ -941,6 +942,11 @@
     el.photoAiStatus.classList.toggle("growth-photo-ai-status--error", !!(text && isError));
   }
 
+  function syncPhotoAiButtonState() {
+    if (!el.photoAiGenerate) return;
+    el.photoAiGenerate.disabled = state.photoAiBusy || state.photoQueue.length === 0;
+  }
+
   function uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
     return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
@@ -1247,6 +1253,7 @@
         el.photoStatus.hidden = true;
       }
     }
+    syncPhotoAiButtonState();
   }
 
   function resetPhotoQueueFromRecord(r) {
@@ -1495,7 +1502,7 @@
     });
   }
 
-  function generateAiCommentsForEmptyPhotos() {
+  function generateAiCommentsForEmptyPhotosLegacy() {
     if (state.photoAiBusy) return;
 
     var targets = [];
@@ -1569,6 +1576,30 @@
       setPhotoAiStatus(failedMessage, true);
       showToast(failedMessage, true);
     });
+  }
+
+  function generateAiCommentsForEmptyPhotos() {
+    if (state.photoAiBusy) return;
+    if (!state.photoQueue.length) {
+      setPhotoAiStatus("写真がありません。先に写真を追加してください。", true);
+      showToast("写真がありません。", true);
+      return;
+    }
+
+    var changed = false;
+    state.photoQueue.forEach(function (item) {
+      if (!item || item.aiState === "loading") return;
+      var memo = item.memo != null ? String(item.memo).trim() : "";
+      item.aiState = memo ? "refresh_pending" : "pending";
+      changed = true;
+    });
+
+    if (!changed) return;
+
+    setPhotoAiStatus("バックグラウンドでAIコメントを再生成します…", false);
+    showToast("バックグラウンドで再生成を開始しました。");
+    renderPhotoQueueUi();
+    generateAiCommentsForPendingPhotos();
   }
 
   function onPhotoInputChange(source) {
@@ -3603,6 +3634,7 @@
     el.photoLibrary = $("field-photo-library");
     el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
+    el.photoAiGenerate = $("photo-ai-generate");
     el.photoAiStatus = $("photo-ai-status");
     el.photoQueueEl = $("growth-photo-queue");
     el.photoQueueEmpty = $("growth-photo-queue-empty");
@@ -3740,6 +3772,12 @@
       el.photoClear.addEventListener("click", function () {
         clearPhotoQueueCompletely();
         clearPhotoInputs();
+      });
+    }
+
+    if (el.photoAiGenerate) {
+      el.photoAiGenerate.addEventListener("click", function () {
+        generateAiCommentsForEmptyPhotos();
       });
     }
 
