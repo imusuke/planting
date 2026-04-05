@@ -11,6 +11,7 @@
   var LS_THUMB_SIZE = "growthThumbSize";
   var LS_FEED_SORT = "growthFeedSort";
   var API_GROWTH = "/api/growth";
+  var API_GROWTH_AI_REFRESH = "/api/growth-ai-refresh";
   var API_GROWTH_COMMENT = "/api/growth-photo-comment";
   var API_GROWTH_IMAGE = "/api/growth-image";
   /** 閲覧ページ: API 失敗時に試すリポジトリ内スナップショット（npm run sync:prod で更新） */
@@ -1321,6 +1322,8 @@
   function clearPhotoInputs() {
     if (el.photoCamera) el.photoCamera.value = "";
     if (el.photoLibrary) el.photoLibrary.value = "";
+    renderPhotoQueueUi();
+    return;
     setPhotoAiStatus(
       "保存するとサーバー側でAIコメントを再生成します。保存後は画面を離れても大丈夫です。",
       false
@@ -1642,6 +1645,42 @@
     showToast("バックグラウンドで再生成を開始しました。");
     showToast("保存後にバックグラウンドで再生成するよう予約しました。");
     renderPhotoQueueUi();
+  }
+
+  function runAiRefreshAfterSave(record, targetIndexes) {
+    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
+      return Promise.resolve({ record: record || null });
+    }
+
+    startEdit(record);
+    setPhotoAiStatus("保存済みの写真にAIコメントを追加しています…", false);
+
+    return fetch(API_GROWTH_AI_REFRESH, {
+      method: "POST",
+      headers: cloudHeaders(true),
+      body: JSON.stringify({
+        id: record.id,
+        targets: targetIndexes.slice(),
+      }),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+        }
+        if (!res.ok) {
+          return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.record) {
+          startEdit(data.record);
+          setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
+        }
+        return data || {};
+      });
   }
 
   function onPhotoInputChange(source) {
@@ -3351,23 +3390,43 @@
           saveMessage += " AIコメントの更新予約は作成しましたが、サーバー側で開始できませんでした。";
         }
         showToast(saveMessage);
-        return loadPlantsData().catch(function () {
+        var loadPackPromise = loadPlantsData().catch(function () {
           return null;
         });
+        if (saveResult && saveResult.record && aiCommentTargets.length) {
+          return runAiRefreshAfterSave(saveResult.record, aiCommentTargets)
+            .catch(function (err) {
+              showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);
+              return {};
+            })
+            .then(function (refreshResult) {
+              return loadPackPromise.then(function (pack) {
+                return { pack: pack, refreshResult: refreshResult || null };
+              });
+            });
+        }
+        return loadPackPromise.then(function (pack) {
+          return { pack: pack, refreshResult: null };
+        });
       })
-      .then(function (pack) {
+      .then(function (result) {
+        var pack = result && result.pack ? result.pack : null;
         if (pack) {
           state.areas = pack.areas || [];
           state.plantsBaseline = JSON.parse(JSON.stringify(state.areas));
           state.plantsSource = pack.source;
         }
-        clearEditMode();
-        if (dateInput) dateInput.value = todayInputValue();
         populateAreaSelects();
         renderPlantsCatalogEditor();
-        renderPlantChecks(el.area.value);
-        updateFilterPlantOptions();
         updatePlantsCatalogSourceLabel();
+        if (result && result.refreshResult && result.refreshResult.record) {
+          startEdit(result.refreshResult.record);
+        } else {
+          clearEditMode();
+          if (dateInput) dateInput.value = todayInputValue();
+          renderPlantChecks(el.area.value);
+          updateFilterPlantOptions();
+        }
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {

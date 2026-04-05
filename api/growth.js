@@ -348,7 +348,7 @@ async function readJsonBody(req) {
   }
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "GET") {
     var records = await readRecords();
     if (records === null) {
@@ -643,4 +643,11 @@ module.exports = async function handler(req, res) {
 
   res.setHeader("Allow", "GET, POST, DELETE");
   return res.status(405).json({ error: "method_not_allowed" });
-};
+}
+
+module.exports = handler;
+module.exports.assertAuth = assertAuth;
+module.exports.normalizeAiCommentTargets = normalizeAiCommentTargets;
+module.exports.readJsonBody = readJsonBody;
+module.exports.readRecords = readRecords;
+module.exports.refreshGrowthPhotoCommentsInBackground = refreshGrowthPhotoCommentsInBackground;
