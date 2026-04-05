@@ -671,11 +671,28 @@ dialog.growth-photo-lightbox::backdrop {
 
 .growth-photo-lightbox-inner {
   position: relative;
+  width: min(96vw, 1400px);
   max-width: min(96vw, 1400px);
   max-height: 92dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  justify-items: center;
+  gap: 0;
+  overflow: hidden;
   cursor: default;
   /* pan-y だと iOS 等で横スワイプがブラウザに取られ touchend まで届かないことがある → JS で扱う */
   touch-action: none;
+}
+
+.growth-photo-lightbox-media-frame {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  max-height: min(70dvh, calc(92dvh - 240px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 button.growth-photo-lightbox-nav {
@@ -737,12 +754,14 @@ button.growth-photo-lightbox-nav:focus-visible {
 }
 
 .growth-photo-lightbox-corner-nav {
-  position: absolute;
-  right: max(8px, env(safe-area-inset-right));
-  bottom: max(8px, env(safe-area-inset-bottom));
+  position: static;
   z-index: 25;
-  max-width: calc(100% - 16px);
-  pointer-events: none;
+  width: min(100%, 920px);
+  max-width: min(100%, 920px);
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: auto;
 }
 
 .growth-photo-lightbox-corner-nav .growth-photo-lightbox-corner-inner {
@@ -792,7 +811,7 @@ button.growth-photo-lightbox-corner-btn:disabled {
 .growth-photo-lightbox-img {
   display: block;
   max-width: 100%;
-  max-height: min(85dvh, 1200px);
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -811,6 +830,7 @@ button.growth-photo-lightbox-corner-btn:disabled {
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
+  width: min(100%, 920px);
 }
 
 .growth-photo-lightbox-area-label {
@@ -840,9 +860,39 @@ select.growth-photo-lightbox-area-select {
   line-height: 1.45;
   color: rgba(244, 247, 245, 0.92);
   touch-action: none;
-  max-height: min(36vh, 320px);
+  width: min(100%, 920px);
+  max-height: min(20dvh, 190px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .growth-photo-lightbox-inner {
+    max-height: 94dvh;
+  }
+
+  .growth-photo-lightbox-media-frame {
+    max-height: min(58dvh, calc(100dvh - 300px));
+  }
+
+  .growth-photo-lightbox-caption {
+    max-height: min(24dvh, 220px);
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .growth-photo-lightbox-corner-nav {
+    width: 100%;
+    max-width: none;
+    justify-content: stretch;
+  }
+
+  .growth-photo-lightbox-corner-inner {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 
 .growth-card-img-wrap--empty {

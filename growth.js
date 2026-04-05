@@ -552,9 +552,15 @@
     nextBtn.textContent = "›";
     nextBtn.hidden = true;
 
+    var mediaFrame = document.createElement("div");
+    mediaFrame.className = "growth-photo-lightbox-media-frame";
+
     var bigImg = document.createElement("img");
     bigImg.className = "growth-photo-lightbox-img";
     bigImg.alt = "";
+    mediaFrame.appendChild(prevBtn);
+    mediaFrame.appendChild(nextBtn);
+    mediaFrame.appendChild(bigImg);
 
     var areaRow = document.createElement("div");
     areaRow.className = "growth-photo-lightbox-area-row";
@@ -572,9 +578,7 @@
     cap.className = "growth-photo-lightbox-caption";
 
     inner.appendChild(closeBtn);
-    inner.appendChild(prevBtn);
-    inner.appendChild(nextBtn);
-    inner.appendChild(bigImg);
+    inner.appendChild(mediaFrame);
     inner.appendChild(areaRow);
     inner.appendChild(cap);
 
@@ -613,7 +617,7 @@
     cornerInner.addEventListener("click", function (e) {
       e.stopPropagation();
     });
-    shell.appendChild(cornerNav);
+    inner.appendChild(cornerNav);
     dlg.appendChild(shell);
     document.body.appendChild(dlg);
 
