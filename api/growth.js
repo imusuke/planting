@@ -242,7 +242,49 @@ function normalizeAiCommentTargets(value, imageCount) {
   return out;
 }
 
-function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount) {
+function recordPlantsOverlap(record, candidate) {
+  var left = record && Array.isArray(record.plants) ? record.plants : [];
+  var right = candidate && Array.isArray(candidate.plants) ? candidate.plants : [];
+  if (!left.length || !right.length) return true;
+  var seen = {};
+  for (var i = 0; i < left.length; i++) {
+    if (!left[i]) continue;
+    seen[String(left[i])] = true;
+  }
+  for (var j = 0; j < right.length; j++) {
+    if (!right[j]) continue;
+    if (seen[String(right[j])]) return true;
+  }
+  return false;
+}
+
+function findPreviousComparableRecord(records, record) {
+  if (!Array.isArray(records) || !record) return null;
+  var currentStamp = String(record.recordedAt || record.createdAt || "");
+  var candidates = records.filter(function (item) {
+    if (!item || item.id === record.id) return false;
+    if (String(item.areaId || "") !== String(record.areaId || "")) return false;
+    if (!recordPlantsOverlap(record, item)) return false;
+    if (!normalizeRecordImages(item).length) return false;
+    var itemStamp = String(item.recordedAt || item.createdAt || "");
+    if (currentStamp && itemStamp && itemStamp >= currentStamp) return false;
+    return true;
+  });
+
+  candidates.sort(function (a, b) {
+    return String(b.recordedAt || b.createdAt || "").localeCompare(
+      String(a.recordedAt || a.createdAt || "")
+    );
+  });
+  return candidates[0] || null;
+}
+
+function pickComparisonImage(images, slotIndex) {
+  if (!Array.isArray(images) || !images.length) return null;
+  return images[slotIndex] || images[0] || null;
+}
+
+function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount, previousRecord, previousMemo) {
   return {
     recordedDate: record && record.recordedAt ? String(record.recordedAt).slice(0, 10) : "",
     areaId: record && record.areaId ? String(record.areaId) : "",
@@ -250,6 +292,12 @@ function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount) {
     plantNames: record && Array.isArray(record.plants) ? record.plants.slice() : [],
     note: record && record.note ? String(record.note) : "",
     currentPhotoMemo: currentMemo ? String(currentMemo) : "",
+    previousRecordedDate:
+      previousRecord && previousRecord.recordedAt
+        ? String(previousRecord.recordedAt).slice(0, 10)
+        : "",
+    previousNote: previousRecord && previousRecord.note ? String(previousRecord.note) : "",
+    previousPhotoMemo: previousMemo ? String(previousMemo) : "",
     photoIndex: slotIndex + 1,
     photoCount: photoCount,
     mode: "edit",
@@ -268,6 +316,10 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   var expectedRevision = record.updatedAt || record.createdAt || "";
   var generated = {};
   var failed = {};
+  var recordsForComparison = await readRecords();
+  if (recordsForComparison === null) recordsForComparison = [];
+  var previousRecord = findPreviousComparableRecord(recordsForComparison, record);
+  var previousImages = previousRecord ? normalizeRecordImages(previousRecord) : [];
 
   for (var i = 0; i < targets.length; i++) {
     var slotIndex = targets[i];
@@ -275,10 +327,37 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     if (!slot) continue;
     try {
       var buf = await readSourceImageBuffer(slot, token);
+      var previousSlot = pickComparisonImage(previousImages, slotIndex);
+      var referenceImages = [];
+      if (previousSlot) {
+        try {
+          var previousBuf = await readSourceImageBuffer(previousSlot, token);
+          referenceImages.push({
+            label: "比較用の前回写真",
+            imageBase64: previousBuf.toString("base64"),
+            imageMimeType: "image/jpeg",
+          });
+        } catch (comparisonErr) {
+          console.error(
+            "refreshGrowthPhotoCommentsInBackground:comparison",
+            record.id,
+            slotIndex,
+            comparisonErr && comparisonErr.message ? comparisonErr.message : comparisonErr
+          );
+        }
+      }
       var result = await generateGrowthPhotoComment({
         imageBase64: buf.toString("base64"),
         imageMimeType: "image/jpeg",
-        context: buildAiContextFromRecord(record, slotIndex, slot.memo || "", images.length),
+        referenceImages: referenceImages,
+        context: buildAiContextFromRecord(
+          record,
+          slotIndex,
+          slot.memo || "",
+          images.length,
+          previousRecord,
+          previousSlot && previousSlot.memo ? previousSlot.memo : ""
+        ),
         timeoutMs: 30000,
       });
       generated[slotIndex] = result.comment;

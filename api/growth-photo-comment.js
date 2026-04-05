@@ -74,6 +74,7 @@ module.exports = async function handler(req, res) {
           ? body.imageMimeType.trim()
           : "image/jpeg",
       context: body.context || {},
+      referenceImages: Array.isArray(body.referenceImages) ? body.referenceImages : [],
     });
 
     return res.status(200).json(result);
