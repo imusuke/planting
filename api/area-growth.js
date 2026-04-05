@@ -97,6 +97,17 @@ function normalizeRecordImages(record) {
   return [];
 }
 
+function applyImageMemos(images, memos) {
+  if (!Array.isArray(images) || !images.length) return images || [];
+  if (!Array.isArray(memos) || !memos.length) return images;
+  return images.map(function (img, i) {
+    if (memos[i] === undefined) return img;
+    var out = Object.assign({}, img);
+    out.memo = String(memos[i] != null ? memos[i] : "").slice(0, 5000);
+    return out;
+  });
+}
+
 async function deleteAllRecordImages(record, token) {
   if (!token || !record) return;
   var list = normalizeRecordImages(record);
@@ -270,6 +281,7 @@ module.exports = async function handler(req, res) {
           : existing
             ? normalizeRecordImages(existing)
             : [];
+      finalImages = applyImageMemos(finalImages, body.imageMemos);
 
       var noteText = String(body.note != null ? body.note : "").slice(0, 20000);
       if (!finalImages.length && !noteText.trim()) {
