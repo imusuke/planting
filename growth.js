@@ -1683,6 +1683,87 @@
       });
   }
 
+  function runAiRefreshAfterSaveByPolling(record, targetIndexes) {
+    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
+      return Promise.resolve({ record: record || null });
+    }
+
+    var baseRevision = String(record.updatedAt || record.createdAt || "");
+    var baseSlots = growthImageSlots(record);
+    var baseMemos = baseSlots.map(function (slot) {
+      return slot && slot.memo != null ? String(slot.memo).trim() : "";
+    });
+    var deadline = Date.now() + 35000;
+
+    function latestRecordChanged(latest) {
+      if (!latest) return false;
+      var latestRevision = String(latest.updatedAt || latest.createdAt || "");
+      if (latestRevision && latestRevision !== baseRevision) return true;
+      var latestSlots = growthImageSlots(latest);
+      for (var i = 0; i < targetIndexes.length; i++) {
+        var idx = targetIndexes[i];
+        var nextMemo =
+          latestSlots[idx] && latestSlots[idx].memo != null
+            ? String(latestSlots[idx].memo).trim()
+            : "";
+        if (nextMemo !== (baseMemos[idx] || "")) return true;
+      }
+      return false;
+    }
+
+    function fetchLatestRecord() {
+      return fetch(API_GROWTH, { headers: cloudHeaders(false) })
+        .then(function (res) {
+          if (!res.ok) {
+            return apiErrorMessage(res, "AIコメントの反映確認に失敗しました").then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          var records = data && Array.isArray(data.records) ? data.records : [];
+          return records.find(function (item) {
+            return item && item.id === record.id;
+          }) || null;
+        });
+    }
+
+    function pollUntilUpdated() {
+      return fetchLatestRecord()
+        .then(function (latest) {
+          if (latest && latestRecordChanged(latest)) {
+            startEdit(latest);
+            setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
+            return { record: latest, updated: true };
+          }
+          if (Date.now() >= deadline) {
+            if (latest) startEdit(latest);
+            setPhotoAiStatus(
+              "AIコメントの更新は継続中の可能性があります。少ししてからもう一度開くと確認しやすいです。",
+              false
+            );
+            return { record: latest || record, updated: false, timedOut: true };
+          }
+          return new Promise(function (resolve) {
+            setTimeout(resolve, 2000);
+          }).then(pollUntilUpdated);
+        })
+        .catch(function (err) {
+          if (Date.now() >= deadline) {
+            throw err;
+          }
+          return new Promise(function (resolve) {
+            setTimeout(resolve, 2000);
+          }).then(pollUntilUpdated);
+        });
+    }
+
+    startEdit(record);
+    setPhotoAiStatus("保存済みの写真にAIコメントを追加しています…", false);
+    return pollUntilUpdated();
+  }
+
   function onPhotoInputChange(source) {
     if (source === "camera") {
       if (el.photoCamera && el.photoCamera.files && el.photoCamera.files[0]) {
@@ -3394,7 +3475,7 @@
           return null;
         });
         if (saveResult && saveResult.record && aiCommentTargets.length) {
-          return runAiRefreshAfterSave(saveResult.record, aiCommentTargets)
+          return runAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets)
             .catch(function (err) {
               showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);
               return {};
