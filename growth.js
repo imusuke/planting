@@ -1657,6 +1657,8 @@
 
     return fetch(API_GROWTH_AI_REFRESH, {
       method: "POST",
+      cache: "no-store",
+      keepalive: true,
       headers: cloudHeaders(true),
       body: JSON.stringify({
         id: record.id,
@@ -1675,11 +1677,29 @@
         return res.json();
       })
       .then(function (data) {
-        if (data && data.record) {
-          startEdit(data.record);
-          setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
+        var latestRecord = data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
+        if (latestRecord) {
+          startEdit(latestRecord);
         }
-        return data || {};
+        if (data && data.updated && latestRecord) {
+          setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
+        } else if (data && data.detail) {
+          setPhotoAiStatus(
+            "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + data.detail + ")",
+            true
+          );
+        } else {
+          setPhotoAiStatus(
+            "AIコメントを更新しています。保存後は画面を離れても大丈夫です。",
+            false
+          );
+        }
+        return {
+          record: latestRecord || record,
+          updated: !!(data && data.updated),
+          detail: data && data.detail ? String(data.detail) : "",
+          raw: data || {},
+        };
       });
   }
 
@@ -3475,6 +3495,9 @@
           return null;
         });
         if (saveResult && saveResult.record && aiCommentTargets.length) {
+          runAiRefreshAfterSave(saveResult.record, aiCommentTargets).catch(function (err) {
+            console.error("runAiRefreshAfterSave", err);
+          });
           return runAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets)
             .catch(function (err) {
               showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);

@@ -71,10 +71,23 @@ module.exports = async function handler(req, res) {
       return item && item.id === id;
     });
     var updated = !!(refreshResult && refreshResult.ok && refreshResult.updated);
+    var detail = "";
+    if (!updated) {
+      if (refreshResult && refreshResult.errors) {
+        var errorKeys = Object.keys(refreshResult.errors);
+        if (errorKeys.length) {
+          detail = String(refreshResult.errors[errorKeys[0]] || "");
+        }
+      }
+      if (!detail && refreshResult && refreshResult.skipped) {
+        detail = String(refreshResult.skipped);
+      }
+    }
 
     return res.status(updated ? 200 : 202).json({
       ok: updated,
       updated: updated,
+      detail: detail,
       result: refreshResult,
       record: updated ? latestRecord || null : null,
       latestRecord: latestRecord || null,
