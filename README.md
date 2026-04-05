@@ -14,7 +14,7 @@
 - **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
 - **`data/area-details.json`** … エリアごとの全体メモ・任意の画像（`images[].imageUrl` / `localSnapshotImage` / `caption` など）。マスタの各 `areaId` に 1 エントリずつあると運用しやすいです。
 - **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
-- **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。`GEMINI_API_KEY` を設定すると、保存時に **Gemini 3 Flash** が写真メモをサーバー側でバックグラウンド更新します。保存完了後は画面を離れても大丈夫です。Gemini への送信は参考実装 `agentic vision` と同じく `x-goog-api-key` ヘッダー方式です。
+- **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。`GEMINI_API_KEY` を設定すると、保存時に **Gemini 3 Flash** が写真メモをサーバー側でバックグラウンド更新します。既存メモがある場合はその意味や言い回しをできるだけ残しつつ、**20文字以上100文字未満の日本語コメント**に整えるようにしています。保存完了後は画面を離れても大丈夫です。Gemini への送信は参考実装 `agentic vision` と同じく `x-goog-api-key` ヘッダー方式です。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
 - **`package.json`** … `@vercel/blob`・`@vercel/kv` など。デプロイ前に `npm install` が必要です。
 - **`data/plants.json`** … 成長記録のエリア／植栽マスタ。**`plants.html` の表**および **`index.html` / `growth-edit.html` の embed** と植栽名を揃えると運用が楽です。本番でマスタを編集して KV に保存した内容は、**`git pull` だけでは入りません**。`npm run sync:prod`（後述）で本番 API から取り込んでから commit / push してください。
