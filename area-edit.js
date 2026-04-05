@@ -18,6 +18,7 @@
     photoQueue: [],
     photosTouched: false,
     editRecord: null,
+    photoAiBusy: false,
   };
 
   var el = {};
@@ -39,6 +40,25 @@
     showToast._t = setTimeout(function () {
       el.toast.className = "growth-toast";
     }, 4200);
+  }
+
+  function setPhotoAiStatus(message, isError) {
+    if (!el.photoAiStatus) return;
+    if (!message) {
+      el.photoAiStatus.hidden = true;
+      el.photoAiStatus.textContent = "";
+      el.photoAiStatus.className = "growth-hint growth-photo-ai-status";
+      return;
+    }
+    el.photoAiStatus.hidden = false;
+    el.photoAiStatus.textContent = message;
+    el.photoAiStatus.className =
+      "growth-hint growth-photo-ai-status" + (isError ? " growth-photo-ai-status--error" : "");
+  }
+
+  function syncPhotoAiButtonState() {
+    if (!el.photoAiGenerate) return;
+    el.photoAiGenerate.disabled = state.photoAiBusy || state.photoQueue.length === 0;
   }
 
   function cloudHeaders(jsonBody) {
@@ -367,6 +387,7 @@
       tile.appendChild(row);
       el.photoQueueEl.appendChild(tile);
     });
+    syncPhotoAiButtonState();
   }
 
   function resetPhotoQueue() {
@@ -382,6 +403,7 @@
         kind: "saved",
         slot: slot,
         memo: typeof slot.memo === "string" ? slot.memo : "",
+        aiState: "idle",
       };
     });
     state.photosTouched = false;
@@ -418,7 +440,7 @@
       if (state.photoQueue.length >= MAX_AREA_PHOTOS) break;
       var file = fileList[i];
       if (!fileLooksLikeImage(file)) continue;
-      state.photoQueue.push({ kind: "new", file: file, memo: "" });
+      state.photoQueue.push({ kind: "new", file: file, memo: "", aiState: "idle" });
       state.photosTouched = true;
       appended += 1;
     }
@@ -601,6 +623,126 @@
     return count;
   }
 
+  function collectPendingAreaAiTargets() {
+    var targets = [];
+    state.photoQueue.forEach(function (item, idx) {
+      if (!item) return;
+      if (item.aiState === "pending" || item.aiState === "refresh_pending") {
+        targets.push(idx);
+      }
+    });
+    return targets;
+  }
+
+  function generateAiCommentsForAreaPhotos() {
+    if (state.photoAiBusy) return;
+    if (!state.photoQueue.length) {
+      setPhotoAiStatus("写真がありません。先に写真を追加してください。", true);
+      showToast("写真がありません。", true);
+      return;
+    }
+
+    state.photoQueue.forEach(function (item) {
+      if (!item) return;
+      var memo = item.memo != null ? String(item.memo).trim() : "";
+      item.aiState = memo ? "refresh_pending" : "pending";
+    });
+    setPhotoAiStatus(
+      "保存するとサーバー側でAIコメントを追加・更新します。保存後は画面を離れても大丈夫です。",
+      false
+    );
+    showToast("保存後にバックグラウンドでAIコメントを追加するよう予約しました。");
+    renderPhotoQueueUi();
+  }
+
+  function runAreaAiRefreshAfterSaveByPolling(record, targetIndexes) {
+    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
+      return Promise.resolve({ record: record || null });
+    }
+
+    var baseRevision = String(record.updatedAt || record.createdAt || "");
+    var baseSlots = normalizeRecordImages(record);
+    var baseMemos = baseSlots.map(function (slot) {
+      return slot && slot.memo != null ? String(slot.memo).trim() : "";
+    });
+    var deadline = Date.now() + 35000;
+
+    function latestRecordChanged(latest) {
+      if (!latest) return false;
+      var latestRevision = String(latest.updatedAt || latest.createdAt || "");
+      if (latestRevision && latestRevision !== baseRevision) return true;
+      var latestSlots = normalizeRecordImages(latest);
+      for (var i = 0; i < targetIndexes.length; i++) {
+        var idx = targetIndexes[i];
+        var nextMemo =
+          latestSlots[idx] && latestSlots[idx].memo != null
+            ? String(latestSlots[idx].memo).trim()
+            : "";
+        if (nextMemo !== (baseMemos[idx] || "")) return true;
+      }
+      return false;
+    }
+
+    function fetchLatestRecord() {
+      return fetch(API_AREA_GROWTH, { headers: cloudHeaders(false) })
+        .then(function (res) {
+          if (!res.ok) {
+            return apiErrorMessage(res, "AIコメントの反映確認に失敗しました").then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          var records = data && Array.isArray(data.records) ? data.records : [];
+          return (
+            records.find(function (item) {
+              return item && item.id === record.id;
+            }) || null
+          );
+        });
+    }
+
+    function pollUntilUpdated() {
+      return fetchLatestRecord()
+        .then(function (latest) {
+          if (latest && latestRecordChanged(latest)) {
+            startEdit(latest);
+            setPhotoAiStatus("AIコメントを反映しました。必要なら調整して保存してください。", false);
+            return { record: latest, updated: true };
+          }
+          if (Date.now() >= deadline) {
+            if (latest) startEdit(latest);
+            setPhotoAiStatus(
+              "AIコメントの更新は予約済みですが、反映確認に時間がかかっています。少ししてからもう一度開いてください。",
+              false
+            );
+            return { record: latest || record, updated: false, timedOut: true };
+          }
+          return new Promise(function (resolve) {
+            setTimeout(resolve, 2000);
+          }).then(pollUntilUpdated);
+        })
+        .catch(function (err) {
+          if (Date.now() >= deadline) {
+            throw err;
+          }
+          return new Promise(function (resolve) {
+            setTimeout(resolve, 2000);
+          }).then(pollUntilUpdated);
+        });
+    }
+
+    state.photoAiBusy = true;
+    syncPhotoAiButtonState();
+    startEdit(record);
+    setPhotoAiStatus("保存済みのエリア写真にAIコメントを追加しています…", false);
+    return pollUntilUpdated().finally(function () {
+      state.photoAiBusy = false;
+      syncPhotoAiButtonState();
+    });
+  }
+
   function renderAreaGrowthFeed(areaId) {
     if (!el.records) return;
     el.records.innerHTML = "";
@@ -717,7 +859,9 @@
 
   function clearEditMode(preserveAreaId) {
     state.editRecord = null;
+    state.photoAiBusy = false;
     syncEditFormUI();
+    setPhotoAiStatus("", false);
     var areaId = preserveAreaId || currentAreaId();
     if (el.area && areaId) el.area.value = areaId;
     applyFormForArea(areaId);
@@ -817,6 +961,7 @@
       summary: summary,
       body: body,
     };
+    var aiCommentTargets = collectPendingAreaAiTargets();
 
     function postAreaDetails() {
       return fetch(API_AREA_DETAILS, {
@@ -873,6 +1018,9 @@
       if (state.photoQueue.length) {
         payload.imageMemos = imageMemosPayload();
       }
+      if (aiCommentTargets.length) {
+        payload.aiCommentTargets = aiCommentTargets.slice();
+      }
       return Promise.resolve(payload);
     }
 
@@ -903,6 +1051,16 @@
     postAreaDetails()
       .then(buildAreaGrowthPayload)
       .then(postAreaGrowth)
+      .then(function (saveResult) {
+        if (saveResult && saveResult.record && aiCommentTargets.length) {
+          return runAreaAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets).then(
+            function (refreshResult) {
+              return refreshResult && refreshResult.record ? refreshResult.record : saveResult.record;
+            }
+          );
+        }
+        return saveResult && saveResult.record ? saveResult.record : null;
+      })
       .then(function () {
         return Promise.all([loadAreaDetailsMerged(), loadAreaGrowthRecords()]);
       })
@@ -938,6 +1096,8 @@
     el.body = $("area-edit-body");
     el.photoCamera = $("area-edit-photo-camera");
     el.photoLibrary = $("area-edit-photo-library");
+    el.photoAiGenerate = $("area-photo-ai-generate");
+    el.photoAiStatus = $("area-photo-ai-status");
     el.photoClear = $("area-edit-photo-clear");
     el.photoQueueEl = $("area-edit-photo-queue");
     el.photoQueueEmpty = $("area-edit-photo-queue-empty");
@@ -986,6 +1146,11 @@
         clearPhotoQueueCompletely();
       });
     }
+    if (el.photoAiGenerate) {
+      el.photoAiGenerate.addEventListener("click", function () {
+        generateAiCommentsForAreaPhotos();
+      });
+    }
     if (el.area) {
       el.area.addEventListener("change", onAreaChange);
     }
@@ -1029,6 +1194,7 @@
         syncEditFormUI();
         syncAreaEditContext(areaId || wanted);
         renderAreaGrowthFeed(areaId || wanted);
+        syncPhotoAiButtonState();
       })
       .catch(function () {
         showToast("データを読み込めませんでした。", true);

@@ -103,8 +103,10 @@
           tabindex="-1"
         />
         <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
+        <button type="button" id="area-photo-ai-generate" class="growth-secondary">保存後にバックグラウンドでAIコメント</button>
         <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
       </div>
+      <p id="area-photo-ai-status" class="growth-hint growth-photo-ai-status" hidden></p>
       <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">
         <div id="area-edit-photo-queue" class="growth-photo-queue" aria-live="polite"></div>
         <p id="area-edit-photo-queue-empty" class="growth-hint growth-photo-queue-empty">写真はまだありません。</p>

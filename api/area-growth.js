@@ -1,6 +1,8 @@
 const { put, del, get } = require("@vercel/blob");
+const { waitUntil } = require("@vercel/functions");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+const { generateGrowthPhotoComment } = require("../lib/growth-photo-ai");
 
 const KV_KEY = "planting_area_growth_records_v1";
 
@@ -108,6 +110,19 @@ function applyImageMemos(images, memos) {
   });
 }
 
+function normalizeAiCommentTargets(value, imageCount) {
+  if (!Array.isArray(value) || !value.length) return [];
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < value.length; i++) {
+    var n = parseInt(String(value[i]), 10);
+    if (isNaN(n) || n < 0 || n >= imageCount || seen[n]) continue;
+    seen[n] = true;
+    out.push(n);
+  }
+  return out;
+}
+
 async function deleteAllRecordImages(record, token) {
   if (!token || !record) return;
   var list = normalizeRecordImages(record);
@@ -150,6 +165,164 @@ async function readSourceImageBuffer(src, token) {
     throw new Error("source_image_empty");
   }
   return buf;
+}
+
+function findPreviousAreaRecord(records, record) {
+  if (!Array.isArray(records) || !record) return null;
+  var currentStamp = String(record.recordedAt || record.createdAt || "");
+  var candidates = records.filter(function (item) {
+    if (!item || item.id === record.id) return false;
+    if (String(item.areaId || "") !== String(record.areaId || "")) return false;
+    if (!normalizeRecordImages(item).length) return false;
+    var itemStamp = String(item.recordedAt || item.createdAt || "");
+    if (currentStamp && itemStamp && itemStamp >= currentStamp) return false;
+    return true;
+  });
+
+  candidates.sort(function (a, b) {
+    return String(b.recordedAt || b.createdAt || "").localeCompare(
+      String(a.recordedAt || a.createdAt || "")
+    );
+  });
+  return candidates[0] || null;
+}
+
+function pickComparisonImage(images, slotIndex) {
+  if (!Array.isArray(images) || !images.length) return null;
+  return images[slotIndex] || images[0] || null;
+}
+
+function buildAiContextFromAreaRecord(record, slotIndex, currentMemo, photoCount, previousRecord, previousMemo) {
+  return {
+    recordedDate: record && record.recordedAt ? String(record.recordedAt).slice(0, 10) : "",
+    areaId: record && record.areaId ? String(record.areaId) : "",
+    areaLabel: record && record.areaLabel ? String(record.areaLabel) : "",
+    plantNames: [],
+    note: record && record.note ? String(record.note) : "",
+    currentPhotoMemo: currentMemo ? String(currentMemo) : "",
+    previousRecordedDate:
+      previousRecord && previousRecord.recordedAt
+        ? String(previousRecord.recordedAt).slice(0, 10)
+        : "",
+    previousNote: previousRecord && previousRecord.note ? String(previousRecord.note) : "",
+    previousPhotoMemo: previousMemo ? String(previousMemo) : "",
+    photoIndex: slotIndex + 1,
+    photoCount: photoCount,
+    mode: "edit",
+  };
+}
+
+async function refreshAreaPhotoCommentsInBackground(record, targetIndexes) {
+  if (!record || !record.id) return { ok: false, skipped: "missing_record" };
+  if (!process.env.GEMINI_API_KEY) return { ok: false, skipped: "gemini_unavailable" };
+
+  var images = normalizeRecordImages(record);
+  var targets = normalizeAiCommentTargets(targetIndexes, images.length);
+  if (!targets.length) return { ok: false, skipped: "no_targets" };
+
+  var token = process.env.BLOB_READ_WRITE_TOKEN;
+  var expectedRevision = record.updatedAt || record.createdAt || "";
+  var generated = {};
+  var failed = {};
+  var recordsForComparison = await readRecords();
+  if (recordsForComparison === null) recordsForComparison = [];
+  var previousRecord = findPreviousAreaRecord(recordsForComparison, record);
+  var previousImages = previousRecord ? normalizeRecordImages(previousRecord) : [];
+
+  for (var i = 0; i < targets.length; i++) {
+    var slotIndex = targets[i];
+    var slot = images[slotIndex];
+    if (!slot) continue;
+    try {
+      var buf = await readSourceImageBuffer(slot, token);
+      var previousSlot = pickComparisonImage(previousImages, slotIndex);
+      var referenceImages = [];
+      if (previousSlot) {
+        try {
+          var previousBuf = await readSourceImageBuffer(previousSlot, token);
+          referenceImages.push({
+            label: "前回のエリア写真",
+            imageBase64: previousBuf.toString("base64"),
+            imageMimeType: "image/jpeg",
+          });
+        } catch (comparisonErr) {
+          console.error(
+            "refreshAreaPhotoCommentsInBackground:comparison",
+            record.id,
+            slotIndex,
+            comparisonErr && comparisonErr.message ? comparisonErr.message : comparisonErr
+          );
+        }
+      }
+      var result = await generateGrowthPhotoComment({
+        imageBase64: buf.toString("base64"),
+        imageMimeType: "image/jpeg",
+        referenceImages: referenceImages,
+        context: buildAiContextFromAreaRecord(
+          record,
+          slotIndex,
+          slot.memo || "",
+          images.length,
+          previousRecord,
+          previousSlot && previousSlot.memo ? previousSlot.memo : ""
+        ),
+        timeoutMs: 30000,
+      });
+      generated[slotIndex] = result.comment;
+    } catch (err) {
+      var detail = err && err.message ? String(err.message) : "ai_comment_failed";
+      failed[slotIndex] = detail;
+      console.error("refreshAreaPhotoCommentsInBackground:slot", record.id, slotIndex, detail);
+    }
+  }
+
+  var keys = Object.keys(generated);
+  if (!keys.length) {
+    return {
+      ok: false,
+      skipped: "no_results",
+      failed: Object.keys(failed).length,
+      errors: failed,
+    };
+  }
+
+  var records = await readRecords();
+  if (records === null) {
+    throw new Error("kv_unavailable");
+  }
+
+  var idx = records.findIndex(function (r) {
+    return r && r.id === record.id;
+  });
+  if (idx < 0) return { ok: false, skipped: "record_deleted" };
+
+  var latest = records[idx];
+  var latestRevision = latest.updatedAt || latest.createdAt || "";
+  if (expectedRevision && latestRevision !== expectedRevision) {
+    return { ok: false, skipped: "record_changed" };
+  }
+
+  var latestImages = normalizeRecordImages(latest);
+  for (var k = 0; k < keys.length; k++) {
+    var key = Number(keys[k]);
+    if (!latestImages[key]) continue;
+    latestImages[key] = Object.assign({}, latestImages[key], {
+      memo: generated[key],
+    });
+  }
+
+  latest.images = latestImages;
+  latest.imageUrl = latestImages[0] ? latestImages[0].imageUrl : null;
+  latest.imagePathname = latestImages[0] ? latestImages[0].imagePathname : null;
+  latest.updatedAt = new Date().toISOString();
+  records[idx] = latest;
+  await writeRecords(records);
+  return {
+    ok: true,
+    updated: keys.length,
+    failed: Object.keys(failed).length,
+    errors: failed,
+  };
 }
 
 function jsonError(res, status, code, err) {
@@ -327,7 +500,22 @@ module.exports = async function handler(req, res) {
         return jsonError(res, 503, "kv_write_failed", kvErr);
       }
 
-      return res.status(200).json({ ok: true, record: record });
+      var aiCommentTargets = normalizeAiCommentTargets(body.aiCommentTargets, finalImages.length);
+      var aiCommentsQueued = aiCommentTargets.length > 0 && !!process.env.GEMINI_API_KEY;
+      if (aiCommentsQueued) {
+        waitUntil(
+          refreshAreaPhotoCommentsInBackground(record, aiCommentTargets).catch(function (err) {
+            console.error("refreshAreaPhotoCommentsInBackground", err);
+          })
+        );
+      }
+
+      return res.status(200).json({
+        ok: true,
+        record: record,
+        aiCommentsQueued: aiCommentsQueued,
+        aiCommentTargetCount: aiCommentTargets.length,
+      });
     } catch (unexpected) {
       return jsonError(res, 500, "internal_error", unexpected);
     }
@@ -399,3 +587,9 @@ module.exports = async function handler(req, res) {
   res.setHeader("Allow", "GET, POST, DELETE");
   return res.status(405).json({ error: "method_not_allowed" });
 };
+
+module.exports.assertAuth = assertAuth;
+module.exports.normalizeAiCommentTargets = normalizeAiCommentTargets;
+module.exports.readJsonBody = readJsonBody;
+module.exports.readRecords = readRecords;
+module.exports.refreshAreaPhotoCommentsInBackground = refreshAreaPhotoCommentsInBackground;
