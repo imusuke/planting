@@ -36,7 +36,33 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "missing_targets" });
     }
 
-    var refreshResult = await growthApi.refreshGrowthPhotoCommentsInBackground(record, targets);
+    var refreshResult;
+    try {
+      refreshResult = await growthApi.refreshGrowthPhotoCommentsInBackground(record, targets);
+    } catch (err) {
+      var refreshDetail =
+        err && err.message ? String(err.message) : "AIコメントの更新に失敗しました。";
+      console.error("growth-ai-refresh", refreshDetail, err);
+
+      var latestAfterFailure = await growthApi.readRecords();
+      if (latestAfterFailure === null) {
+        return res.status(503).json({ error: "kv_unavailable" });
+      }
+      var latestRecordAfterFailure = latestAfterFailure.find(function (item) {
+        return item && item.id === id;
+      });
+
+      return res.status(202).json({
+        ok: false,
+        updated: false,
+        error: "refresh_failed",
+        detail: refreshDetail,
+        result: null,
+        record: null,
+        latestRecord: latestRecordAfterFailure || null,
+      });
+    }
+
     var latestRecords = await growthApi.readRecords();
     if (latestRecords === null) {
       return res.status(503).json({ error: "kv_unavailable" });
@@ -44,11 +70,14 @@ module.exports = async function handler(req, res) {
     var latestRecord = latestRecords.find(function (item) {
       return item && item.id === id;
     });
+    var updated = !!(refreshResult && refreshResult.ok && refreshResult.updated);
 
-    return res.status(200).json({
-      ok: true,
+    return res.status(updated ? 200 : 202).json({
+      ok: updated,
+      updated: updated,
       result: refreshResult,
-      record: latestRecord || null,
+      record: updated ? latestRecord || null : null,
+      latestRecord: latestRecord || null,
     });
   } catch (err) {
     var detail = err && err.message ? String(err.message) : "AIコメントの更新に失敗しました。";

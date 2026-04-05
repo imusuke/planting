@@ -267,23 +267,37 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   var token = process.env.BLOB_READ_WRITE_TOKEN;
   var expectedRevision = record.updatedAt || record.createdAt || "";
   var generated = {};
+  var failed = {};
 
   for (var i = 0; i < targets.length; i++) {
     var slotIndex = targets[i];
     var slot = images[slotIndex];
     if (!slot) continue;
-    var buf = await readSourceImageBuffer(slot, token);
-    var result = await generateGrowthPhotoComment({
-      imageBase64: buf.toString("base64"),
-      imageMimeType: "image/jpeg",
-      context: buildAiContextFromRecord(record, slotIndex, slot.memo || "", images.length),
-      timeoutMs: 30000,
-    });
-    generated[slotIndex] = result.comment;
+    try {
+      var buf = await readSourceImageBuffer(slot, token);
+      var result = await generateGrowthPhotoComment({
+        imageBase64: buf.toString("base64"),
+        imageMimeType: "image/jpeg",
+        context: buildAiContextFromRecord(record, slotIndex, slot.memo || "", images.length),
+        timeoutMs: 30000,
+      });
+      generated[slotIndex] = result.comment;
+    } catch (err) {
+      var detail = err && err.message ? String(err.message) : "ai_comment_failed";
+      failed[slotIndex] = detail;
+      console.error("refreshGrowthPhotoCommentsInBackground:slot", record.id, slotIndex, detail);
+    }
   }
 
   var keys = Object.keys(generated);
-  if (!keys.length) return { ok: false, skipped: "no_results" };
+  if (!keys.length) {
+    return {
+      ok: false,
+      skipped: "no_results",
+      failed: Object.keys(failed).length,
+      errors: failed,
+    };
+  }
 
   var records = await readRecords();
   if (records === null) {
@@ -316,7 +330,12 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   latest.updatedAt = new Date().toISOString();
   records[idx] = latest;
   await writeRecords(records);
-  return { ok: true, updated: keys.length };
+  return {
+    ok: true,
+    updated: keys.length,
+    failed: Object.keys(failed).length,
+    errors: failed,
+  };
 }
 
 async function readJsonBody(req) {
