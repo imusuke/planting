@@ -83,33 +83,38 @@
       <div class="section-heading-row">
         <h2>エリア全体の写真</h2>
       </div>
-      <p class="growth-hint">最大 12 枚。保存すると Blob にアップロードされます（差し替え時は既存分も含めて再アップロードされます）。</p>
-      <div class="growth-photo-pick-row">
-        <input
-          id="area-edit-photo-camera"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          class="growth-file-input-hidden"
-          tabindex="-1"
-        />
-        <label for="area-edit-photo-camera" class="growth-secondary growth-photo-pick-label">カメラで撮る</label>
-        <input
-          id="area-edit-photo-library"
-          type="file"
-          accept="image/*"
-          multiple
-          class="growth-file-input-hidden"
-          tabindex="-1"
-        />
-        <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
-        <button type="button" id="area-photo-ai-generate" class="growth-secondary">保存後にバックグラウンドでAIコメント</button>
-        <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
-      </div>
-      <p id="area-photo-ai-status" class="growth-hint growth-photo-ai-status" hidden></p>
-      <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">
-        <div id="area-edit-photo-queue" class="growth-photo-queue" aria-live="polite"></div>
-        <p id="area-edit-photo-queue-empty" class="growth-hint growth-photo-queue-empty">写真はまだありません。</p>
+      <div class="block growth-photo-block">
+        <span class="growth-photo-block-title">エリア全体の写真（最大12枚）</span>
+        <p class="growth-hint growth-photo-block-lead">
+          保存するとBlobにアップロードされます。差し替え時は既存分も含めて再アップロードされます。
+        </p>
+        <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">
+          <div id="area-edit-photo-queue" class="growth-photo-queue" aria-live="polite"></div>
+          <p id="area-edit-photo-queue-empty" class="growth-hint growth-photo-queue-empty">写真はまだありません。</p>
+        </div>
+        <div class="growth-photo-pick-row">
+          <input
+            id="area-edit-photo-camera"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="growth-file-input-hidden"
+            tabindex="-1"
+          />
+          <label for="area-edit-photo-camera" class="growth-secondary growth-photo-pick-label">カメラで撮る</label>
+          <input
+            id="area-edit-photo-library"
+            type="file"
+            accept="image/*"
+            multiple
+            class="growth-file-input-hidden"
+            tabindex="-1"
+          />
+          <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
+          <button type="button" id="area-photo-ai-generate" class="growth-secondary">保存後にバックグラウンドで再生成</button>
+          <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
+        </div>
+        <p id="area-photo-ai-status" class="growth-hint growth-photo-ai-status" hidden></p>
       </div>
 
       <p class="growth-actions">

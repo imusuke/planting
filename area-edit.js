@@ -4,6 +4,7 @@
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var API_AREA_DETAILS = "/api/area-details";
   var API_AREA_GROWTH = "/api/area-growth";
+  var API_AREA_AI_REFRESH = "/api/area-ai-refresh";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_PLANTS = "/api/plants";
   var AREA_GROWTH_SNAPSHOT_JSON = "./data/area-growth-snapshot.json";
@@ -684,7 +685,10 @@
     }
 
     function fetchLatestRecord() {
-      return fetch(API_AREA_GROWTH, { headers: cloudHeaders(false) })
+      return fetch(API_AREA_GROWTH, {
+        headers: cloudHeaders(false),
+        cache: "no-store",
+      })
         .then(function (res) {
           if (!res.ok) {
             return apiErrorMessage(res, "AIコメントの反映確認に失敗しました").then(function (msg) {
@@ -741,6 +745,62 @@
       state.photoAiBusy = false;
       syncPhotoAiButtonState();
     });
+  }
+
+  function runAreaAiRefreshAfterSave(record, targetIndexes) {
+    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
+      return Promise.resolve({ record: record || null });
+    }
+
+    startEdit(record);
+    setPhotoAiStatus("保存済みのエリア写真にAIコメントを追加しています…", false);
+
+    return fetch(API_AREA_AI_REFRESH, {
+      method: "POST",
+      cache: "no-store",
+      keepalive: true,
+      headers: cloudHeaders(true),
+      body: JSON.stringify({
+        id: record.id,
+        targets: targetIndexes.slice(),
+      }),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+        }
+        if (!res.ok) {
+          return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var latestRecord = data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
+        if (latestRecord) {
+          startEdit(latestRecord);
+        }
+        if (data && data.updated && latestRecord) {
+          setPhotoAiStatus("AIコメントを更新しました。必要なら確認して保存してください。", false);
+        } else if (data && data.detail) {
+          setPhotoAiStatus(
+            "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + data.detail + ")",
+            true
+          );
+        } else {
+          setPhotoAiStatus(
+            "AIコメントを更新しています。保存後の画面を閉じても処理は続きます。",
+            false
+          );
+        }
+        return {
+          record: latestRecord || record,
+          updated: !!(data && data.updated),
+          detail: data && data.detail ? String(data.detail) : "",
+          raw: data || {},
+        };
+      });
   }
 
   function renderAreaGrowthFeed(areaId) {
@@ -1011,6 +1071,9 @@
         return buildImagesBase64Payload().then(function (imagesBase64) {
           payload.imagesBase64 = imagesBase64;
           payload.imageMemos = imageMemosPayload();
+          if (aiCommentTargets.length) {
+            payload.aiCommentTargets = aiCommentTargets.slice();
+          }
           return payload;
         });
       }
@@ -1053,11 +1116,17 @@
       .then(postAreaGrowth)
       .then(function (saveResult) {
         if (saveResult && saveResult.record && aiCommentTargets.length) {
-          return runAreaAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets).then(
-            function (refreshResult) {
+          runAreaAiRefreshAfterSave(saveResult.record, aiCommentTargets).catch(function (err) {
+            console.error("runAreaAiRefreshAfterSave", err);
+          });
+          return runAreaAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets)
+            .catch(function (err) {
+              showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);
+              return {};
+            })
+            .then(function (refreshResult) {
               return refreshResult && refreshResult.record ? refreshResult.record : saveResult.record;
-            }
-          );
+            });
         }
         return saveResult && saveResult.record ? saveResult.record : null;
       })
