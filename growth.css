@@ -797,9 +797,32 @@ button.growth-photo-lightbox-corner-btn {
   touch-action: manipulation;
 }
 
+.growth-photo-lightbox-edit-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #f4f7f5;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 button.growth-photo-lightbox-corner-btn:hover,
 button.growth-photo-lightbox-corner-btn:focus-visible {
   background: rgba(45, 106, 79, 0.85);
+  outline: none;
+}
+
+.growth-photo-lightbox-edit-link:hover,
+.growth-photo-lightbox-edit-link:focus-visible {
+  background: rgba(255, 255, 255, 0.22);
   outline: none;
 }
 
@@ -892,6 +915,10 @@ select.growth-photo-lightbox-area-select {
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  .growth-photo-lightbox-edit-link {
+    width: 100%;
   }
 }
 
