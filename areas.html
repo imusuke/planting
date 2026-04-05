@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ - エリア一覧</title>
+  <title>植栽メモ — エリア一覧</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
 </head>
 <body>
   <main class="panel">
-    <nav class="top growth-nav-top" aria-label="ページ移動">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li aria-current="page">エリア一覧</li>
@@ -19,15 +19,15 @@
       <div class="growth-nav-extra">
         <a href="./plants.html">植栽一覧</a>
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./area-edit.html">エリア一覧を編集</a>
-        <a href="./growth-edit.html">記録を追加・編集</a>
+        <a href="./growth-edit.html#areas">記録の追加・編集（エリア）</a>
+        <a href="./growth-edit.html" class="growth-nav-cta">記録の追加・編集</a>
       </div>
     </nav>
 
     <header class="page-header">
-      <p class="eyebrow">Areas</p>
+      <p class="eyebrow">エリア</p>
       <h1>エリア一覧</h1>
-      <p class="lead">エリアを選ぶと、エリア時系列のページを開けます。</p>
+      <p class="lead">エリアを選ぶと、そのエリアの概要と記録をまとめて見られます。</p>
     </header>
 
     <section class="plant-overview" aria-labelledby="areas-overview-heading">
@@ -178,9 +178,10 @@
   "records": []
 }
   </script>
-  <script src="./data/growth-snapshot.boot.js" defer></script>
-  <script src="./data/area-growth-snapshot.boot.js" defer></script>
-  <script src="./photo-lightbox.js" defer></script>
-  <script src="./areas.js" defer></script>
+  <script src="./data/growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./edit-page-common.js?v=20260406c" defer></script>
+  <script src="./list-page-common.js?v=20260405a" defer></script>
+  <script src="./areas.js?v=20260406l" defer></script>
 </body>
 </html>

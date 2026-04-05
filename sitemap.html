@@ -7,11 +7,11 @@
   <title>植栽メモ — サイトマップ</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
 </head>
 <body>
   <main class="panel">
-    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li aria-current="page">サイトマップ</li>
@@ -19,15 +19,15 @@
       <div class="growth-nav-extra">
         <a href="./areas.html">エリア一覧</a>
         <a href="./plants.html">植栽一覧</a>
-        <a href="./growth-edit.html" class="growth-nav-cta">記録を追加・編集</a>
+        <a href="./growth-edit.html" class="growth-nav-cta">記録の追加・編集</a>
       </div>
     </nav>
 
     <header class="page-header">
-      <p class="eyebrow">Site map</p>
+      <p class="eyebrow">サイトマップ</p>
       <h1>サイトマップ</h1>
       <p class="lead">
-        一覧・時系列・詳細・編集のつながりを、できるだけシンプルに確認できます。
+        一覧・各ページ・編集のつながりを、できるだけシンプルに確認できます。
       </p>
     </header>
 
@@ -39,45 +39,45 @@
             <div class="sitemap-node sitemap-node--root">
               <div class="sitemap-node-title">
                 <a href="./index.html">植栽メモ</a>
-                <span class="sitemap-node-label">root</span>
+                <span class="sitemap-node-label">入口</span>
               </div>
-              <p>サイト全体の入口です。エリア一覧と植栽一覧から、時系列・詳細・編集へ進みます。</p>
+              <p>サイト全体の入口です。エリア一覧と植栽一覧から、各ページや編集画面へ進みます。</p>
             </div>
             <ul class="sitemap-tree">
               <li>
                 <div class="sitemap-node">
                   <div class="sitemap-node-title">
                     <a href="./areas.html">エリア一覧</a>
-                    <span class="sitemap-node-label">browse</span>
+                    <span class="sitemap-node-label">一覧</span>
                   </div>
-                  <p>エリアごとの入口です。各エリアの時系列へ進みます。</p>
+                  <p>エリアごとの入口です。各エリアの概要と記録へ進みます。</p>
                 </div>
                 <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <a href="./growth-edit.html#areas">エリア一覧編集</a>
-                        <span class="sitemap-node-label">edit</span>
+                        <a href="./growth-edit.html#areas">記録の追加・編集（エリア）</a>
+                        <span class="sitemap-node-label">編集</span>
                       </div>
-                      <p>一覧全体のエリア名やエリアIDを編集します。</p>
+                      <p>記録の追加・編集ページのエリア整理タブで、一覧全体のエリア名やエリアIDを編集します。</p>
                     </div>
                   </li>
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <a href="./area.html">エリア時系列</a>
-                        <span class="sitemap-node-label">timeline</span>
+                        <a href="./area.html">エリア</a>
+                        <span class="sitemap-node-label">ページ</span>
                       </div>
-                      <p>各エリアの写真と記録を時系列で閲覧します。</p>
+                      <p>各エリアの概要、写真、植栽一覧、記録をまとめて確認します。</p>
                     </div>
                     <ul class="sitemap-tree">
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <a href="./area-edit.html">エリア時系列編集</a>
-                            <span class="sitemap-node-label">edit</span>
+                            <a href="./area-edit.html">エリアの概要・記録を編集</a>
+                            <span class="sitemap-node-label">編集</span>
                           </div>
-                          <p>エリア写真やメモを編集します。</p>
+                          <p>エリアの記録メモ、概要、本文、写真をまとめて編集します。</p>
                         </div>
                       </li>
                     </ul>
@@ -88,34 +88,34 @@
                 <div class="sitemap-node">
                   <div class="sitemap-node-title">
                     <a href="./plants.html">植栽一覧</a>
-                    <span class="sitemap-node-label">browse</span>
+                    <span class="sitemap-node-label">一覧</span>
                   </div>
-                  <p>植栽ごとの入口です。植栽ページで写真・記録・詳しいメモをまとめて確認できます。</p>
+                  <p>植栽ごとの入口です。その植栽を開くと、写真・記録・詳細メモをまとめて確認できます。</p>
                 </div>
                 <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <a href="./growth-edit.html#plants">植栽一覧編集</a>
-                        <span class="sitemap-node-label">edit</span>
+                        <a href="./growth-edit.html#plants">記録の追加・編集（植栽）</a>
+                        <span class="sitemap-node-label">編集</span>
                       </div>
-                      <p>一覧全体の植栽名を編集します。</p>
+                      <p>記録の追加・編集ページの植栽整理タブで、一覧全体の植栽名を編集します。</p>
                     </div>
                   </li>
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
                         <a href="./plant.html">植栽</a>
-                        <span class="sitemap-node-label">browse</span>
+                        <span class="sitemap-node-label">ページ</span>
                       </div>
-                      <p>その植栽の写真・記録・詳しいメモをまとめて確認します。</p>
+                      <p>その植栽の写真・記録・詳細メモをまとめて確認します。</p>
                     </div>
                     <ul class="sitemap-tree">
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <a href="./growth-edit.html">植栽記録編集</a>
-                            <span class="sitemap-node-label">edit</span>
+                            <a href="./growth-edit.html">記録の追加・編集</a>
+                            <span class="sitemap-node-label">編集</span>
                           </div>
                           <p>その植栽の記録や写真を追加・編集します。</p>
                         </div>
@@ -123,10 +123,10 @@
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <a href="./plant-edit.html">植栽詳細編集</a>
-                            <span class="sitemap-node-label">edit</span>
+                            <a href="./plant-edit.html">植栽の詳細を編集</a>
+                            <span class="sitemap-node-label">編集</span>
                           </div>
-                          <p>植栽の説明文や概要を編集します。</p>
+                          <p>植栽の概要と詳細メモを編集します。</p>
                         </div>
                       </li>
                     </ul>
@@ -137,7 +137,7 @@
                 <div class="sitemap-node sitemap-node--current">
                   <div class="sitemap-node-title">
                     <span>サイトマップ</span>
-                    <span class="sitemap-node-label">guide</span>
+                    <span class="sitemap-node-label">案内</span>
                   </div>
                   <p>ページのつながりを確認するための案内ページです。</p>
                 </div>

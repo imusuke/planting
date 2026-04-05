@@ -36,24 +36,8 @@ main.panel {
   overflow: hidden;
 }
 
-.top {
-  padding: 20px 24px 0;
-}
-
-.top a {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--green);
-  text-decoration: none;
-}
-
-.top a:hover,
-.top a:focus-visible {
-  text-decoration: underline;
-}
-
-/* パンくず（植栽メモ各ページ） */
 .growth-nav-top {
+  padding: 20px 24px 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -482,36 +466,36 @@ a.plant-record-link--with-thumb {
   object-fit: cover;
 }
 
-a.plant-detail-link {
+a.detail-page-link {
   color: var(--muted);
   text-decoration: none;
   border-bottom: 1px dotted rgba(74, 99, 86, 0.5);
 }
 
-a.plant-detail-link:hover,
-a.plant-detail-link:focus-visible {
+a.detail-page-link:hover,
+a.detail-page-link:focus-visible {
   color: var(--green);
   border-bottom-color: rgba(45, 106, 79, 0.55);
   outline: none;
 }
 
-.plant-detail-header {
+.detail-page-header {
   padding-bottom: 8px;
 }
 
-.plant-detail-area-line {
+.detail-page-subline {
   color: var(--muted);
   font-size: 0.98rem !important;
 }
 
-a.plant-detail-area-link {
+a.detail-page-subline-link {
   color: inherit;
   text-decoration: none;
   border-bottom: 1px dotted rgba(74, 99, 86, 0.45);
 }
 
-a.plant-detail-area-link:hover,
-a.plant-detail-area-link:focus-visible {
+a.detail-page-subline-link:hover,
+a.detail-page-subline-link:focus-visible {
   color: var(--green);
   border-bottom-color: rgba(45, 106, 79, 0.55);
   outline: none;
@@ -629,28 +613,28 @@ a.plant-area-link:focus-visible {
   color: var(--muted);
 }
 
-.area-detail-static-photos.plant-detail-photos {
+.area-detail-static-photos.detail-page-photos {
   border-bottom: none;
   padding-bottom: 0.35rem;
 }
 
-.plant-detail-article {
+.detail-page-article {
   padding: 0 24px 36px;
   max-width: 42rem;
 }
 
-.plant-detail-loading,
-.plant-detail-error {
+.detail-page-loading,
+.detail-page-error {
   margin: 0;
   line-height: 1.65;
   color: var(--muted);
 }
 
-.plant-detail-error {
+.detail-page-error {
   color: #8b2942;
 }
 
-.plant-detail-warning {
+.detail-page-warning {
   margin: 0 0 1.25rem;
   padding: 12px 14px;
   border-radius: 12px;
@@ -661,18 +645,18 @@ a.plant-area-link:focus-visible {
   border: 1px solid rgba(184, 134, 11, 0.35);
 }
 
-.plant-detail-summary {
+.detail-page-summary {
   margin: 0 0 1.35rem;
   font-size: 1.06rem;
   line-height: 1.65;
   color: var(--muted);
 }
 
-.plant-detail-section {
+.detail-page-section {
   margin: 0 0 1.75rem;
 }
 
-.plant-detail-section-heading {
+.detail-page-section-heading {
   margin: 0 0 12px;
   font-size: 0.95rem;
   font-weight: 700;
@@ -680,13 +664,13 @@ a.plant-area-link:focus-visible {
   color: var(--muted);
 }
 
-.plant-detail-photos {
+.detail-page-photos {
   margin: 0 0 1.75rem;
   padding: 0 0 1.25rem;
   border-bottom: 1px solid var(--line);
 }
 
-.plant-detail-photos-heading {
+.detail-page-photos-heading {
   margin: 0 0 12px;
   font-size: 0.95rem;
   font-weight: 700;
@@ -695,28 +679,28 @@ a.plant-area-link:focus-visible {
   color: var(--green-soft, #2d6a4f);
 }
 
-.plant-detail-photos-empty {
+.detail-page-photos-empty {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--muted);
 }
 
-.plant-detail-photos-grid {
+.detail-page-photos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 10px;
   margin: 0;
 }
 
-.plant-detail-photo-figure {
+.detail-page-photo-figure {
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-img.plant-detail-photo-img {
+img.detail-page-photo-img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
@@ -726,14 +710,14 @@ img.plant-detail-photo-img {
   background: rgba(26, 46, 36, 0.06);
 }
 
-.plant-detail-photo-date {
+.detail-page-photo-date {
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--muted);
   text-align: center;
 }
 
-.plant-detail-photos-more {
+.detail-page-photos-more {
   margin: 14px 0 0;
   font-size: 0.88rem;
 }
@@ -791,68 +775,17 @@ img.plant-detail-photo-img {
   color: #b00020;
 }
 
-.home-simple-header .lead {
-  max-width: 100%;
-}
-
-.home-quick .card {
-  min-height: 112px;
-  padding: 16px;
-  gap: 8px;
-  border-radius: 16px;
-}
-
-.home-quick .card h2 {
-  font-size: 1.1rem;
-}
-
-.home-quick .card p {
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
-.home-quick .card .open {
-  font-size: 0.78rem;
-}
-
-.home-quick-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-.home-advanced-controls {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.55);
-}
-
-.home-advanced-controls > summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--ink);
-  list-style: none;
-}
-
-.home-advanced-controls > summary::-webkit-details-marker {
-  display: none;
-}
-
-.home-advanced-controls[open] > summary {
-  margin-bottom: 10px;
-}
-
 .area-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
-.plant-detail-body {
+.detail-page-body {
   margin: 0;
 }
 
-p.plant-detail-body-p {
+p.detail-page-body-p {
   margin: 0 0 1rem;
   line-height: 1.75;
   color: var(--ink);
@@ -939,7 +872,7 @@ img.plant-timeline-photo-img {
   margin: 0;
 }
 
-.plant-detail-placeholder {
+.detail-page-placeholder {
   margin: 0;
   padding: 14px 16px;
   border-radius: 12px;
@@ -950,7 +883,7 @@ img.plant-timeline-photo-img {
   color: var(--muted);
 }
 
-.plant-detail-actions {
+.detail-page-actions {
   margin: 2rem 0 0;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line);
@@ -960,7 +893,7 @@ img.plant-timeline-photo-img {
   gap: 10px 16px;
 }
 
-a.plant-detail-cta {
+a.detail-page-cta {
   display: inline-block;
   font-weight: 600;
   font-size: 0.95rem;
@@ -968,8 +901,8 @@ a.plant-detail-cta {
   text-decoration: none;
 }
 
-a.plant-detail-cta:hover,
-a.plant-detail-cta:focus-visible {
+a.detail-page-cta:hover,
+a.detail-page-cta:focus-visible {
   text-decoration: underline;
   outline: none;
 }
@@ -987,7 +920,7 @@ a.plant-detail-cta:focus-visible {
     padding: 8px 18px 16px;
   }
 
-  .top {
+  .growth-nav-top {
     padding: 16px 18px 0;
   }
 
@@ -995,7 +928,7 @@ a.plant-detail-cta:focus-visible {
     padding: 0 18px 8px;
   }
 
-  .plant-detail-article {
+  .detail-page-article {
     padding: 0 18px 28px;
   }
 }

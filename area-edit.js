@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  var LS_CLOUD_TOKEN = "growthCloudToken";
+  var common = window.PlantingEditCommon || {};
+  var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
   var API_AREA_DETAILS = "/api/area-details";
   var API_AREA_GROWTH = "/api/area-growth";
   var API_AREA_AI_REFRESH = "/api/area-ai-refresh";
@@ -43,6 +44,93 @@
     }, 4200);
   }
 
+  function createTextElement(tagName, className, text) {
+    return common.createTextElement
+      ? common.createTextElement(tagName, className, text)
+      : (function () {
+          var node = document.createElement(tagName);
+          if (className) node.className = className;
+          if (text != null) node.textContent = text;
+          return node;
+        })();
+  }
+
+  function createButtonElement(className, text, onClick, attrs) {
+    return common.createButtonElement
+      ? common.createButtonElement(className, text, onClick, attrs)
+      : (function () {
+          var node = document.createElement("button");
+          node.type = "button";
+          if (className) node.className = className;
+          if (text != null) node.textContent = text;
+          if (attrs && typeof attrs === "object") {
+            Object.keys(attrs).forEach(function (key) {
+              var value = attrs[key];
+              if (value == null) return;
+              node.setAttribute(key, String(value));
+            });
+          }
+          if (typeof onClick === "function") {
+            node.addEventListener("click", onClick);
+          }
+          return node;
+        })();
+  }
+
+  function createGrowthCardScaffold(options) {
+    return common.createGrowthCardScaffold
+      ? common.createGrowthCardScaffold(options)
+      : (function () {
+          var opts = options || {};
+          var card = document.createElement("article");
+          card.className = "growth-card" + (opts.cardClassName ? " " + opts.cardClassName : "");
+          var body = document.createElement("div");
+          body.className = opts.bodyClassName || "growth-card-body";
+          var actions = document.createElement("div");
+          actions.className = opts.actionsClassName || "growth-card-actions";
+          return {
+            card: card,
+            body: body,
+            actions: actions,
+            finalize: function () {
+              if (!body.parentNode) card.appendChild(body);
+              if (actions.childNodes.length && !actions.parentNode) card.appendChild(actions);
+              return card;
+            },
+          };
+        })();
+  }
+
+  function createGrowthCardImageWrap(options) {
+    return common.createGrowthCardImageWrap
+      ? common.createGrowthCardImageWrap(options)
+      : (function () {
+          var opts = options || {};
+          var wrap = document.createElement("div");
+          wrap.className = opts.wrapClassName || "growth-card-img-wrap";
+          if (opts.wrapOnly) {
+            return { wrap: wrap, img: null };
+          }
+          if (!opts.src) {
+            wrap.className += " growth-card-img-wrap--empty";
+            wrap.textContent = opts.emptyText || "写真なし";
+            return { wrap: wrap, img: null };
+          }
+          var img = document.createElement("img");
+          img.src = opts.src;
+          img.alt = opts.alt || "";
+          img.loading = opts.loading || "lazy";
+          img.decoding = opts.decoding || "async";
+          img.referrerPolicy = opts.referrerPolicy || "no-referrer";
+          if (opts.imageClassName) img.className = opts.imageClassName;
+          wrap.appendChild(img);
+          if (opts.badgeText) {
+            wrap.appendChild(createTextElement("span", "growth-card-img-count", opts.badgeText));
+          }
+          return { wrap: wrap, img: img };
+        })();
+  }
+
   function setPhotoAiStatus(message, isError) {
     if (!el.photoAiStatus) return;
     if (!message) {
@@ -63,21 +151,9 @@
   }
 
   function cloudHeaders(jsonBody) {
-    var headers = { Accept: "application/json" };
-    if (jsonBody) headers["Content-Type"] = "application/json";
-    var token = localStorage.getItem(LS_CLOUD_TOKEN);
-    if (token) headers["x-growth-token"] = token;
-    return headers;
-  }
-
-  function readEmbeddedPlants() {
-    var embed = document.getElementById("plants-embed");
-    if (!embed || !embed.textContent.trim()) return null;
-    try {
-      return JSON.parse(embed.textContent.trim());
-    } catch (err) {
-      return null;
-    }
+    return common.buildCloudHeaders
+      ? common.buildCloudHeaders(jsonBody, LS_CLOUD_TOKEN)
+      : { Accept: "application/json" };
   }
 
   function readWindowSnapshotRecords(key) {
@@ -86,26 +162,16 @@
   }
 
   function loadPlantsData() {
-    return fetch(API_PLANTS, { cache: "no-store" })
-      .then(function (res) {
-        if (!res.ok) throw new Error("api");
-        return res.json();
-      })
-      .then(function (data) {
-        if (!data || !Array.isArray(data.areas)) throw new Error("shape");
-        return data;
-      })
-      .catch(function () {
-        return fetch("data/plants.json", { cache: "no-store" }).then(function (res) {
-          if (!res.ok) throw new Error("file");
+    return common.loadPlantsData
+      ? common.loadPlantsData({
+          apiPath: API_PLANTS,
+          fallbackPath: "data/plants.json",
+          embedId: "plants-embed",
+        })
+      : fetch(API_PLANTS, { cache: "no-store" }).then(function (res) {
+          if (!res.ok) throw new Error("api");
           return res.json();
         });
-      })
-      .catch(function () {
-        var embedded = readEmbeddedPlants();
-        if (embedded && Array.isArray(embedded.areas)) return embedded;
-        throw new Error("no plants");
-      });
   }
 
   function loadAreaDetailsMerged() {
@@ -164,45 +230,53 @@
   }
 
   function normalizeRecordImages(record) {
-    if (!record) return [];
-    if (Array.isArray(record.images) && record.images.length) {
-      return record.images.map(function (img) {
-        return {
-          imageUrl: img && img.imageUrl ? img.imageUrl : null,
-          imagePathname: img && img.imagePathname ? img.imagePathname : null,
-          localSnapshotImage: img && img.localSnapshotImage ? img.localSnapshotImage : null,
-          memo: img && typeof img.memo === "string" ? img.memo : "",
-        };
-      });
-    }
-    if (record.imageUrl || record.imagePathname || record.localSnapshotImage) {
-      return [
-        {
-          imageUrl: record.imageUrl || null,
-          imagePathname: record.imagePathname || null,
-          localSnapshotImage: record.localSnapshotImage || null,
-          memo: "",
-        },
-      ];
-    }
-    return [];
+    return common.normalizeImageSlots
+      ? common.normalizeImageSlots(record)
+      : (function () {
+          if (!record) return [];
+          if (Array.isArray(record.images) && record.images.length) {
+            return record.images.map(function (img) {
+              return {
+                imageUrl: img && img.imageUrl ? img.imageUrl : null,
+                imagePathname: img && img.imagePathname ? img.imagePathname : null,
+                localSnapshotImage: img && img.localSnapshotImage ? img.localSnapshotImage : null,
+                memo: img && typeof img.memo === "string" ? img.memo : "",
+              };
+            });
+          }
+          if (record.imageUrl || record.imagePathname || record.localSnapshotImage) {
+            return [
+              {
+                imageUrl: record.imageUrl || null,
+                imagePathname: record.imagePathname || null,
+                localSnapshotImage: record.localSnapshotImage || null,
+                memo: "",
+              },
+            ];
+          }
+          return [];
+        })();
   }
 
   function growthImageSrcFromSlot(slot) {
-    if (!slot) return null;
-    if (slot.localSnapshotImage) {
-      var p = String(slot.localSnapshotImage).trim();
-      if (/^https?:\/\//i.test(p)) return p;
-      try {
-        return new URL(p, window.location.href).href;
-      } catch (e0) {
-        return p;
-      }
-    }
-    if (slot.imagePathname) {
-      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
-    }
-    return slot.imageUrl || null;
+    return common.imageSrcFromSlot
+      ? common.imageSrcFromSlot(slot, API_GROWTH_IMAGE)
+      : (function () {
+          if (!slot) return null;
+          if (slot.localSnapshotImage) {
+            var p = String(slot.localSnapshotImage).trim();
+            if (/^https?:\/\//i.test(p)) return p;
+            try {
+              return new URL(p, window.location.href).href;
+            } catch (e0) {
+              return p;
+            }
+          }
+          if (slot.imagePathname) {
+            return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+          }
+          return slot.imageUrl || null;
+        })();
   }
 
   function growthIsImageBitmap(x) {
@@ -545,11 +619,19 @@
     var recordHref = wanted
       ? "./growth-edit.html?area=" + encodeURIComponent(wanted)
       : "./growth-edit.html";
+    var recordText = wanted ? "このエリアの記録を追加・編集" : "記録の追加・編集";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
+    if (el.detailLink) el.detailLink.href = viewHref;
     if (el.viewLink) el.viewLink.href = viewHref;
-    if (el.recordLink) el.recordLink.href = recordHref;
-    if (el.growthLink) el.growthLink.href = recordHref;
+    if (el.recordLink) {
+      el.recordLink.href = recordHref;
+      el.recordLink.textContent = recordText;
+    }
+    if (el.growthLink) {
+      el.growthLink.href = recordHref;
+      el.growthLink.textContent = recordText;
+    }
   }
 
   function syncEditFormUI() {
@@ -584,31 +666,33 @@
     syncAreaEditLinks(area ? area.id : wanted);
 
     if (area) {
-      if (crumbEl) crumbEl.textContent = state.editRecord ? "エリア記録を編集" : "エリアを編集";
+      if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = area.label || area.id;
+      if (crumbEl) crumbEl.textContent = state.editRecord ? "エリア記録を編集" : "エリアの概要・記録を編集";
       if (titleEl) {
         titleEl.textContent =
-          area.label + (state.editRecord ? "の記録を編集" : "の説明・メモを編集");
+          area.label + (state.editRecord ? "の記録を編集" : "の概要・記録を編集");
       }
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = state.editRecord
-          ? "このエリアの過去記録と写真コメントを編集します。"
-          : "このエリアの説明、メモ、写真付き記録をまとめて更新できます。";
+          ? "このエリアの過去記録、写真コメント、概要メモを編集します。"
+          : "このエリアの記録メモ、概要、本文、写真をまとめて追加・更新できます。";
       }
       document.title =
+        "植栽メモ — " +
         area.label +
-        (state.editRecord ? "の記録を編集" : "の説明・メモを編集") +
-        " | 植栽メモ";
+        (state.editRecord ? "の記録を編集" : "の概要・記録を編集");
       return;
     }
 
-    if (crumbEl) crumbEl.textContent = "エリアを編集";
-    if (titleEl) titleEl.textContent = "エリアの説明・メモを編集";
+    if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = "エリア";
+    if (crumbEl) crumbEl.textContent = "エリアの概要・記録を編集";
+    if (titleEl) titleEl.textContent = "エリアの概要・記録を編集";
     if (contextEl) {
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "植栽メモ | エリアの説明・メモを編集";
+    document.title = "植栽メモ — エリアの概要・記録を編集";
   }
 
   function recordDateLabel(record) {
@@ -808,9 +892,11 @@
     el.records.innerHTML = "";
 
     if (!areaId) {
-      var choose = document.createElement("p");
-      choose.className = "growth-hint";
-      choose.textContent = "先にエリアを選ぶと、過去のエリア記録をここから編集できます。";
+      var choose = createTextElement(
+        "p",
+        "growth-hint",
+        "先にエリアを選ぶと、過去のエリア記録をここから編集できます。"
+      );
       el.records.appendChild(choose);
       return;
     }
@@ -822,44 +908,33 @@
       .sort(compareRecordsNewest);
 
     if (!items.length) {
-      var empty = document.createElement("p");
-      empty.className = "growth-hint";
-      empty.textContent = "このエリアの記録はまだありません。上のフォームから追加できます。";
+      var empty = createTextElement(
+        "p",
+        "growth-hint",
+        "このエリアの記録はまだありません。上のフォームから追加できます。"
+      );
       el.records.appendChild(empty);
       return;
     }
 
     items.forEach(function (record) {
-      var card = document.createElement("article");
-      card.className = "growth-card";
+      var cardParts = createGrowthCardScaffold();
+      var card = cardParts.card;
+      var body = cardParts.body;
+      var actions = cardParts.actions;
 
       var images = normalizeRecordImages(record);
       var firstSrc = images.length ? growthImageSrcFromSlot(images[0]) : "";
       if (firstSrc) {
-        var imgWrap = document.createElement("div");
-        imgWrap.className = "growth-card-img-wrap";
-        var img = document.createElement("img");
-        img.src = firstSrc;
-        img.alt = (areaLabelById(areaId) || "エリア") + "の記録写真";
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.referrerPolicy = "no-referrer";
-        imgWrap.appendChild(img);
-        if (images.length > 1) {
-          var count = document.createElement("span");
-          count.className = "growth-card-img-count";
-          count.textContent = images.length + "枚";
-          imgWrap.appendChild(count);
-        }
-        card.appendChild(imgWrap);
+        var imageParts = createGrowthCardImageWrap({
+          src: firstSrc,
+          alt: (areaLabelById(areaId) || "エリア") + "の記録写真",
+          badgeText: images.length > 1 ? images.length + "枚" : "",
+        });
+        card.appendChild(imageParts.wrap);
       }
 
-      var body = document.createElement("div");
-      body.className = "growth-card-body";
-
-      var meta = document.createElement("p");
-      meta.className = "growth-card-meta";
-      meta.textContent = recordDateLabel(record);
+      var meta = createTextElement("p", "growth-card-meta", recordDateLabel(record));
       body.appendChild(meta);
 
       var title = document.createElement("h3");
@@ -868,9 +943,7 @@
       body.appendChild(title);
 
       if (record.note) {
-        var note = document.createElement("p");
-        note.className = "growth-card-note";
-        note.textContent = String(record.note).trim();
+        var note = createTextElement("p", "growth-card-note", String(record.note).trim());
         body.appendChild(note);
       }
 
@@ -881,27 +954,17 @@
         .filter(Boolean)
         .slice(0, 2);
       if (photoCommentPreview.length) {
-        var preview = document.createElement("p");
-        preview.className = "growth-card-note";
-        preview.textContent = photoCommentPreview.join(" / ");
+        var preview = createTextElement("p", "growth-card-note", photoCommentPreview.join(" / "));
         body.appendChild(preview);
       }
 
       card.appendChild(body);
 
-      var actions = document.createElement("div");
-      actions.className = "growth-card-actions";
-      var editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "growth-edit";
-      editBtn.textContent = "この記録を編集";
-      editBtn.addEventListener("click", function () {
+      var editBtn = createButtonElement("growth-edit", "この記録を編集", function () {
         startEdit(record);
       });
       actions.appendChild(editBtn);
-      card.appendChild(actions);
-
-      el.records.appendChild(card);
+      el.records.appendChild(cardParts.finalize());
     });
   }
 
@@ -1033,7 +1096,7 @@
           throw new Error("トークンが違います。");
         }
         if (res.status === 503) {
-          return apiErrorMessage(res, "エリア詳細の保存に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "エリアの概要の保存に失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -1172,19 +1235,20 @@
     el.photoQueueEmpty = $("area-edit-photo-queue-empty");
     el.save = $("area-edit-save");
     el.detailBreadcrumbLink = $("area-edit-detail-breadcrumb-link");
+    el.detailLink = $("area-edit-detail-link");
     el.recordLink = $("area-edit-record-link");
     el.viewLink = $("area-edit-view-link");
     el.growthLink = $("area-edit-growth-link");
 
-    if (el.cloudToken) {
-      el.cloudToken.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";
-    }
+    if (common.applyStoredCloudToken) common.applyStoredCloudToken(el.cloudToken, LS_CLOUD_TOKEN);
+    else if (el.cloudToken) el.cloudToken.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";
     if (el.cloudTokenSave) {
       el.cloudTokenSave.addEventListener("click", function () {
         var value = el.cloudToken ? el.cloudToken.value.trim() : "";
-        if (value) localStorage.setItem(LS_CLOUD_TOKEN, value);
+        if (common.saveCloudToken) common.saveCloudToken(value, LS_CLOUD_TOKEN);
+        else if (value) localStorage.setItem(LS_CLOUD_TOKEN, value);
         else localStorage.removeItem(LS_CLOUD_TOKEN);
-        showToast("トークンを保存しました。");
+        showToast(value ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。");
       });
     }
     if (el.cloudStatus) {

@@ -4,34 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリア時系列</title>
+  <title>植栽メモ — エリア</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
 </head>
 <body>
   <main class="panel">
-    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
-        <li aria-current="page" id="area-detail-breadcrumb-current">エリア時系列</li>
+        <li aria-current="page" id="area-detail-breadcrumb-current">エリア</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./plants.html">植栽一覧</a>
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./area-edit.html" id="area-detail-edit-link">このエリアを編集</a>
-        <a href="./growth-edit.html" id="area-detail-growth-edit-link">このエリアの記録を追加・編集</a>
+        <a href="./area-edit.html" id="area-detail-edit-link">このエリアの概要・記録を編集</a>
+        <a href="./growth-edit.html" id="area-detail-growth-edit-link" class="growth-nav-cta">このエリアの記録を追加・編集</a>
       </div>
     </nav>
 
-    <header class="page-header plant-detail-header">
-      <p class="eyebrow">Planting · Area</p>
-      <h1 id="area-detail-title">エリア時系列</h1>
+    <header class="page-header detail-page-header">
+      <p class="eyebrow">エリア</p>
+      <h1 id="area-detail-title">エリア</h1>
     </header>
 
-    <article class="plant-detail-article" id="area-detail-root" aria-live="polite">
-      <p class="plant-detail-loading">読み込み中…</p>
+    <article class="detail-page-article" id="area-detail-root" aria-live="polite">
+      <p class="detail-page-loading">読み込み中…</p>
     </article>
   </main>
   <script type="application/json" id="plants-embed">
@@ -172,10 +172,13 @@
   ]
 }
   </script>
-  <script src="./data/growth-snapshot.boot.js" defer></script>
-  <script src="./data/area-growth-snapshot.boot.js" defer></script>
-  <script src="./photo-lightbox.js" defer></script>
-  <script src="./hub-link.js" defer></script>
-  <script src="./area.js" defer></script>
+  <script src="./data/growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./photo-lightbox.js?v=20260405i" defer></script>
+  <script src="./edit-page-common.js?v=20260406c" defer></script>
+  <script src="./detail-page.js?v=20260405r" defer></script>
+  <script src="./list-page-common.js?v=20260405a" defer></script>
+  <script src="./hub-link.js?v=20260405i" defer></script>
+  <script src="./area.js?v=20260406m" defer></script>
 </body>
 </html>

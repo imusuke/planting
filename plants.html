@@ -7,11 +7,11 @@
   <title>植栽メモ — 植栽一覧</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
 </head>
 <body>
   <main class="panel">
-    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li aria-current="page">植栽一覧</li>
@@ -19,16 +19,16 @@
       <div class="growth-nav-extra">
         <a href="./areas.html">エリア一覧</a>
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html#plants">植栽一覧を編集</a>
-        <a href="./growth-edit.html#areas">エリア一覧を編集</a>
+        <a href="./growth-edit.html#plants">記録の追加・編集（植栽）</a>
+        <a href="./growth-edit.html#areas">記録の追加・編集（エリア）</a>
       </div>
     </nav>
 
     <header class="page-header">
-      <p class="eyebrow">Planting</p>
+      <p class="eyebrow">植栽</p>
       <h1>植栽一覧</h1>
       <p class="lead">
-        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すとその植栽ページを開き、写真・記録・詳しいメモをまとめて確認できます。名前の横には最新の写真サムネイルを表示します。
+        エリアごとの植栽一覧です。<strong>植栽名</strong>を押すとその植栽を開き、写真・記録・詳細メモをまとめて確認できます。名前の横には最新の写真サムネイルを表示します。
       </p>
     </header>
 
@@ -208,11 +208,11 @@
   ]
 }
   </script>
-  <script src="./data/growth-snapshot.boot.js" defer></script>
-  <script src="./data/area-growth-snapshot.boot.js" defer></script>
-  <script src="./photo-lightbox.js" defer></script>
-  <script src="./hub-link.js" defer></script>
-
-  <script src="./index.js" defer></script>
+  <script src="./data/growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./hub-link.js?v=20260405i" defer></script>
+  <script src="./edit-page-common.js?v=20260406c" defer></script>
+  <script src="./list-page-common.js?v=20260405a" defer></script>
+  <script src="./index.js?v=20260406m" defer></script>
 </body>
 </html>

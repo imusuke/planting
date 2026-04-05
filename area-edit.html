@@ -4,48 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリアの写真・メモを編集</title>
+  <title>植栽メモ — エリアの概要・記録を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="stylesheet" href="./growth.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
+  <link rel="stylesheet" href="./growth.css?v=20260406a" />
 </head>
 <body>
   <main class="panel growth-panel">
-    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
-        <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア時系列</a></li>
-        <li aria-current="page" id="area-edit-breadcrumb-current">エリアを編集</li>
+        <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア</a></li>
+        <li aria-current="page" id="area-edit-breadcrumb-current">エリアの概要・記録を編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html" id="area-edit-record-link">記録の追加・編集</a>
+        <a href="./growth-edit.html" id="area-edit-record-link" class="growth-nav-cta">このエリアの記録を追加・編集</a>
+        <a href="./area.html" id="area-edit-detail-link">このエリアを見る</a>
       </div>
     </nav>
 
     <div id="area-edit-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
     <header class="page-header">
-      <p class="eyebrow">Planting · Area</p>
-      <h1 id="area-edit-page-title">エリアの写真・メモを編集</h1>
-      <p id="area-edit-context-line" class="lead plant-detail-area-line" hidden></p>
+      <p class="eyebrow">エリア</p>
+      <h1 id="area-edit-page-title">エリアの概要・記録を編集</h1>
+      <p id="area-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="area-edit-page-lead" class="lead">
-        エリア全体の<strong>概要・本文</strong>と<strong>登録写真</strong>を保存します（本番の Vercel + トークンが必要）。閲覧は <a href="./area.html" id="area-edit-view-link">エリア時系列</a> から。
+        エリア全体の<strong>記録メモ</strong>、<strong>概要・本文</strong>、<strong>登録写真</strong>をまとめて編集します。閲覧は
+        <a href="./area.html" id="area-edit-view-link" class="detail-page-link">このエリアを見る</a>
+        から確認できます。
       </p>
     </header>
 
     <section class="growth-section" aria-labelledby="area-edit-connection-h2">
       <h2 id="area-edit-connection-h2">保存先への接続</h2>
+      <p class="growth-hint">保存や編集を行うときだけ、必要に応じてトークンを入力します。閲覧だけなら不要です。</p>
       <p id="area-edit-cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div class="growth-token-row">
         <label class="block growth-token-field">
-          <span class="growth-label-with-info">アップロード用トークン（成長記録と同じ）</span>
+          <span class="growth-label-with-info">アップロード用トークン（共通）</span>
           <input id="area-edit-cloud-token" type="password" autocomplete="off" placeholder="サイト管理者が設定した文字列" />
         </label>
         <button type="button" id="area-edit-cloud-token-save" class="growth-secondary">
-          保存
+          トークンを保存
         </button>
       </div>
     </section>
@@ -112,17 +116,17 @@
           />
           <label for="area-edit-photo-library" class="growth-secondary growth-photo-pick-label">アルバムから選ぶ</label>
           <button type="button" id="area-photo-ai-generate" class="growth-secondary">保存後にバックグラウンドでAIコメント再生成</button>
-          <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>すべて外す</button>
         </div>
         <p id="area-photo-ai-status" class="growth-hint growth-photo-ai-status" hidden></p>
       </div>
 
-      <p class="growth-actions">
+      <div class="growth-actions">
         <button type="submit" id="area-edit-save" class="growth-primary">保存する</button>
         <button type="button" id="area-edit-cancel" class="growth-secondary" hidden>編集をやめる</button>
         <button type="button" id="area-edit-delete-record" class="growth-danger" hidden>この記録を削除</button>
-        <a href="./growth-edit.html" id="area-edit-growth-link" class="plant-detail-link">記録の追加・編集へ</a>
-      </p>
+        <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>写真をクリア</button>
+        <a href="./growth-edit.html" id="area-edit-growth-link" class="growth-secondary">このエリアの記録を追加・編集</a>
+      </div>
     </form>
 
     <section class="growth-section" aria-labelledby="area-edit-past-records-heading">
@@ -228,8 +232,9 @@
   ]
 }
   </script>
-  <script src="./hub-link.js" defer></script>
-  <script src="./data/area-growth-snapshot.boot.js" defer></script>
-  <script src="./area-edit.js" defer></script>
+  <script src="./hub-link.js?v=20260405i" defer></script>
+  <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
+  <script src="./edit-page-common.js?v=20260406c" defer></script>
+  <script src="./area-edit.js?v=20260406e" defer></script>
 </body>
 </html>

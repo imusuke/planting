@@ -6,43 +6,320 @@
   var API_PLANT_DETAILS = "/api/plant-details";
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
 
-  var root = document.getElementById("plant-detail-root");
-  var titleEl = document.getElementById("plant-detail-title");
-  var areaLineEl = document.getElementById("plant-detail-area-line");
-  var crumbEl = document.getElementById("plant-detail-breadcrumb-current");
-  var detailEditLinkEl = document.getElementById("plant-detail-edit-link");
-  var recordEditLinkEl = document.getElementById("plant-detail-record-edit-link");
+  var root = document.getElementById("plant-page-root");
+  var titleEl = document.getElementById("plant-page-title");
+  var areaLineEl = document.getElementById("plant-page-area-line");
+  var crumbEl = document.getElementById("plant-page-breadcrumb-current");
+  var detailEditLinkEl = document.getElementById("plant-page-edit-link");
+  var recordEditLinkEl = document.getElementById("plant-page-record-edit-link");
+  var detailPage = window.PlantingDetailPage || {};
   if (!root || !titleEl) return;
 
+  var bindLightboxImage =
+    detailPage.bindLightboxImage ||
+    function (img, configOrFactory) {
+      if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
+        return false;
+      }
+      window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+      return true;
+    };
+  var bindLightboxGalleryImage =
+    detailPage.bindLightboxGalleryImage ||
+    function (img, galleryNodes, galleryCaptions, galleryIndex) {
+      return bindLightboxImage(img, function () {
+        return {
+          items: (galleryNodes || []).map(function (node, idx) {
+            return {
+              src: (node && (node.currentSrc || node.src)) || "",
+              alt: (node && node.alt) || "",
+              caption: (galleryCaptions && galleryCaptions[idx]) || "",
+            };
+          }),
+          index: galleryIndex || 0,
+        };
+      });
+    };
+  var attachSnapshotFallback =
+    detailPage.attachSnapshotFallback ||
+    function (img, slot, apiPath, datasetKey) {
+      if (!img) return;
+      img.addEventListener("error", function onSnapshotFallback() {
+        img.removeEventListener("error", onSnapshotFallback);
+        var key = datasetKey || "snapshotFallback";
+        if (img.dataset[key] === "1") return;
+        if (!slot || !slot.localSnapshotImage) return;
+        var fb = slot.imageUrl || "";
+        if (!fb && slot.imagePathname && apiPath) {
+          fb = apiPath + "?pathname=" + encodeURIComponent(slot.imagePathname);
+        }
+        if (!fb) return;
+        img.dataset[key] = "1";
+        img.src = fb;
+      });
+    };
+
+  var buildQuery =
+    detailPage.buildQuery ||
+    function (pathname, params) {
+      var pairs = [];
+      if (params && params.id) pairs.push("id=" + encodeURIComponent(params.id));
+      if (params && params.area) pairs.push("area=" + encodeURIComponent(params.area));
+      if (params && params.plant) pairs.push("plant=" + encodeURIComponent(params.plant));
+      return pathname + (pairs.length ? "?" + pairs.join("&") : "");
+    };
+
+  var clearDetailRoot =
+    detailPage.clearRoot ||
+    function (el) {
+      if (el) el.innerHTML = "";
+    };
+  var createDetailLink =
+    detailPage.createLink ||
+    function (href, text, className, title) {
+      var a = document.createElement("a");
+      if (className) a.className = className;
+      if (href) a.href = href;
+      if (title) a.setAttribute("title", title);
+      a.textContent = text || "";
+      return a;
+    };
+  var createDetailImageFigure =
+    detailPage.createImageFigure ||
+    function (options) {
+      var opts = options || {};
+      var figure = document.createElement("figure");
+      if (opts.figureClass) figure.className = opts.figureClass;
+      var img = document.createElement("img");
+      if (opts.imageClass) img.className = opts.imageClass;
+      img.src = opts.src || "";
+      img.alt = opts.alt || "";
+      img.loading = opts.loading || "lazy";
+      img.decoding = opts.decoding || "async";
+      img.referrerPolicy = opts.referrerPolicy || "no-referrer";
+      figure.appendChild(img);
+      return { figure: figure, img: img };
+    };
+
+  var createDetailMessage =
+    detailPage.createMessage ||
+    function (className, text) {
+      var p = document.createElement("p");
+      if (className) p.className = className;
+      p.textContent = text || "";
+      return p;
+    };
+  var createDetailPlaceholder =
+    detailPage.createPlaceholder ||
+    function (text, className, tagName) {
+      var el = document.createElement(tagName || "p");
+      if (className) el.className = className;
+      el.textContent = text || "";
+      return el;
+    };
+  var createDetailSection =
+    detailPage.createSection ||
+    function (options) {
+      var opts = options || {};
+      var section = document.createElement(opts.tagName || "section");
+      if (opts.className) section.className = opts.className;
+      var heading = null;
+      if (opts.headingText) {
+        heading = document.createElement(opts.headingTag || "h2");
+        if (opts.headingClass) heading.className = opts.headingClass;
+        heading.textContent = opts.headingText;
+        section.appendChild(heading);
+      }
+      return { section: section, heading: heading };
+    };
+  var appendDetailGalleryFigure =
+    detailPage.appendGalleryFigure ||
+    function (target, galleryNodes, galleryCaptions, options) {
+      var opts = options || {};
+      var figureParts = createDetailImageFigure(opts);
+      var figure = figureParts.figure;
+      var img = figureParts.img;
+      if (opts.slot) {
+        attachSnapshotFallback(img, opts.slot, opts.apiPath, opts.datasetKey);
+      }
+      if (opts.captionText) {
+        figure.appendChild(
+          createDetailPlaceholder(opts.captionText, opts.captionClass || "detail-page-photo-date", "figcaption")
+        );
+      }
+      var galleryIndex = Array.isArray(galleryNodes) ? galleryNodes.length : 0;
+      if (Array.isArray(galleryNodes)) galleryNodes.push(img);
+      if (Array.isArray(galleryCaptions)) {
+        galleryCaptions.push(opts.galleryCaptionText || opts.captionText || "");
+      }
+      bindLightboxGalleryImage(img, galleryNodes || [], galleryCaptions || [], galleryIndex);
+      if (target) target.appendChild(figure);
+      return { figure: figure, img: img };
+    };
+
+  var formatDateLabel =
+    detailPage.formatDateLabel ||
+    function (value) {
+      var text = String(value || "").trim();
+      if (!text) return "日付未設定";
+      return text.slice(0, 10) || text;
+    };
+
+  var renderDetailBody =
+    detailPage.renderBody ||
+    function (container, text, paragraphClass) {
+      if (!text || !String(text).trim()) return 0;
+      var parts = String(text).split(/\n\n+/);
+      var count = 0;
+      for (var i = 0; i < parts.length; i++) {
+        var chunk = parts[i].trim();
+        if (!chunk) continue;
+        container.appendChild(createDetailMessage(paragraphClass || "detail-page-body-p", chunk));
+        count += 1;
+      }
+      return count;
+    };
+
+  var readEmbeddedJson =
+    detailPage.readEmbeddedJson ||
+    function (scriptId) {
+      var el = document.getElementById(scriptId);
+      if (!el || !String(el.textContent || "").trim()) return null;
+      try {
+        return JSON.parse(String(el.textContent).trim());
+      } catch (e) {
+        return null;
+      }
+    };
+
+  var loadJson =
+    detailPage.loadJson ||
+    function (path) {
+      return fetch(path, { cache: "no-store" }).then(function (res) {
+        if (!res.ok) throw new Error("bad status");
+        return res.json();
+      });
+    };
+
+  var readSnapshotRecords =
+    detailPage.readWindowSnapshotRecords ||
+    function (key) {
+      var data = window[key];
+      return data && Array.isArray(data.records) ? data.records : [];
+    };
+
+  var normalizePlantName =
+    detailPage.normalizePlantName ||
+    function (value) {
+      return typeof value === "string" ? value.trim() : "";
+    };
+
+  var loadPlantsData =
+    detailPage.loadPlantsData ||
+    function () {
+      return loadJson("/api/plants")
+        .then(function (data) {
+          if (!data || !Array.isArray(data.areas)) throw new Error("shape");
+          return data;
+        })
+        .catch(function () {
+          return loadJson("data/plants.json");
+        })
+        .catch(function () {
+          var embedded = readEmbeddedPlants();
+          if (embedded && Array.isArray(embedded.areas)) return embedded;
+          throw new Error("no plants");
+        });
+    };
+
+  var loadRecordList =
+    detailPage.loadRecordList ||
+    function (apiPath, snapshotPath, windowKey) {
+      return fetch(apiPath, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("api bad");
+          return res.json();
+        })
+        .then(function (data) {
+          return Array.isArray(data.records) ? data.records : [];
+        })
+        .catch(function () {
+          if (!snapshotPath) return [];
+          return fetch(snapshotPath, { cache: "no-store" })
+            .then(function (res) {
+              if (!res.ok) return null;
+              return res.json();
+            })
+            .then(function (data) {
+              return data && Array.isArray(data.records) ? data.records : [];
+            })
+            .catch(function () {
+              return windowKey ? readSnapshotRecords(windowKey) : [];
+            });
+        });
+    };
+
+  var growthImageSlots =
+    detailPage.growthImageSlots ||
+    function (record) {
+      if (!record) return [];
+      if (record.images && Array.isArray(record.images) && record.images.length) {
+        return record.images.map(function (image) {
+          if (!image || typeof image !== "object") return {};
+          return {
+            imageUrl: image.imageUrl || null,
+            imagePathname: image.imagePathname || null,
+            localSnapshotImage: image.localSnapshotImage || null,
+            memo: String(image.memo || "").trim(),
+          };
+        });
+      }
+      if (record.localSnapshotImage || record.imagePathname || record.imageUrl) {
+        return [
+          {
+            imageUrl: record.imageUrl || null,
+            imagePathname: record.imagePathname || null,
+            localSnapshotImage: record.localSnapshotImage || null,
+            memo: "",
+          },
+        ];
+      }
+      return [];
+    };
+
+  var growthImageSrcFromSlot =
+    detailPage.growthImageSrcFromSlot
+      ? function (slot) {
+          return detailPage.growthImageSrcFromSlot(slot, API_GROWTH_IMAGE);
+        }
+      : function (slot) {
+          if (!slot) return null;
+          if (slot.localSnapshotImage) {
+            var localPath = String(slot.localSnapshotImage).trim();
+            if (/^https?:\/\//i.test(localPath)) {
+              return localPath;
+            }
+            try {
+              return new URL(localPath, window.location.href).href;
+            } catch (e0) {
+              return localPath;
+            }
+          }
+          if (slot.imagePathname) {
+            return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+          }
+          return slot.imageUrl || null;
+        };
+
   function readEmbeddedPlants() {
-    var el = document.getElementById("plants-embed");
-    if (!el || !el.textContent.trim()) return null;
-    try {
-      return JSON.parse(el.textContent.trim());
-    } catch (e) {
-      return null;
-    }
+    return readEmbeddedJson("plants-embed");
   }
 
   function readEmbeddedPlantDetails() {
-    var el = document.getElementById("plant-details-embed");
-    if (!el || !el.textContent.trim()) return null;
-    try {
-      return JSON.parse(el.textContent.trim());
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function normalizePlantName(p) {
-    return typeof p === "string" ? p.trim() : "";
-  }
-
-  function bindLightboxImage(img, configOrFactory) {
-    if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
-      return;
-    }
-    window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+    return readEmbeddedJson("plant-details-embed");
   }
 
   function areaHasPlant(area, plantName) {
@@ -65,103 +342,8 @@
     return null;
   }
 
-  function loadJson(path) {
-    return fetch(path, { cache: "no-store" }).then(function (res) {
-      if (!res.ok) throw new Error("bad status");
-      return res.json();
-    });
-  }
-
-  function readWindowSnapshotRecords(key) {
-    var data = window[key];
-    return data && Array.isArray(data.records) ? data.records : [];
-  }
-
-  function loadPlantsData() {
-    return loadJson("/api/plants")
-      .then(function (data) {
-        if (!data || !Array.isArray(data.areas)) throw new Error("shape");
-        return data;
-      })
-      .catch(function () {
-        return loadJson("data/plants.json");
-      })
-      .catch(function () {
-        var embedded = readEmbeddedPlants();
-        if (embedded && Array.isArray(embedded.areas)) return embedded;
-        throw new Error("no plants");
-      });
-  }
-
-  function growthImageSlots(r) {
-    if (!r) return [];
-    if (r.images && Array.isArray(r.images) && r.images.length) {
-      return r.images.map(function (im) {
-        if (!im || typeof im !== "object") return {};
-        return {
-          imageUrl: im.imageUrl || null,
-          imagePathname: im.imagePathname || null,
-          localSnapshotImage: im.localSnapshotImage || null,
-          memo: String(im.memo || "").trim(),
-        };
-      });
-    }
-    if (r.localSnapshotImage || r.imagePathname || r.imageUrl) {
-      return [
-        {
-          imageUrl: r.imageUrl || null,
-          imagePathname: r.imagePathname || null,
-          localSnapshotImage: r.localSnapshotImage || null,
-          memo: "",
-        },
-      ];
-    }
-    return [];
-  }
-
-  function growthImageSrcFromSlot(slot) {
-    if (!slot) return null;
-    if (slot.localSnapshotImage) {
-      var p = String(slot.localSnapshotImage).trim();
-      if (/^https?:\/\//i.test(p)) {
-        return p;
-      }
-      try {
-        return new URL(p, window.location.href).href;
-      } catch (e0) {
-        return p;
-      }
-    }
-    if (slot.imagePathname) {
-      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
-    }
-    return slot.imageUrl || null;
-  }
-
   function loadGrowthRecordsList() {
-    return fetch(API_GROWTH, {
-      headers: { Accept: "application/json" },
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error("growth bad");
-        return res.json();
-      })
-      .then(function (data) {
-        return Array.isArray(data.records) ? data.records : [];
-      })
-      .catch(function () {
-        return fetch(GROWTH_SNAPSHOT_JSON, { cache: "no-store" })
-          .then(function (res) {
-            if (!res.ok) return null;
-            return res.json();
-          })
-          .then(function (data) {
-            return data && Array.isArray(data.records) ? data.records : [];
-          })
-          .catch(function () {
-            return readWindowSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__");
-          });
-      });
+    return loadRecordList(API_GROWTH, GROWTH_SNAPSHOT_JSON, "__PLANTING_GROWTH_SNAPSHOT__");
   }
 
   function recordHasPlantInArea(r, plantName, areaId) {
@@ -224,44 +406,10 @@
       });
   }
 
-  function buildQuery(pathname, params) {
-    var pairs = [];
-    if (params && params.id) pairs.push("id=" + encodeURIComponent(params.id));
-    if (params && params.area) pairs.push("area=" + encodeURIComponent(params.area));
-    if (params && params.plant) pairs.push("plant=" + encodeURIComponent(params.plant));
-    return pathname + (pairs.length ? "?" + pairs.join("&") : "");
-  }
-
-  function formatDateLabel(value) {
-    var text = String(value || "").trim();
-    if (!text) return "日付未設定";
-    return text.slice(0, 10) || text;
-  }
-
-  function renderBody(container, text) {
-    if (!text || !String(text).trim()) return;
-    var parts = String(text).split(/\n\n+/);
-    for (var i = 0; i < parts.length; i++) {
-      var chunk = parts[i].trim();
-      if (!chunk) continue;
-      var p = document.createElement("p");
-      p.className = "plant-detail-body-p";
-      p.textContent = chunk;
-      container.appendChild(p);
-    }
-  }
-
-  function clearRoot() {
-    root.innerHTML = "";
-  }
-
   function renderError(message) {
-    document.title = "植栽 — 植栽メモ";
-    clearRoot();
-    var p = document.createElement("p");
-    p.className = "plant-detail-error";
-    p.textContent = message;
-    root.appendChild(p);
+    document.title = "植栽メモ — 植栽";
+    clearDetailRoot(root);
+    root.appendChild(createDetailMessage("detail-page-error", message));
     titleEl.textContent = "植栽";
     if (crumbEl) crumbEl.textContent = "エラー";
     if (areaLineEl) {
@@ -271,25 +419,25 @@
   }
 
   function renderDetailSection(entry) {
-    var section = document.createElement("section");
-    section.className = "plant-detail-section";
-
-    var h = document.createElement("h2");
-    h.className = "plant-detail-section-heading";
-    h.textContent = "詳しいメモ";
-    section.appendChild(h);
+    var sectionParts = createDetailSection({
+      className: "detail-page-section",
+      headingClass: "detail-page-section-heading",
+      headingText: "詳細メモ",
+    });
+    var section = sectionParts.section;
 
     var bodyWrap = document.createElement("div");
-    bodyWrap.className = "plant-detail-body";
+    bodyWrap.className = "detail-page-body";
     if (entry && entry.body) {
-      renderBody(bodyWrap, entry.body);
+      renderDetailBody(bodyWrap, entry.body, "detail-page-body-p");
     }
     if (!bodyWrap.childElementCount) {
-      var hint = document.createElement("p");
-      hint.className = "plant-detail-placeholder";
-      hint.textContent =
-        "この植栽の解説や手入れメモは、まだ登録されていません。植栽の説明を編集から追加できます。";
-      bodyWrap.appendChild(hint);
+      bodyWrap.appendChild(
+        createDetailPlaceholder(
+          "この植栽の詳細メモや手入れメモは、まだ登録されていません。植栽の詳細を編集から追加できます。",
+          "detail-page-placeholder"
+        )
+      );
     }
     section.appendChild(bodyWrap);
 
@@ -297,21 +445,21 @@
   }
 
   function renderTimelineSection(area, plantName, records) {
-    var section = document.createElement("section");
-    section.className = "plant-detail-section plant-timeline";
-
-    var h = document.createElement("h2");
-    h.className = "plant-detail-section-heading";
-    h.textContent = "記録の時系列";
-    section.appendChild(h);
+    var sectionParts = createDetailSection({
+      className: "detail-page-section plant-timeline",
+      headingClass: "detail-page-section-heading",
+      headingText: "記録の時系列",
+    });
+    var section = sectionParts.section;
 
     var items = collectRecordsForPlant(records, plantName, area.id);
     if (!items.length) {
-      var empty = document.createElement("p");
-      empty.className = "plant-detail-placeholder";
-      empty.textContent =
-        "この植栽の記録はまだありません。記録を追加すると、ここに時系列で並びます。";
-      section.appendChild(empty);
+      section.appendChild(
+        createDetailPlaceholder(
+          "この植栽の記録はまだありません。記録を追加すると、ここに時系列で並びます。",
+          "detail-page-placeholder"
+        )
+      );
       return section;
     }
 
@@ -364,55 +512,22 @@
           (function (slot) {
             var src = growthImageSrcFromSlot(slot);
             if (!src) return;
-            var fig = document.createElement("figure");
-            fig.className = "plant-timeline-photo";
-            var img = document.createElement("img");
-            img.className = "plant-timeline-photo-img";
-            img.src = src;
-            img.alt = plantName + "の記録写真";
-            img.loading = "lazy";
-            img.decoding = "async";
-            img.referrerPolicy = "no-referrer";
-            img.addEventListener("error", function onPlantPhotoErr() {
-              img.removeEventListener("error", onPlantPhotoErr);
-              if (img.dataset.plantPhotoFb === "1") return;
-              if (!slot || !slot.localSnapshotImage) return;
-              var fb = slot.imageUrl || "";
-              if (!fb && slot.imagePathname) {
-                fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
-              }
-              if (fb) {
-                img.dataset.plantPhotoFb = "1";
-                img.src = fb;
-              }
-            });
-            fig.appendChild(img);
             var captionText = formatDateLabel(record.recordedAt);
             if (slot.memo) {
               captionText += " — " + slot.memo;
             }
-            if (slot.memo) {
-              var cap = document.createElement("figcaption");
-              cap.className = "plant-timeline-photo-caption";
-              cap.textContent = slot.memo;
-              fig.appendChild(cap);
-            }
-            var galleryIndex = galleryNodes.length;
-            galleryNodes.push(img);
-            galleryCaptions.push(captionText);
-            bindLightboxImage(img, function () {
-              return {
-                items: galleryNodes.map(function (node, idx) {
-                  return {
-                    src: node.currentSrc || node.src || "",
-                    alt: node.alt || "",
-                    caption: galleryCaptions[idx] || "",
-                  };
-                }),
-                index: galleryIndex,
-              };
+            appendDetailGalleryFigure(grid, galleryNodes, galleryCaptions, {
+              figureClass: "plant-timeline-photo",
+              imageClass: "plant-timeline-photo-img",
+              src: src,
+              alt: plantName + "の記録写真",
+              slot: slot,
+              apiPath: API_GROWTH_IMAGE,
+              datasetKey: "plantPhotoFb",
+              captionClass: "plant-timeline-photo-caption",
+              captionText: slot.memo ? slot.memo : "",
+              galleryCaptionText: captionText,
             });
-            grid.appendChild(fig);
           })(slots[si]);
         }
         if (grid.childElementCount) {
@@ -421,22 +536,22 @@
       }
 
       if (!note && !slots.length) {
-        var emptyState = document.createElement("p");
-        emptyState.className = "plant-timeline-entry-empty";
-        emptyState.textContent = "この記録には写真やコメントがありません。";
-        card.appendChild(emptyState);
+        card.appendChild(
+          createDetailPlaceholder("この記録には写真やコメントがありません。", "plant-timeline-entry-empty")
+        );
       }
 
       var actions = document.createElement("p");
       actions.className = "plant-timeline-entry-actions";
-      var editLink = document.createElement("a");
-      editLink.className = "plant-detail-link";
-      editLink.href = buildQuery("./growth-edit.html", {
-        id: record.id || "",
-        area: area.id,
-        plant: plantName,
-      });
-      editLink.textContent = "この記録を編集";
+      var editLink = createDetailLink(
+        buildQuery("./growth-edit.html", {
+          id: record.id || "",
+          area: area.id,
+          plant: plantName,
+        }),
+        "この記録を編集",
+        "detail-page-link"
+      );
       actions.appendChild(editLink);
       card.appendChild(actions);
 
@@ -449,11 +564,11 @@
 
   function renderPage(area, plantName, entry, options) {
     options = options || {};
-    clearRoot();
+    clearDetailRoot(root);
 
     if (options.warnMultipleAreaMatch) {
       var wMulti = document.createElement("p");
-      wMulti.className = "plant-detail-warning";
+      wMulti.className = "detail-page-warning";
       wMulti.setAttribute("role", "status");
       wMulti.textContent =
         "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、植栽一覧からエリア付きで開いてください。";
@@ -461,7 +576,7 @@
     }
     if (options.warnNotInMaster) {
       var warn = document.createElement("p");
-      warn.className = "plant-detail-warning";
+      warn.className = "detail-page-warning";
       warn.setAttribute("role", "status");
       warn.textContent =
         "植栽一覧のマスタに「" +
@@ -470,7 +585,7 @@
       root.appendChild(warn);
     }
 
-    document.title = plantName + " — 植栽メモ";
+    document.title = "植栽メモ — " + plantName;
     titleEl.textContent = plantName;
     if (crumbEl) crumbEl.textContent = plantName;
 
@@ -479,7 +594,7 @@
         area: area.id,
         plant: plantName,
       });
-      detailEditLinkEl.textContent = "この植栽の説明を編集";
+      detailEditLinkEl.textContent = "この植栽の詳細を編集";
     }
     if (recordEditLinkEl) {
       recordEditLinkEl.href = buildQuery("./growth-edit.html", {
@@ -492,17 +607,18 @@
     if (areaLineEl) {
       areaLineEl.hidden = false;
       areaLineEl.innerHTML = "";
-      var areaLink = document.createElement("a");
-      areaLink.href = "./area.html?area=" + encodeURIComponent(area.id);
-      areaLink.className = "plant-detail-area-link";
-      areaLink.textContent = "エリア: " + (area.label || area.id);
-      areaLink.setAttribute("title", "このエリアのページへ");
+      var areaLink = createDetailLink(
+        "./area.html?area=" + encodeURIComponent(area.id),
+        "エリア: " + (area.label || area.id),
+        "detail-page-subline-link",
+        "このエリアを見る"
+      );
       areaLineEl.appendChild(areaLink);
     }
 
     if (entry && entry.summary) {
       var sum = document.createElement("p");
-      sum.className = "plant-detail-summary";
+      sum.className = "detail-page-summary";
       sum.textContent = entry.summary;
       root.appendChild(sum);
     }
@@ -511,24 +627,26 @@
     root.appendChild(renderTimelineSection(area, plantName, options.growthRecords || []));
 
     var actions = document.createElement("p");
-    actions.className = "plant-detail-actions";
+    actions.className = "detail-page-actions";
 
-    var aDetail = document.createElement("a");
-    aDetail.className = "plant-detail-cta";
-    aDetail.href = buildQuery("./plant-edit.html", {
-      area: area.id,
-      plant: plantName,
-    });
-    aDetail.textContent = "この植栽の説明を編集";
+    var aDetail = createDetailLink(
+      buildQuery("./plant-edit.html", {
+        area: area.id,
+        plant: plantName,
+      }),
+      "この植栽の詳細を編集",
+      "detail-page-cta"
+    );
     actions.appendChild(aDetail);
 
-    var aRecord = document.createElement("a");
-    aRecord.className = "plant-detail-cta";
-    aRecord.href = buildQuery("./growth-edit.html", {
-      area: area.id,
-      plant: plantName,
-    });
-    aRecord.textContent = "この植栽の記録を追加・編集";
+    var aRecord = createDetailLink(
+      buildQuery("./growth-edit.html", {
+        area: area.id,
+        plant: plantName,
+      }),
+      "この植栽の記録を追加・編集",
+      "detail-page-cta"
+    );
     actions.appendChild(aRecord);
 
     root.appendChild(actions);

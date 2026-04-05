@@ -4,33 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>成長記録 — 追加・編集</title>
+  <title>植栽メモ — 記録の追加・編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="stylesheet" href="./growth.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260406a" />
+  <link rel="stylesheet" href="./growth.css?v=20260406a" />
 </head>
 <body>
   <main class="panel growth-panel">
-    <nav class="top growth-nav-top" aria-label="パンくずリスト">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
         <li aria-current="page" id="growth-edit-breadcrumb-current">記録の追加・編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./area-edit.html">エリアを編集</a>
+        <a href="./area-edit.html">エリアの概要・記録を編集</a>
       </div>
     </nav>
 
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
     <header class="page-header">
-      <p class="eyebrow">Growth log</p>
+      <p class="eyebrow">記録</p>
       <h1 id="growth-edit-page-title">記録の追加・編集</h1>
-      <p id="growth-edit-context-line" class="lead plant-detail-area-line" hidden></p>
+      <p id="growth-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="growth-edit-page-lead" class="lead">
-        下のタブで<strong>記録の追加・編集</strong>と<strong>エリア</strong>・<strong>植栽名</strong>のマスタ編集を切り替えられます。バックアップもこのページから行えます。
+        記録の追加・編集、<strong>エリア</strong>と<strong>植栽名</strong>の整理、バックアップをこのページでまとめて行えます。
       </p>
     </header>
 
@@ -40,7 +40,7 @@
       <p id="cloud-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div class="growth-token-row">
         <label class="block growth-token-field">
-          <span>アップロード用トークン（任意）</span>
+          <span>アップロード用トークン（共通）</span>
           <input id="cloud-token" type="password" autocomplete="off" placeholder="サイト管理者が設定した文字列" />
         </label>
         <button type="button" id="cloud-token-save" class="growth-secondary">
@@ -162,7 +162,7 @@
         </div>
 
         <div class="growth-actions">
-          <button type="submit" id="growth-submit" class="growth-primary">保存</button>
+        <button type="submit" id="growth-submit" class="growth-primary">保存する</button>
           <button type="button" id="growth-edit-cancel" class="growth-secondary" hidden>編集をやめる</button>
           <button type="button" id="growth-delete-record" class="growth-danger" hidden>この記録を削除</button>
           <button type="button" id="photo-clear" class="growth-secondary">写真をクリア</button>
@@ -374,8 +374,8 @@
   ]
 }
   </script>
-  <script src="./hub-link.js" defer></script>
-
-  <script src="./growth.js?v=20260405e" defer></script>
+  <script src="./hub-link.js?v=20260405i" defer></script>
+  <script src="./edit-page-common.js?v=20260406c" defer></script>
+    <script src="./growth.js?v=20260406l" defer></script>
 </body>
 </html>

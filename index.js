@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  var common = window.PlantingEditCommon || {};
+  var listCommon = window.PlantingListPage || {};
   var API_PLANTS = "/api/plants";
   var API_GROWTH = "/api/growth";
   var API_AREA_GROWTH = "/api/area-growth";
@@ -14,13 +16,16 @@
   if (!tbody) return;
 
   function loadJson(path) {
-    return fetch(path, { cache: "no-store" }).then(function (res) {
-      if (!res.ok) throw new Error("bad status");
-      return res.json();
-    });
+    return common.loadJson
+      ? common.loadJson(path)
+      : fetch(path, { cache: "no-store" }).then(function (res) {
+          if (!res.ok) throw new Error("bad status");
+          return res.json();
+        });
   }
 
   function readEmbeddedJson(id) {
+    if (common.readEmbeddedJson) return common.readEmbeddedJson(id);
     var el = document.getElementById(id);
     if (!el || !el.textContent || !el.textContent.trim()) {
       return null;
@@ -33,10 +38,12 @@
   }
 
   function normalizePlantName(name) {
+    if (listCommon.normalizeName) return listCommon.normalizeName(name);
     return String(name || "").trim();
   }
 
   function growthImageSlots(record) {
+    if (listCommon.growthImageSlots) return listCommon.growthImageSlots(record);
     if (!record || typeof record !== "object") return [];
     if (Array.isArray(record.images) && record.images.length) {
       return record.images.filter(Boolean);
@@ -54,6 +61,9 @@
   }
 
   function growthImageSrcFromSlot(slot) {
+    if (listCommon.growthImageSrcFromSlot) {
+      return listCommon.growthImageSrcFromSlot(slot, API_GROWTH_IMAGE);
+    }
     if (!slot || typeof slot !== "object") return "";
     if (slot.localSnapshotImage) return slot.localSnapshotImage;
     if (slot.imagePathname) {
@@ -64,6 +74,7 @@
   }
 
   function normalizeStaticImageSlot(im) {
+    if (listCommon.normalizeStaticImageSlot) return listCommon.normalizeStaticImageSlot(im);
     if (!im || typeof im !== "object") return null;
     return {
       imageUrl: im.imageUrl || im.url || null,
@@ -73,6 +84,7 @@
   }
 
   function compareRecordsNewest(a, b) {
+    if (listCommon.compareRecordsNewest) return listCommon.compareRecordsNewest(a, b);
     var aTime = Date.parse((a && (a.recordedAt || a.createdAt)) || "") || 0;
     var bTime = Date.parse((b && (b.recordedAt || b.createdAt)) || "") || 0;
     if (aTime !== bTime) return bTime - aTime;
@@ -80,6 +92,7 @@
   }
 
   function countPhotoSlots(record) {
+    if (listCommon.countPhotoSlots) return listCommon.countPhotoSlots(record, API_GROWTH_IMAGE);
     var slots = growthImageSlots(record);
     var count = 0;
     for (var i = 0; i < slots.length; i++) {
@@ -89,6 +102,9 @@
   }
 
   function buildPlantPhotoCountMap(records) {
+    if (listCommon.buildPlantPhotoCountMap) {
+      return listCommon.buildPlantPhotoCountMap(records, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
@@ -112,6 +128,9 @@
   }
 
   function buildAreaTimelinePhotoCountMap(areaRecords) {
+    if (listCommon.buildAreaTimelinePhotoCountMap) {
+      return listCommon.buildAreaTimelinePhotoCountMap(areaRecords, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(areaRecords)) return map;
 
@@ -125,10 +144,14 @@
   }
 
   function photoCountSuffix(count) {
+    if (listCommon.photoCountSuffix) return listCommon.photoCountSuffix(count);
     return "（" + String(count || 0) + "枚）";
   }
 
   function buildLatestPlantPhotoMap(records) {
+    if (listCommon.buildLatestPlantPhotoMap) {
+      return listCommon.buildLatestPlantPhotoMap(records, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
@@ -153,6 +176,9 @@
   }
 
   function buildLatestAreaPhotoMap(records) {
+    if (listCommon.buildLatestAreaPhotoMap) {
+      return listCommon.buildLatestAreaPhotoMap(records, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
@@ -169,6 +195,9 @@
   }
 
   function mergeStaticAreaPhotoMap(entries, map) {
+    if (listCommon.mergeStaticAreaPhotoMap) {
+      return listCommon.mergeStaticAreaPhotoMap(entries, map, API_GROWTH_IMAGE);
+    }
     var out = Object.assign(Object.create(null), map || {});
     if (!Array.isArray(entries) || !entries.length) return out;
 
@@ -219,7 +248,7 @@
       var areaPage = document.createElement("a");
       areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
       areaPage.className = "plant-area-link";
-      areaPage.setAttribute("title", area.label + " のエリア時系列を開く");
+      areaPage.setAttribute("title", area.label + " の概要と記録を見る");
 
       var areaName = document.createElement("span");
       areaName.className = "plant-area-name";
@@ -280,7 +309,7 @@
             encodeURIComponent(area.id) +
             "&plant=" +
             encodeURIComponent(plantName);
-          link.setAttribute("title", plantName + " のページを開く");
+          link.setAttribute("title", plantName + " を見る");
 
           var name = document.createElement("span");
           name.className = "plant-record-name";
@@ -325,6 +354,22 @@
   }
 
   function loadPlantsData() {
+    if (common.loadPlantsData) {
+      return common
+        .loadPlantsData({
+          apiPath: API_PLANTS,
+          fallbackPath: PLANTS_JSON,
+          embedId: "plants-embed",
+          apiSource: "api",
+          fileSource: "file",
+          embedSource: "embed",
+        })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");
+          return { areas: data.areas };
+        });
+    }
+
     return loadJson(API_PLANTS)
       .then(function (data) {
         if (!data || !Array.isArray(data.areas)) throw new Error("bad shape");

@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  var LS_CLOUD_TOKEN = "growthCloudToken";
+  var common = window.PlantingEditCommon || {};
+  var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
   var API_PLANTS = "/api/plants";
   var API_PLANT_DETAILS = "/api/plant-details";
 
@@ -28,58 +29,36 @@
   }
 
   function cloudHeaders(jsonBody) {
-    var headers = { Accept: "application/json" };
-    if (jsonBody) headers["Content-Type"] = "application/json";
-    var token = localStorage.getItem(LS_CLOUD_TOKEN);
-    if (token) headers["x-growth-token"] = token;
-    return headers;
-  }
-
-  function readEmbeddedPlants() {
-    var dataEl = $("plants-embed");
-    if (!dataEl || !dataEl.textContent.trim()) return null;
-    try {
-      return JSON.parse(dataEl.textContent.trim());
-    } catch (e) {
-      return null;
-    }
+    return common.buildCloudHeaders
+      ? common.buildCloudHeaders(jsonBody, LS_CLOUD_TOKEN)
+      : { Accept: "application/json" };
   }
 
   function readEmbeddedPlantDetails() {
-    var dataEl = $("plant-details-embed");
-    if (!dataEl || !dataEl.textContent.trim()) return null;
-    try {
-      return JSON.parse(dataEl.textContent.trim());
-    } catch (e) {
-      return null;
-    }
+    return common.readEmbeddedJson ? common.readEmbeddedJson("plant-details-embed") : null;
   }
 
   function normalizePlantName(name) {
-    return typeof name === "string" ? name.trim() : "";
+    return common.normalizeName ? common.normalizeName(name) : typeof name === "string" ? name.trim() : "";
   }
 
   function loadJson(pathname) {
-    return fetch(pathname, { cache: "no-store", headers: { Accept: "application/json" } }).then(function (res) {
-      if (!res.ok) throw new Error("bad status");
-      return res.json();
-    });
+    return common.loadJson
+      ? common.loadJson(pathname)
+      : fetch(pathname, { cache: "no-store", headers: { Accept: "application/json" } }).then(function (res) {
+          if (!res.ok) throw new Error("bad status");
+          return res.json();
+        });
   }
 
   function loadPlantsData() {
-    return loadJson(API_PLANTS)
-      .then(function (data) {
-        if (!data || !Array.isArray(data.areas)) throw new Error("shape");
-        return data;
-      })
-      .catch(function () {
-        return loadJson("data/plants.json");
-      })
-      .catch(function () {
-        var embedded = readEmbeddedPlants();
-        if (embedded && Array.isArray(embedded.areas)) return embedded;
-        throw new Error("no plants");
-      });
+    return common.loadPlantsData
+      ? common.loadPlantsData({
+          apiPath: API_PLANTS,
+          fallbackPath: "data/plants.json",
+          embedId: "plants-embed",
+        })
+      : loadJson(API_PLANTS);
   }
 
   function loadPlantDetailsMerged() {
@@ -112,27 +91,11 @@
   }
 
   function findAreaById(areaId) {
-    var wanted = String(areaId || "").trim();
-    if (!wanted) return null;
-    for (var i = 0; i < state.areas.length; i++) {
-      var area = state.areas[i];
-      if (area && area.id === wanted) return area;
-    }
-    return null;
+    return common.findAreaById ? common.findAreaById(state.areas, areaId) : null;
   }
 
   function areaPlants(areaId) {
-    var area = findAreaById(areaId);
-    if (!area || !Array.isArray(area.plants)) return [];
-    var seen = {};
-    var list = [];
-    for (var i = 0; i < area.plants.length; i++) {
-      var plantName = normalizePlantName(area.plants[i]);
-      if (!plantName || seen[plantName]) continue;
-      seen[plantName] = true;
-      list.push(plantName);
-    }
-    return list;
+    return common.listAreaPlants ? common.listAreaPlants(state.areas, areaId) : [];
   }
 
   function findEntry(areaId, plantName) {
@@ -209,11 +172,15 @@
   }
 
   function setCloudStatus() {
+    if (common.setCloudStatus) {
+      common.setCloudStatus(el.cloudStatus, { storageKey: LS_CLOUD_TOKEN });
+      return;
+    }
     if (!el.cloudStatus) return;
     var hasToken = !!localStorage.getItem(LS_CLOUD_TOKEN);
     el.cloudStatus.textContent = hasToken
-      ? "編集トークンを保存済みです。"
-      : "編集トークンを入力すると本番データへ保存できます。";
+      ? "アップロード用トークンを保存済みです。"
+      : "アップロード用トークンを入力すると本番データへ保存できます。";
   }
 
   function selectedAreaId() {
@@ -249,10 +216,10 @@
     var entry = findEntry(areaId, plantName);
 
     if (el.pageTitle) {
-      el.pageTitle.textContent = plantName ? plantName + "の詳細を編集" : "植栽詳細を編集";
+      el.pageTitle.textContent = plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集";
     }
     if (el.breadcrumbCurrent) {
-      el.breadcrumbCurrent.textContent = plantName ? plantName + "の詳細を編集" : "植栽詳細を編集";
+      el.breadcrumbCurrent.textContent = plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集";
     }
     if (el.detailBreadcrumbLink) {
       el.detailBreadcrumbLink.textContent = plantName ? plantName : "植栽";
@@ -272,7 +239,7 @@
     if (el.summary) el.summary.value = entry && entry.summary ? String(entry.summary) : "";
     if (el.body) el.body.value = entry && entry.body ? String(entry.body) : "";
     syncLinks(areaId, plantName);
-    document.title = (plantName ? plantName + "の詳細を編集" : "植栽詳細を編集") + " — 植栽メモ";
+    document.title = "植栽メモ — " + (plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集");
   }
 
   function updateQuery(areaId, plantName) {
@@ -315,10 +282,11 @@
   function onSaveToken() {
     if (!el.tokenInput) return;
     var token = String(el.tokenInput.value || "").trim();
-    if (token) localStorage.setItem(LS_CLOUD_TOKEN, token);
+    if (common.saveCloudToken) common.saveCloudToken(token, LS_CLOUD_TOKEN);
+    else if (token) localStorage.setItem(LS_CLOUD_TOKEN, token);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
     setCloudStatus();
-    showToast(token ? "編集トークンを保存しました。" : "編集トークンを削除しました。", false);
+    showToast(token ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。", false);
   }
 
   function onSubmit(event) {
@@ -344,7 +312,7 @@
     })
       .then(function (res) {
         if (!res.ok) {
-          var prefix = res.status === 401 ? "保存に失敗しました。編集トークンを確認してください。" : "保存に失敗しました。";
+          var prefix = res.status === 401 ? "保存に失敗しました。アップロード用トークンを確認してください。" : "保存に失敗しました。";
           return apiErrorMessage(res, prefix).then(function (message) {
             throw new Error(message);
           });
@@ -355,7 +323,7 @@
         upsertLocalEntry(data && data.entry ? data.entry : payload);
         syncFormFromSelection();
         updateQuery(areaId, plantName);
-        showToast("植栽詳細を保存しました。", false);
+        showToast("植栽の詳細を保存しました。", false);
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "保存に失敗しました。", true);
@@ -383,9 +351,8 @@
 
     if (!el.form || !el.area || !el.plant) return;
 
-    if (el.tokenInput) {
-      el.tokenInput.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";
-    }
+    if (common.applyStoredCloudToken) common.applyStoredCloudToken(el.tokenInput, LS_CLOUD_TOKEN);
+    else if (el.tokenInput) el.tokenInput.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";
     setCloudStatus();
 
     if (el.tokenSave) el.tokenSave.addEventListener("click", onSaveToken);

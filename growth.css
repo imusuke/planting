@@ -47,6 +47,54 @@ main.growth-panel {
   max-width: 920px;
 }
 
+.home-quick .card {
+  min-height: 112px;
+  padding: 16px;
+  gap: 8px;
+  border-radius: 16px;
+}
+
+.home-quick .card h2 {
+  font-size: 1.1rem;
+}
+
+.home-quick .card p {
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.home-quick .card .open {
+  font-size: 0.78rem;
+}
+
+.home-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.home-advanced-controls {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.home-advanced-controls > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink);
+  list-style: none;
+}
+
+.home-advanced-controls > summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-advanced-controls[open] > summary {
+  margin-bottom: 10px;
+}
+
 .growth-status {
   min-height: 1.4em;
   margin-top: 8px;
@@ -208,9 +256,13 @@ button.growth-primary:disabled {
 }
 
 button.growth-secondary,
+a.growth-secondary,
 label.growth-secondary,
 label.growth-file-label {
   font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   font-size: 0.9rem;
   padding: 10px 16px;
@@ -219,9 +271,11 @@ label.growth-file-label {
   background: rgba(255, 255, 255, 0.85);
   color: var(--ink);
   cursor: pointer;
+  text-decoration: none;
 }
 
 button.growth-secondary:hover,
+a.growth-secondary:hover,
 label.growth-secondary:hover,
 label.growth-file-label:hover {
   border-color: rgba(26, 46, 36, 0.22);
@@ -233,6 +287,7 @@ button.growth-secondary:disabled {
 }
 
 button.growth-secondary:focus-visible,
+a.growth-secondary:focus-visible,
 label.growth-secondary:focus-visible {
   outline: 2px solid var(--green-soft, #2d6a4f);
   outline-offset: 2px;

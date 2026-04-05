@@ -2786,7 +2786,7 @@
     return plantPageHref(areaId, plantName);
   }
 
-  /** 旧ホーム時系列 URL の代わりに、植栽ページを返す。 */
+  /** 旧URL互換として、植栽へのリンク先を返す。 */
   function growthTimelineBrowseHref(plantName, areaId) {
     return plantPageHref(areaId, plantName);
   }
@@ -2927,7 +2927,7 @@
         a.className = "growth-card-plant-link";
         a.href = plantPageHref(aid, name);
         a.textContent = name;
-        a.setAttribute("title", name + "のページへ");
+        a.setAttribute("title", name + "を見る");
         title.appendChild(a);
       });
       if (!title.childNodes.length) {
@@ -2953,7 +2953,7 @@
     areaLabel.textContent = r.areaLabel || "—";
     if (cardAreaId) {
       areaLabel.href = "./area.html?area=" + encodeURIComponent(cardAreaId);
-      areaLabel.setAttribute("title", (r.areaLabel || "このエリア") + "の時系列へ");
+      areaLabel.setAttribute("title", (r.areaLabel || "このエリア") + "を見る");
     }
     areaRow.appendChild(areaIcon);
     areaRow.appendChild(areaLabel);
@@ -2987,7 +2987,7 @@
           tlLink.href = growthTimelineBrowseHref(tln, r.areaId);
           tlLink.setAttribute("data-growth-timeline-plant", tln);
           if (r.areaId) tlLink.setAttribute("data-growth-timeline-area", String(r.areaId));
-          tlLink.setAttribute("aria-label", tln + "のページを見る");
+          tlLink.setAttribute("aria-label", tln + "を見る");
           tlLink.textContent =
             plantNames.length === 1 ? "植栽を見る" : "植栽（" + tln + "）";
           actions.appendChild(tlLink);
@@ -2998,7 +2998,7 @@
           areaLink.href = "./area.html?area=" + encodeURIComponent(cardAreaId);
           areaLink.setAttribute(
             "aria-label",
-            (r.areaLabel || "このエリア") + "のページを見る"
+            (r.areaLabel || "このエリア") + "を見る"
           );
           areaLink.textContent = "エリアを見る";
           actions.appendChild(areaLink);
@@ -3008,7 +3008,7 @@
           var detailLink = document.createElement("a");
           detailLink.className = "growth-card-view-link";
           detailLink.href = plantDetailHref(r.areaId, detailName);
-          detailLink.setAttribute("aria-label", detailName + "の植栽ページを見る");
+          detailLink.setAttribute("aria-label", detailName + "の植栽を見る");
           detailLink.textContent =
             plantNames.length === 1 ? "植栽を見る" : "植栽（" + detailName + "）";
           actions.appendChild(detailLink);
@@ -3187,23 +3187,23 @@
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
-          "「" + area.label + "」の記録を一覧で見ています。必要に応じてエリア時系列ページへ進めます。"
+          "「" + area.label + "」の記録を一覧で見ています。必要に応じて、そのエリアの概要や写真も確認できます。"
         );
       }
       if (areaPrimaryEl) {
         areaPrimaryEl.href = "./area.html?area=" + encodeURIComponent(area.id);
-        areaPrimaryEl.textContent = "このエリアの時系列を見る";
+        areaPrimaryEl.textContent = "このエリアを見る";
       }
       if (areaSecondaryEl) {
         areaSecondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-        areaSecondaryEl.textContent = "このエリアを編集";
+        areaSecondaryEl.textContent = "このエリアの概要・記録を編集";
       }
       if (areaTertiaryEl) {
         areaTertiaryEl.hidden = false;
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
         areaTertiaryEl.textContent = "このエリアの記録を追加・編集";
       }
-      document.title = area.label + "の記録一覧 — 植栽メモ";
+      document.title = "植栽メモ — " + area.label + "の記録一覧";
       return;
     }
 
@@ -3215,7 +3215,7 @@
     if (leadEl) {
       setLeadTextKeepingButton(
         leadEl,
-        "このサイト全体の入り口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。"
+        "このサイト全体の入口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。"
       );
     }
     document.title = "植栽メモ";
@@ -3419,7 +3419,7 @@
         if (data === null || data === undefined) return;
         if (IS_VIEW) {
           updateCloudStatus(
-            "記録と写真を表示できています。追加・編集・削除は「記録を追加・編集」から行ってください。"
+            "記録と写真を表示できています。追加・編集・削除は「記録の追加・編集」から行ってください。"
           );
         } else {
           updateCloudStatus(
@@ -3677,7 +3677,7 @@
     var v = el.cloudToken.value.trim();
     if (v) localStorage.setItem(LS_CLOUD_TOKEN, v);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
-    showToast("トークンを保存しました");
+    showToast(v ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。");
     if (el.feed) refreshFeed();
   }
 
@@ -3747,8 +3747,8 @@
       quick.innerHTML =
         '<h2 id="home-quick-heading">メニュー</h2>' +
         '<div class="home-quick-grid">' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">Areas</span><h2>エリア一覧を見る</h2><p>エリアごとの時系列へ進みます。</p><span class="open">Open</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">Browse</span><h2>植栽一覧を見る</h2><p>植栽とエリアの関係から入ります。</p><span class="open">Open</span></a>' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">エリア</span><h2>エリア一覧を見る</h2><p>各エリアの概要と記録へ進みます。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">植栽</span><h2>植栽一覧を見る</h2><p>植栽名とエリアの対応から探せます。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);

@@ -1,19 +1,19 @@
 # 植栽メモ（planting）
 
-植栽まわりの **トップ（成長記録の閲覧）** と **植栽一覧**、**編集** をまとめたフォルダです。
+植栽まわりの **入口（記録一覧の閲覧）** と **植栽一覧**、**編集** をまとめたフォルダです。
 
 ## 公開サイト向け
 
-- **`index.html`** … サイトの**トップ**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
-- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**、植栽名から **`plant.html`**（植栽ページ）へ進めます。
-- **`plant.html`** + **`plant.js`** … **各植栽のページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。**概要・詳しいメモ・成長記録の時系列と写真** を 1 ページで表示します。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。
+- **`index.html`** … サイトの**入口**。成長記録の**閲覧**（一覧・写真・フィルタ・サムネイル大中小・JSON エクスポート）。保存や編集はしません。
+- **`plants.html`** … **全エリアの植栽一覧表**。表は **`index.js`** が `data/plants.json` を読み込んで生成（失敗時はページ内 **`plants-embed`** にフォールバック。`file://` で開く場合など）。**エリア名**から **`area.html`**、植栽名から **`plant.html`**（植栽）へ進めます。
+- **`plant.html`** + **`plant.js`** … **各植栽のページ**。URL は `plant.html?area=（エリアid）&plant=（植栽名）`。**概要・詳細メモ・成長記録の時系列と写真** を 1 ページで表示します。ヘッダの「エリア: …」は **`area.html?area=…`** へリンクします。
 - **`plant-detail.html`** … 旧URL互換。`plant.html` に転送します。
 - **`area.html`** + **`area.js`** … **エリア単位のページ**（複数植栽がまとまっているゾーン全体）。URL は `area.html?area=（エリアid）`。文章・写真は **`data/area-details.json`** と **GET `/api/area-details`**（本番で KV があればマージ）を反映。**成長記録**でそのエリアに紐づいた写真も一覧表示します。
 - **`area-edit.html`** + **`area-edit.js`** … エリア全体の **概要・本文・写真** をブラウザから保存（**POST `/api/area-details`**、成長記録と同じ **アップロード用トークン** `x-growth-token`）。`?area=（id）` でエリアを選択できます。
 - **`api/area-details.js`** … エリア詳細の上書きを **KV** に保存し、写真は **Vercel Blob**（パス `area-details/{areaId}/{n}.jpg`）。**GET はトークン不要**、POST は `GROWTH_UPLOAD_TOKEN` と一致するトークンが必要です。プライベート Blob は **`/api/growth-image`** から配信（パス許可を拡張済み）。
-- **`data/plant-details.json`** … 植栽ごとの解説（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
+- **`data/plant-details.json`** … 植栽ごとの概要・詳細メモ（任意）。`entries` に無い組み合わせでもページは開き、プレースホルダが表示されます。段落は `body` 内で **空行** 区切り。
 - **`data/area-details.json`** … エリアごとの全体メモ・任意の画像（`images[].imageUrl` / `localSnapshotImage` / `caption` など）。マスタの各 `areaId` に 1 エントリずつあると運用しやすいです。
-- **`growth.html`** … 旧URL互換。`index.html`（トップ）へリダイレクトします。
+- **`growth.html`** … 旧URL互換。`index.html`（入口）へリダイレクトします。
 - **`growth-edit.html`** … 記録の**新規追加・編集・削除**、トークン、植栽名マスタの編集。保存は **Vercel（Blob + KV）の API のみ**（`file://` では不可。デプロイ URL または `vercel dev`）。マスタは `data/plants.json`（失敗時は各ページの **`plants-embed`** を `plants.json` と揃える）。**各写真に枚ごとのメモ**（`images[].memo`）を付けられます（記録全体の「メモ」欄とは別）。`GEMINI_API_KEY` を設定すると、保存時に **Gemini 3 Flash** が写真メモをサーバー側でバックグラウンド更新します。既存メモがある場合はその意味や言い回しをできるだけ残しつつ、**20文字以上100文字未満の日本語コメント**に整えるようにしています。保存完了後は画面を離れても大丈夫です。Gemini への送信は参考実装 `agentic vision` と同じく `x-goog-api-key` ヘッダー方式です。
 - **`api/growth.js`** … 成長記録の Serverless API（Vercel 上でのみ動作）。写真は **Vercel Blob**、一覧データは **Vercel KV / Redis（Upstash）** に保存します。
 - **`api/growth-ai-refresh.js`** … 保存済みの写真に対して Gemini コメント更新を即時実行する補助 API。保存後に編集画面を開いたまま待っているときは、こちらで結果を画面へ戻します。

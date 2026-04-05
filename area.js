@@ -12,130 +12,327 @@
   var titleEl = document.getElementById("area-detail-title");
   var crumbEl = document.getElementById("area-detail-breadcrumb-current");
   var growthEditLinkEl = document.getElementById("area-detail-growth-edit-link");
+  var detailPage = window.PlantingDetailPage || {};
+  var listCommon = window.PlantingListPage || {};
   if (!root || !titleEl) return;
 
+  var bindLightboxImage =
+    detailPage.bindLightboxImage ||
+    function (img, configOrFactory) {
+      if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
+        return false;
+      }
+      window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+      return true;
+    };
+  var bindLightboxGalleryImage =
+    detailPage.bindLightboxGalleryImage ||
+    function (img, galleryNodes, galleryCaptions, galleryIndex) {
+      return bindLightboxImage(img, function () {
+        return {
+          items: (galleryNodes || []).map(function (node, idx) {
+            return {
+              src: (node && (node.currentSrc || node.src)) || "",
+              alt: (node && node.alt) || "",
+              caption: (galleryCaptions && galleryCaptions[idx]) || "",
+            };
+          }),
+          index: galleryIndex || 0,
+        };
+      });
+    };
+  var attachSnapshotFallback =
+    detailPage.attachSnapshotFallback ||
+    function (img, slot, apiPath, datasetKey) {
+      if (!img) return;
+      img.addEventListener("error", function onSnapshotFallback() {
+        img.removeEventListener("error", onSnapshotFallback);
+        var key = datasetKey || "snapshotFallback";
+        if (img.dataset[key] === "1") return;
+        if (!slot || !slot.localSnapshotImage) return;
+        var fb = slot.imageUrl || "";
+        if (!fb && slot.imagePathname && apiPath) {
+          fb = apiPath + "?pathname=" + encodeURIComponent(slot.imagePathname);
+        }
+        if (!fb) return;
+        img.dataset[key] = "1";
+        img.src = fb;
+      });
+    };
+
+  var clearDetailRoot =
+    detailPage.clearRoot ||
+    function (el) {
+      if (el) el.innerHTML = "";
+    };
+  var createDetailLink =
+    detailPage.createLink ||
+    function (href, text, className, title) {
+      var a = document.createElement("a");
+      if (className) a.className = className;
+      if (href) a.href = href;
+      if (title) a.setAttribute("title", title);
+      a.textContent = text || "";
+      return a;
+    };
+  var createDetailImageFigure =
+    detailPage.createImageFigure ||
+    function (options) {
+      var opts = options || {};
+      var figure = document.createElement("figure");
+      if (opts.figureClass) figure.className = opts.figureClass;
+      var img = document.createElement("img");
+      if (opts.imageClass) img.className = opts.imageClass;
+      img.src = opts.src || "";
+      img.alt = opts.alt || "";
+      img.loading = opts.loading || "lazy";
+      img.decoding = opts.decoding || "async";
+      img.referrerPolicy = opts.referrerPolicy || "no-referrer";
+      figure.appendChild(img);
+      return { figure: figure, img: img };
+    };
+
+  var createDetailMessage =
+    detailPage.createMessage ||
+    function (className, text) {
+      var p = document.createElement("p");
+      if (className) p.className = className;
+      p.textContent = text || "";
+      return p;
+    };
+  var createDetailPlaceholder =
+    detailPage.createPlaceholder ||
+    function (text, className, tagName) {
+      var el = document.createElement(tagName || "p");
+      if (className) el.className = className;
+      el.textContent = text || "";
+      return el;
+    };
+  var createDetailSection =
+    detailPage.createSection ||
+    function (options) {
+      var opts = options || {};
+      var section = document.createElement(opts.tagName || "section");
+      if (opts.className) section.className = opts.className;
+      var heading = null;
+      if (opts.headingText) {
+        heading = document.createElement(opts.headingTag || "h2");
+        if (opts.headingClass) heading.className = opts.headingClass;
+        heading.textContent = opts.headingText;
+        section.appendChild(heading);
+      }
+      return { section: section, heading: heading };
+    };
+  var appendDetailGalleryFigure =
+    detailPage.appendGalleryFigure ||
+    function (target, galleryNodes, galleryCaptions, options) {
+      var opts = options || {};
+      var figureParts = createDetailImageFigure(opts);
+      var figure = figureParts.figure;
+      var img = figureParts.img;
+      if (opts.slot) {
+        attachSnapshotFallback(img, opts.slot, opts.apiPath, opts.datasetKey);
+      }
+      if (opts.captionText) {
+        figure.appendChild(
+          createDetailPlaceholder(opts.captionText, opts.captionClass || "detail-page-photo-date", "figcaption")
+        );
+      }
+      if (Array.isArray(opts.actions)) {
+        opts.actions.forEach(function (action) {
+          if (action) figure.appendChild(action);
+        });
+      }
+      var galleryIndex = Array.isArray(galleryNodes) ? galleryNodes.length : 0;
+      if (Array.isArray(galleryNodes)) galleryNodes.push(img);
+      if (Array.isArray(galleryCaptions)) {
+        galleryCaptions.push(opts.galleryCaptionText || opts.captionText || "");
+      }
+      bindLightboxGalleryImage(img, galleryNodes || [], galleryCaptions || [], galleryIndex);
+      if (target) target.appendChild(figure);
+      return { figure: figure, img: img };
+    };
+
+  var formatDateLabel =
+    detailPage.formatDateLabel ||
+    function (value) {
+      var text = String(value || "").trim();
+      if (!text) return "日付未設定";
+      return text.slice(0, 10) || text;
+    };
+
+  var renderDetailBody =
+    detailPage.renderBody ||
+    function (container, text, paragraphClass) {
+      if (!text || !String(text).trim()) return 0;
+      var parts = String(text).split(/\n\n+/);
+      var count = 0;
+      for (var i = 0; i < parts.length; i++) {
+        var chunk = parts[i].trim();
+        if (!chunk) continue;
+        container.appendChild(createDetailMessage(paragraphClass || "detail-page-body-p", chunk));
+        count += 1;
+      }
+      return count;
+    };
+
+  var readEmbeddedJson =
+    detailPage.readEmbeddedJson ||
+    function (scriptId) {
+      var el = document.getElementById(scriptId);
+      if (!el || !String(el.textContent || "").trim()) return null;
+      try {
+        return JSON.parse(String(el.textContent).trim());
+      } catch (e) {
+        return null;
+      }
+    };
+
+  var loadJson =
+    detailPage.loadJson ||
+    function (path) {
+      return fetch(path, { cache: "no-store" }).then(function (res) {
+        if (!res.ok) throw new Error("bad status");
+        return res.json();
+      });
+    };
+
+  var loadSnapshotRecords =
+    detailPage.loadSnapshotRecords ||
+    function (path) {
+      return loadJson(path).then(function (data) {
+        return data && Array.isArray(data.records) ? data.records : [];
+      });
+    };
+
+  var readSnapshotRecords =
+    detailPage.readWindowSnapshotRecords ||
+    function (key) {
+      var data = window[key];
+      return data && Array.isArray(data.records) ? data.records : [];
+    };
+
+  var normalizePlantName =
+    detailPage.normalizePlantName ||
+    function (value) {
+      return typeof value === "string" ? value.trim() : "";
+    };
+
+  var loadPlantsData =
+    detailPage.loadPlantsData ||
+    function () {
+      return loadJson("/api/plants")
+        .then(function (data) {
+          if (!data || !Array.isArray(data.areas)) throw new Error("shape");
+          return data;
+        })
+        .catch(function () {
+          return loadJson("data/plants.json");
+        })
+        .catch(function () {
+          var embedded = readEmbeddedPlants();
+          if (embedded && Array.isArray(embedded.areas)) return embedded;
+          throw new Error("no plants");
+        });
+    };
+
+  var loadRecordList =
+    detailPage.loadRecordList ||
+    function (apiPath, snapshotPath, windowKey) {
+      return fetch(apiPath, {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("api bad");
+          return res.json();
+        })
+        .then(function (data) {
+          return Array.isArray(data.records) ? data.records : [];
+        })
+        .catch(function () {
+          if (!snapshotPath) return [];
+          return loadSnapshotRecords(snapshotPath)
+            .catch(function () {
+              return windowKey ? readSnapshotRecords(windowKey) : [];
+            })
+            .catch(function () {
+              return [];
+            });
+        });
+    };
+
+  var growthImageSlots =
+    detailPage.growthImageSlots ||
+    function (record) {
+      if (!record) return [];
+      if (record.images && Array.isArray(record.images) && record.images.length) {
+        return record.images.map(function (image) {
+          if (!image || typeof image !== "object") return {};
+          return {
+            imageUrl: image.imageUrl || null,
+            imagePathname: image.imagePathname || null,
+            localSnapshotImage: image.localSnapshotImage || null,
+            memo: String(image.memo || "").trim(),
+          };
+        });
+      }
+      if (record.localSnapshotImage || record.imagePathname || record.imageUrl) {
+        return [
+          {
+            imageUrl: record.imageUrl || null,
+            imagePathname: record.imagePathname || null,
+            localSnapshotImage: record.localSnapshotImage || null,
+            memo: "",
+          },
+        ];
+      }
+      return [];
+    };
+
+  var growthImageSrcFromSlot =
+    detailPage.growthImageSrcFromSlot
+      ? function (slot) {
+          return detailPage.growthImageSrcFromSlot(slot, API_GROWTH_IMAGE);
+        }
+      : function (slot) {
+          if (!slot) return null;
+          if (slot.localSnapshotImage) {
+            var localPath = String(slot.localSnapshotImage).trim();
+            if (/^https?:\/\//i.test(localPath)) {
+              return localPath;
+            }
+            try {
+              return new URL(localPath, window.location.href).href;
+            } catch (e0) {
+              return localPath;
+            }
+          }
+          if (slot.imagePathname) {
+            return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
+          }
+          return slot.imageUrl || null;
+        };
+
   function readEmbeddedPlants() {
-    var el = document.getElementById("plants-embed");
-    if (!el || !el.textContent.trim()) return null;
-    try {
-      return JSON.parse(el.textContent.trim());
-    } catch (e) {
-      return null;
-    }
+    return readEmbeddedJson("plants-embed");
   }
 
   function readEmbeddedAreaDetails() {
-    var el = document.getElementById("area-details-embed");
-    if (!el || !el.textContent.trim()) return null;
-    try {
-      return JSON.parse(el.textContent.trim());
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function loadJson(path) {
-    return fetch(path, { cache: "no-store" }).then(function (res) {
-      if (!res.ok) throw new Error("bad status");
-      return res.json();
-    });
-  }
-
-  function loadSnapshotRecords(path) {
-    return fetch(path, { cache: "no-store" })
-      .then(function (res) {
-        if (!res.ok) throw new Error("snapshot bad");
-        return res.json();
-      })
-      .then(function (data) {
-        return data && Array.isArray(data.records) ? data.records : [];
-      });
-  }
-
-  function readWindowSnapshotRecords(key) {
-    var data = window[key];
-    return data && Array.isArray(data.records) ? data.records : [];
-  }
-
-  function loadPlantsData() {
-    return loadJson("/api/plants")
-      .then(function (data) {
-        if (!data || !Array.isArray(data.areas)) throw new Error("shape");
-        return data;
-      })
-      .catch(function () {
-        return loadJson("data/plants.json");
-      })
-      .catch(function () {
-        var embedded = readEmbeddedPlants();
-        if (embedded && Array.isArray(embedded.areas)) return embedded;
-        throw new Error("no plants");
-      });
-  }
-
-  function growthImageSlots(r) {
-    if (!r) return [];
-    if (r.images && Array.isArray(r.images) && r.images.length) {
-      return r.images.map(function (im) {
-        if (!im || typeof im !== "object") return {};
-        return {
-          imageUrl: im.imageUrl || null,
-          imagePathname: im.imagePathname || null,
-          localSnapshotImage: im.localSnapshotImage || null,
-          memo: im.memo || "",
-        };
-      });
-    }
-    if (r.localSnapshotImage || r.imagePathname || r.imageUrl) {
-      return [
-        {
-          imageUrl: r.imageUrl || null,
-          imagePathname: r.imagePathname || null,
-          localSnapshotImage: r.localSnapshotImage || null,
-          memo: "",
-        },
-      ];
-    }
-    return [];
-  }
-
-  function growthImageSrcFromSlot(slot) {
-    if (!slot) return null;
-    if (slot.localSnapshotImage) {
-      var p = String(slot.localSnapshotImage).trim();
-      if (/^https?:\/\//i.test(p)) {
-        return p;
-      }
-      try {
-        return new URL(p, window.location.href).href;
-      } catch (e0) {
-        return p;
-      }
-    }
-    if (slot.imagePathname) {
-      return API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(slot.imagePathname);
-    }
-    return slot.imageUrl || null;
-  }
-
-  function normalizePlantName(name) {
-    return typeof name === "string" ? name.trim() : "";
-  }
-
-  function bindLightboxImage(img, configOrFactory) {
-    if (!window.PlantingPhotoLightbox || typeof window.PlantingPhotoLightbox.bindImage !== "function") {
-      return;
-    }
-    window.PlantingPhotoLightbox.bindImage(img, configOrFactory);
+    return readEmbeddedJson("area-details-embed");
   }
 
   function compareRecordsNewest(a, b) {
+    if (listCommon.compareRecordsNewest) return listCommon.compareRecordsNewest(a, b);
     var ax = String((a && (a.recordedAt || a.createdAt)) || "");
     var bx = String((b && (b.recordedAt || b.createdAt)) || "");
     return bx.localeCompare(ax);
   }
 
   function buildLatestPlantPhotoMap(records) {
+    if (listCommon.buildLatestPlantPhotoMap) {
+      return listCommon.buildLatestPlantPhotoMap(records, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
@@ -160,6 +357,7 @@
   }
 
   function countPhotoSlots(record) {
+    if (listCommon.countPhotoSlots) return listCommon.countPhotoSlots(record, API_GROWTH_IMAGE);
     var slots = growthImageSlots(record);
     var count = 0;
     for (var i = 0; i < slots.length; i++) {
@@ -169,6 +367,9 @@
   }
 
   function buildPlantPhotoCountMap(records) {
+    if (listCommon.buildPlantPhotoCountMap) {
+      return listCommon.buildPlantPhotoCountMap(records, API_GROWTH_IMAGE);
+    }
     var map = Object.create(null);
     if (!Array.isArray(records) || !records.length) return map;
 
@@ -192,6 +393,7 @@
   }
 
   function photoCountSuffix(count) {
+    if (listCommon.photoCountSuffix) return listCommon.photoCountSuffix(count);
     return "（" + String(count || 0) + "枚）";
   }
 
@@ -215,49 +417,15 @@
   }
 
   function loadAreaGrowthRecordsList() {
-    return fetch(API_AREA_GROWTH, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error("area growth bad");
-        return res.json();
-      })
-      .then(function (data) {
-        return Array.isArray(data.records) ? data.records : [];
-      })
-      .catch(function () {
-        return loadSnapshotRecords(AREA_GROWTH_SNAPSHOT_JSON)
-          .catch(function () {
-            return readWindowSnapshotRecords("__PLANTING_AREA_GROWTH_SNAPSHOT__");
-          })
-          .catch(function () {
-            return [];
-          });
-      });
+    return loadRecordList(
+      API_AREA_GROWTH,
+      AREA_GROWTH_SNAPSHOT_JSON,
+      "__PLANTING_AREA_GROWTH_SNAPSHOT__"
+    );
   }
 
   function loadPlantGrowthRecordsList() {
-    return fetch(API_GROWTH, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error("growth bad");
-        return res.json();
-      })
-      .then(function (data) {
-        return Array.isArray(data.records) ? data.records : [];
-      })
-      .catch(function () {
-        return loadSnapshotRecords(GROWTH_SNAPSHOT_JSON)
-          .catch(function () {
-            return readWindowSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__");
-          })
-          .catch(function () {
-            return [];
-          });
-      });
+    return loadRecordList(API_GROWTH, GROWTH_SNAPSHOT_JSON, "__PLANTING_GROWTH_SNAPSHOT__");
   }
 
   function loadAreaDetailsData() {
@@ -352,75 +520,31 @@
 
   function renderPhotoRecordsSection(areaLabel, areaId, records, options) {
     var opts = options || {};
-    var section = document.createElement("section");
-    section.className = "plant-detail-photos";
-    var h = document.createElement("h2");
-    h.className = "plant-detail-photos-heading";
-    h.textContent = opts.heading || "写真";
-    section.appendChild(h);
+    var sectionParts = createDetailSection({
+      className: "detail-page-photos",
+      headingClass: "detail-page-photos-heading",
+      headingText: opts.heading || "写真",
+    });
+    var section = sectionParts.section;
 
     var items = collectPhotosForArea(records, areaId);
     if (items.length === 0) {
-      var empty = document.createElement("p");
-      empty.className = "plant-detail-photos-empty";
-      empty.textContent = opts.emptyText || "まだ写真がありません。";
-      section.appendChild(empty);
+      section.appendChild(createDetailPlaceholder(opts.emptyText || "まだ写真がありません。", "detail-page-photos-empty"));
       return section;
     }
 
     var grid = document.createElement("div");
-    grid.className = "plant-detail-photos-grid";
+    grid.className = "detail-page-photos-grid";
     var galleryNodes = [];
     var galleryCaptions = [];
     for (var k = 0; k < items.length; k++) {
       (function (it) {
-        var fig = document.createElement("figure");
-        fig.className = "plant-detail-photo-figure";
-        var img = document.createElement("img");
-        img.className = "plant-detail-photo-img";
-        img.src = it.url;
-        img.alt = (areaLabel || "エリア") + "の記録写真";
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.referrerPolicy = "no-referrer";
-        img.addEventListener("error", function onAreaPhotoErr() {
-          img.removeEventListener("error", onAreaPhotoErr);
-          if (img.dataset.areaPhotoFb === "1") return;
-          var sl = it.slot;
-          if (!sl || !sl.localSnapshotImage) return;
-          var fb = sl.imageUrl || "";
-          if (!fb && sl.imagePathname) {
-            fb = API_GROWTH_IMAGE + "?pathname=" + encodeURIComponent(sl.imagePathname);
-          }
-          if (fb) {
-            img.dataset.areaPhotoFb = "1";
-            img.src = fb;
-          }
-        });
-        fig.appendChild(img);
-        var cap = document.createElement("figcaption");
-        cap.className = "plant-detail-photo-date";
-        var line1 = (it.recordedAt || "").slice(0, 10) || "—";
+        var line1 = formatDateLabel(it.recordedAt);
         var memo = String((it.slot && it.slot.memo) || "").trim();
         var note = it.recordNote;
         var sub = memo || note || "";
-        cap.textContent = sub ? line1 + " — " + sub : line1;
-        fig.appendChild(cap);
-        var galleryIndex = galleryNodes.length;
-        galleryNodes.push(img);
-        galleryCaptions.push(cap.textContent || "");
-        bindLightboxImage(img, function () {
-          return {
-            items: galleryNodes.map(function (node, idx) {
-              return {
-                src: node.currentSrc || node.src || "",
-                alt: node.alt || "",
-                caption: galleryCaptions[idx] || "",
-              };
-            }),
-            index: galleryIndex,
-          };
-        });
+        var captionText = sub ? line1 + " — " + sub : line1;
+        var actions = [];
 
         if (opts.allowImportFromPlant && typeof opts.onImportPhoto === "function") {
           var importBtn = document.createElement("button");
@@ -430,7 +554,7 @@
           importBtn.addEventListener("click", function () {
             opts.onImportPhoto(it, importBtn);
           });
-          fig.appendChild(importBtn);
+          actions.push(importBtn);
         }
         if (opts.allowMoveToPlant && typeof opts.onMovePhoto === "function") {
           var moveBtn = document.createElement("button");
@@ -440,7 +564,7 @@
           moveBtn.addEventListener("click", function () {
             opts.onMovePhoto(it, moveBtn);
           });
-          fig.appendChild(moveBtn);
+          actions.push(moveBtn);
         }
         if (opts.allowDeletePhoto && typeof opts.onDeletePhoto === "function") {
           var delBtn = document.createElement("button");
@@ -450,19 +574,31 @@
           delBtn.addEventListener("click", function () {
             opts.onDeletePhoto(it, delBtn);
           });
-          fig.appendChild(delBtn);
+          actions.push(delBtn);
         }
-        grid.appendChild(fig);
+        appendDetailGalleryFigure(grid, galleryNodes, galleryCaptions, {
+          figureClass: "detail-page-photo-figure",
+          imageClass: "detail-page-photo-img",
+          src: it.url,
+          alt: (areaLabel || "エリア") + "の記録写真",
+          slot: it.slot,
+          apiPath: API_GROWTH_IMAGE,
+          datasetKey: "areaPhotoFb",
+          captionClass: "detail-page-photo-date",
+          captionText: captionText,
+          actions: actions,
+        });
       })(items[k]);
     }
     section.appendChild(grid);
 
     var more = document.createElement("p");
-    more.className = "plant-detail-photos-more";
-    var a = document.createElement("a");
-    a.href = opts.ctaHref || "./area-edit.html?area=" + encodeURIComponent(areaId);
-    a.className = "plant-detail-link";
-    a.textContent = opts.ctaText || "写真を追加する";
+    more.className = "detail-page-photos-more";
+    var a = createDetailLink(
+      opts.ctaHref || "./area-edit.html?area=" + encodeURIComponent(areaId),
+      opts.ctaText || "写真を追加する",
+      "detail-page-link"
+    );
     more.appendChild(a);
     section.appendChild(more);
 
@@ -503,41 +639,21 @@
     return wrap;
   }
 
-  function clearRoot() {
-    root.innerHTML = "";
-  }
-
   function renderError(message) {
-    document.title = "エリア時系列 — 植栽メモ";
-    clearRoot();
-    var p = document.createElement("p");
-    p.className = "plant-detail-error";
-    p.textContent = message;
-    root.appendChild(p);
-    titleEl.textContent = "エリア時系列";
+    document.title = "植栽メモ — エリア";
+    clearDetailRoot(root);
+    root.appendChild(createDetailMessage("detail-page-error", message));
+    titleEl.textContent = "エリア";
     if (crumbEl) crumbEl.textContent = "エラー";
   }
 
-  function renderBody(container, text) {
-    if (!text || !String(text).trim()) return;
-    var parts = String(text).split(/\n\n+/);
-    for (var i = 0; i < parts.length; i++) {
-      var chunk = parts[i].trim();
-      if (!chunk) continue;
-      var p = document.createElement("p");
-      p.className = "plant-detail-body-p";
-      p.textContent = chunk;
-      container.appendChild(p);
-    }
-  }
-
   function renderPlantList(area, plantGrowthRecords) {
-    var section = document.createElement("section");
-    section.className = "area-detail-plants";
-    var h = document.createElement("h2");
-    h.className = "area-detail-plants-heading";
-    h.textContent = "このエリアの植栽";
-    section.appendChild(h);
+    var sectionParts = createDetailSection({
+      className: "area-detail-plants",
+      headingClass: "area-detail-plants-heading",
+      headingText: "このエリアの植栽",
+    });
+    var section = sectionParts.section;
     var ul = document.createElement("ul");
     ul.className = "area-detail-plants-list";
     var plantPhotoMap = buildLatestPlantPhotoMap(plantGrowthRecords || []);
@@ -559,7 +675,7 @@
           "&plant=" +
           encodeURIComponent(pname);
         a.className = "plant-record-link plant-record-link--with-thumb";
-        a.setAttribute("title", pname + " のページを開く");
+        a.setAttribute("title", pname + " を見る");
 
         var name = document.createElement("span");
         name.className = "plant-record-name";
@@ -615,15 +731,15 @@
   }
 
   function renderPage(area, entry, areaGrowthRecords, plantGrowthRecords) {
-    clearRoot();
+    clearDetailRoot(root);
     var label = area.label || area.id;
-    document.title = label + "の時系列 — 植栽メモ";
-    titleEl.textContent = label + "の時系列";
-    if (crumbEl) crumbEl.textContent = label + "の時系列";
+    document.title = "植栽メモ — " + label;
+    titleEl.textContent = label;
+    if (crumbEl) crumbEl.textContent = label;
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-      editLink.textContent = "このエリアを編集";
+      editLink.textContent = "このエリアの概要・記録を編集";
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
@@ -632,13 +748,13 @@
 
     if (entry && entry.summary) {
       var sum = document.createElement("p");
-      sum.className = "plant-detail-summary";
+      sum.className = "detail-page-summary";
       sum.textContent = entry.summary;
       root.appendChild(sum);
     }
 
     var photoStatus = document.createElement("p");
-    photoStatus.className = "plant-detail-photos-more";
+    photoStatus.className = "detail-page-photos-more";
     photoStatus.style.marginTop = "0";
     photoStatus.style.display = "none";
     root.appendChild(photoStatus);
@@ -1018,7 +1134,7 @@
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
-        ctaText: "このエリアを編集",
+        ctaText: "このエリアの概要・記録を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1046,27 +1162,29 @@
     root.appendChild(plantPhotoGroup);
 
     var bodyWrap = document.createElement("div");
-    bodyWrap.className = "plant-detail-body";
+    bodyWrap.className = "detail-page-body";
     if (entry && entry.body) {
-      renderBody(bodyWrap, entry.body);
+      renderDetailBody(bodyWrap, entry.body, "detail-page-body-p");
     }
     if (!bodyWrap.childElementCount) {
-      var hint = document.createElement("p");
-      hint.className = "plant-detail-placeholder";
-      hint.textContent =
-        "エリアの説明メモはまだありません。area-edit.html で編集するか、data/area-details.json に summary・body を追加してください。";
-      bodyWrap.appendChild(hint);
+      bodyWrap.appendChild(
+        createDetailPlaceholder(
+          "エリアの説明メモはまだありません。area-edit.html で編集するか、data/area-details.json に summary・body を追加してください。",
+          "detail-page-placeholder"
+        )
+      );
     }
     root.appendChild(bodyWrap);
 
     root.appendChild(renderPlantList(area, plantGrowthRecords || []));
 
     var actions = document.createElement("p");
-    actions.className = "plant-detail-actions";
-    var aRecord = document.createElement("a");
-    aRecord.className = "plant-detail-cta";
-    aRecord.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-    aRecord.textContent = "このエリアを編集";
+    actions.className = "detail-page-actions";
+    var aRecord = createDetailLink(
+      "./area-edit.html?area=" + encodeURIComponent(area.id),
+      "このエリアの概要・記録を編集",
+      "detail-page-cta"
+    );
     actions.appendChild(aRecord);
     root.appendChild(actions);
   }
