@@ -852,7 +852,8 @@ button.growth-photo-lightbox-corner-btn {
   touch-action: manipulation;
 }
 
-.growth-photo-lightbox-edit-link {
+.growth-photo-lightbox-edit-link,
+button.growth-photo-lightbox-ai-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -869,12 +870,27 @@ button.growth-photo-lightbox-corner-btn {
   box-sizing: border-box;
 }
 
+.growth-photo-lightbox-edit-link {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+button.growth-photo-lightbox-ai-btn {
+  font: inherit;
+  min-width: 140px;
+  border: 1px solid rgba(162, 255, 194, 0.38);
+  background: rgba(45, 106, 79, 0.34);
+  color: #f4f7f5;
+  cursor: pointer;
+}
+
 button.growth-photo-lightbox-corner-btn:hover,
 button.growth-photo-lightbox-corner-btn:focus-visible {
   background: rgba(45, 106, 79, 0.85);
   outline: none;
 }
 
+.growth-photo-lightbox-ai-btn:hover,
+.growth-photo-lightbox-ai-btn:focus-visible,
 .growth-photo-lightbox-edit-link:hover,
 .growth-photo-lightbox-edit-link:focus-visible {
   background: rgba(255, 255, 255, 0.22);
@@ -883,6 +899,11 @@ button.growth-photo-lightbox-corner-btn:focus-visible {
 
 button.growth-photo-lightbox-corner-btn:disabled {
   opacity: 0.38;
+  cursor: not-allowed;
+}
+
+button.growth-photo-lightbox-ai-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -972,7 +993,8 @@ select.growth-photo-lightbox-area-select {
     flex-wrap: wrap;
   }
 
-  .growth-photo-lightbox-edit-link {
+  .growth-photo-lightbox-edit-link,
+  .growth-photo-lightbox-ai-btn {
     width: 100%;
   }
 }

@@ -352,6 +352,7 @@
   var growthPhotoLightboxEls = null;
   /** サムネイルのクリックがそのまま shell に届き、開いた直後に閉じるのを防ぐ */
   var growthLightboxOpenedAt = 0;
+  var growthLightboxAiBusy = false;
   var growthLightboxGallery = {
     urls: [],
     index: 0,
@@ -482,6 +483,7 @@
     }
     growthLightboxSyncCaption(pack);
     growthLightboxSyncEditLink(pack);
+    growthLightboxSyncAiButton(pack);
   }
 
   function growthLightboxCanNavigate() {
@@ -517,6 +519,304 @@
     }
     editLink.hidden = false;
     editLink.href = growthLightboxCurrentEditHref();
+  }
+
+  function growthRecordIndexById(recordId) {
+    var rid = recordId != null ? String(recordId) : "";
+    if (!rid) return -1;
+    for (var i = 0; i < state.lastGrowthRecords.length; i++) {
+      var rec = state.lastGrowthRecords[i];
+      if (rec && String(rec.id || "") === rid) return i;
+    }
+    return -1;
+  }
+
+  function growthRecordById(recordId) {
+    var idx = growthRecordIndexById(recordId);
+    return idx >= 0 ? state.lastGrowthRecords[idx] : null;
+  }
+
+  function replaceGrowthRecordInState(nextRecord) {
+    if (!nextRecord || nextRecord.id == null) return false;
+    var idx = growthRecordIndexById(nextRecord.id);
+    if (idx < 0) return false;
+    state.lastGrowthRecords[idx] = nextRecord;
+    return true;
+  }
+
+  function rerenderCurrentGrowthView() {
+    if (!IS_VIEW) return;
+    if (state.viewLayout === "timeline") {
+      renderPlantTimeline(state.lastGrowthRecords);
+      return;
+    }
+    renderViewMain(state.lastGrowthRecords);
+  }
+
+  function fetchGrowthRecordById(recordId) {
+    return fetch(API_GROWTH, { headers: cloudHeaders(false) })
+      .then(function (res) {
+        if (!res.ok) {
+          return apiErrorMessage(res, "AIコメントの更新結果を確認できませんでした").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var records = data && Array.isArray(data.records) ? data.records : [];
+        var rid = recordId != null ? String(recordId) : "";
+        for (var i = 0; i < records.length; i++) {
+          var rec = records[i];
+          if (rec && String(rec.id || "") === rid) return rec;
+        }
+        return null;
+      });
+  }
+
+  function growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes) {
+    if (!latestRecord) return false;
+    var baseRevision = String((baseRecord && (baseRecord.updatedAt || baseRecord.createdAt)) || "");
+    var latestRevision = String(latestRecord.updatedAt || latestRecord.createdAt || "");
+    if (baseRevision && latestRevision && latestRevision !== baseRevision) return true;
+
+    var baseSlots = growthImageSlots(baseRecord);
+    var latestSlots = growthImageSlots(latestRecord);
+    for (var i = 0; i < targetIndexes.length; i++) {
+      var idx = targetIndexes[i];
+      var beforeMemo =
+        baseSlots[idx] && baseSlots[idx].memo != null ? String(baseSlots[idx].memo).trim() : "";
+      var afterMemo =
+        latestSlots[idx] && latestSlots[idx].memo != null ? String(latestSlots[idx].memo).trim() : "";
+      if (beforeMemo !== afterMemo) return true;
+    }
+    return false;
+  }
+
+  function pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt) {
+    return fetchGrowthRecordById(baseRecord.id)
+      .then(function (latestRecord) {
+        if (latestRecord && growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes)) {
+          return latestRecord;
+        }
+        if (Date.now() >= deadlineAt) {
+          return latestRecord || null;
+        }
+        return new Promise(function (resolve) {
+          setTimeout(resolve, 1800);
+        }).then(function () {
+          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt);
+        });
+      })
+      .catch(function (err) {
+        if (Date.now() >= deadlineAt) throw err;
+        return new Promise(function (resolve) {
+          setTimeout(resolve, 1800);
+        }).then(function () {
+          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt);
+        });
+      });
+  }
+
+  function growthLightboxCurrentRecord() {
+    var ref = growthLightboxCurrentRef();
+    if (!ref || !ref.recordId) return null;
+    return growthRecordById(ref.recordId);
+  }
+
+  function growthLightboxCurrentMemo() {
+    var ref = growthLightboxCurrentRef();
+    var record = growthLightboxCurrentRecord();
+    if (!ref || !record) return "";
+    var idx = typeof ref.imageIndex === "number" ? ref.imageIndex : parseInt(String(ref.imageIndex), 10);
+    if (!isFinite(idx) || idx < 0) return "";
+    var slots = growthImageSlots(record);
+    return slots[idx] && slots[idx].memo != null ? String(slots[idx].memo).trim() : "";
+  }
+
+  function growthLightboxAiButtonLabel() {
+    return growthLightboxCurrentMemo() ? "AIでコメント再生成" : "AIでコメント追加";
+  }
+
+  function growthLightboxSyncAiButton(pack) {
+    var aiButton = pack && pack.aiButton;
+    if (!aiButton) return;
+    var ref = growthLightboxCurrentRef();
+    if (!IS_VIEW || !ref || !ref.recordId) {
+      aiButton.hidden = true;
+      aiButton.disabled = true;
+      aiButton.textContent = "AIでコメント追加";
+      return;
+    }
+    aiButton.hidden = false;
+    aiButton.disabled = !!growthLightboxAiBusy;
+    aiButton.textContent = growthLightboxAiBusy
+      ? "AIコメント更新中…"
+      : growthLightboxAiButtonLabel();
+  }
+
+  function rebuildGrowthLightboxFromCurrentView(pack, preferredRef) {
+    if (!IS_VIEW || !pack) return false;
+    var sorted = getGrowthViewRecordsForLightbox();
+    var flat = sorted && sorted.length ? flattenGrowthRecordsForLightbox(sorted) : { urls: [], captions: [], refs: [] };
+    if (!flat.urls.length) return false;
+
+    var currentUrl =
+      growthLightboxGallery.urls &&
+      growthLightboxGallery.index >= 0 &&
+      growthLightboxGallery.index < growthLightboxGallery.urls.length
+        ? growthLightboxGallery.urls[growthLightboxGallery.index]
+        : "";
+    var targetRecordId =
+      preferredRef && preferredRef.recordId != null
+        ? String(preferredRef.recordId)
+        : String(growthLightboxGallery.anchorRecordId || "");
+    var targetImageIndex =
+      preferredRef && preferredRef.imageIndex != null
+        ? Number(preferredRef.imageIndex)
+        : growthLightboxCurrentRef() && growthLightboxCurrentRef().imageIndex != null
+          ? Number(growthLightboxCurrentRef().imageIndex)
+          : 0;
+    var nextIndex = -1;
+
+    if (flat.refs && flat.refs.length && targetRecordId) {
+      for (var i = 0; i < flat.refs.length; i++) {
+        var ref = flat.refs[i];
+        if (!ref) continue;
+        if (String(ref.recordId || "") === targetRecordId && Number(ref.imageIndex) === targetImageIndex) {
+          nextIndex = i;
+          break;
+        }
+      }
+    }
+    if (nextIndex < 0 && currentUrl) {
+      nextIndex = flat.urls.indexOf(currentUrl);
+    }
+    if (nextIndex < 0) nextIndex = 0;
+
+    growthLightboxGallery.urls = flat.urls;
+    growthLightboxGallery.captions = flat.captions;
+    growthLightboxGallery.refs = flat.refs || null;
+    growthLightboxGallery.captionBase = "";
+    growthLightboxGallery.timelineCrossPlant =
+      state.viewLayout === "timeline" &&
+      el.filterPlant &&
+      el.filterPlant.value &&
+      lightboxFilterPlantChoiceCount() > 1;
+    if (targetRecordId) {
+      growthLightboxGallery.anchorRecordId = targetRecordId;
+    }
+    pack.showAt(pack, nextIndex);
+    growthLightboxRefreshAreaSelect(pack);
+    return true;
+  }
+
+  function applyLightboxLatestRecord(pack, preferredRef, latestRecord) {
+    if (!latestRecord) return;
+    replaceGrowthRecordInState(latestRecord);
+    rerenderCurrentGrowthView();
+    rebuildGrowthLightboxFromCurrentView(pack, preferredRef);
+  }
+
+  function runGrowthLightboxAiRefresh(pack) {
+    if (growthLightboxAiBusy) return;
+    var ref = growthLightboxCurrentRef();
+    if (!ref || !ref.recordId) return;
+
+    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    if (!storedToken) {
+      showToast("アップロード用トークンを保存するとAIコメントを追加できます。", true);
+      return;
+    }
+
+    var targetIndex =
+      typeof ref.imageIndex === "number" ? ref.imageIndex : parseInt(String(ref.imageIndex), 10);
+    if (!isFinite(targetIndex) || targetIndex < 0) targetIndex = 0;
+
+    var baseRecord = growthRecordById(ref.recordId);
+    var targets = [targetIndex];
+    growthLightboxAiBusy = true;
+    growthLightboxSyncAiButton(pack);
+    showToast("この写真のAIコメントを更新しています。");
+
+    fetch(API_GROWTH_AI_REFRESH, {
+      method: "POST",
+      cache: "no-store",
+      keepalive: true,
+      headers: cloudHeaders(true),
+      body: JSON.stringify({
+        id: ref.recordId,
+        targets: targets,
+      }),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+        }
+        if (!res.ok) {
+          return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var latestRecord =
+          data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
+        if (latestRecord) {
+          applyLightboxLatestRecord(pack, ref, latestRecord);
+        }
+        if (data && data.updated) {
+          return {
+            updated: true,
+            detail: "",
+            latestRecord: latestRecord,
+          };
+        }
+        if (!baseRecord) {
+          return {
+            updated: false,
+            detail: data && data.detail ? String(data.detail) : "",
+            latestRecord: latestRecord,
+          };
+        }
+        return pollGrowthRecordUntilUpdated(baseRecord, targets, Date.now() + 12000).then(function (polledRecord) {
+          if (polledRecord && growthRecordChangedForTargets(baseRecord, polledRecord, targets)) {
+            applyLightboxLatestRecord(pack, ref, polledRecord);
+            return {
+              updated: true,
+              detail: "",
+              latestRecord: polledRecord,
+            };
+          }
+          if (polledRecord) {
+            applyLightboxLatestRecord(pack, ref, polledRecord);
+          }
+          return {
+            updated: false,
+            detail: data && data.detail ? String(data.detail) : "",
+            latestRecord: polledRecord || latestRecord,
+          };
+        });
+      })
+      .then(function (result) {
+        if (result && result.updated) {
+          showToast("AIコメントを更新しました。");
+          return;
+        }
+        var detail = result && result.detail ? String(result.detail) : "";
+        var message = detail
+          ? "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + detail + ")"
+          : "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+        showToast(message, true);
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました。", true);
+      })
+      .finally(function () {
+        growthLightboxAiBusy = false;
+        growthLightboxSyncAiButton(pack);
+      });
   }
 
   function lightboxTryGoNextPlant(pack) {
@@ -620,6 +920,13 @@
     var cap = document.createElement("p");
     cap.className = "growth-photo-lightbox-caption";
 
+    var aiButton = document.createElement("button");
+    aiButton.type = "button";
+    aiButton.className = "growth-photo-lightbox-ai-btn";
+    aiButton.setAttribute("aria-label", "AIでコメントを追加または再生成");
+    aiButton.textContent = "AIでコメント追加";
+    aiButton.hidden = true;
+
     var editLink = document.createElement("a");
     editLink.className = "growth-photo-lightbox-edit-link";
     editLink.textContent = "この写真を編集";
@@ -662,6 +969,7 @@
     cornerNext.className = "growth-photo-lightbox-corner-btn growth-photo-lightbox-corner-next";
     cornerNext.setAttribute("aria-label", "次の写真");
     cornerNext.textContent = "次へ";
+    cornerInner.appendChild(aiButton);
     cornerInner.appendChild(editLink);
     cornerInner.appendChild(cornerPrev);
     cornerInner.appendChild(cornerNext);
@@ -718,6 +1026,10 @@
     cornerPrev.addEventListener("click", function (e) {
       e.stopPropagation();
       showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
+    });
+    aiButton.addEventListener("click", function (e) {
+      e.stopPropagation();
+      runGrowthLightboxAiRefresh(growthPhotoLightboxEls);
     });
     cornerNext.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -877,6 +1189,7 @@
       dialog: dlg,
       img: bigImg,
       caption: cap,
+      aiButton: aiButton,
       editLink: editLink,
       prevBtn: prevBtn,
       nextBtn: nextBtn,
