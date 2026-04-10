@@ -131,6 +131,32 @@
         })();
   }
 
+  function confirmIrreversibleAction(options) {
+    if (common.confirmIrreversibleAction) {
+      return common.confirmIrreversibleAction(options);
+    }
+    var opts = options || {};
+    var warning =
+      typeof opts.warning === "string" && opts.warning.trim()
+        ? opts.warning.trim()
+        : "この操作は元に戻せません。";
+    var subject = typeof opts.subject === "string" ? opts.subject.trim() : "";
+    var action =
+      typeof opts.action === "string" && opts.action.trim()
+        ? opts.action.trim()
+        : "削除します。";
+    var detail = typeof opts.detail === "string" ? opts.detail.trim() : "";
+    var question =
+      typeof opts.question === "string" && opts.question.trim()
+        ? opts.question.trim()
+        : "本当に削除しますか？";
+    var lines = [warning];
+    lines.push(subject ? subject + action : action);
+    if (detail) lines.push(detail);
+    lines.push(question);
+    return window.confirm(lines.join("\n"));
+  }
+
   function setPhotoAiStatus(message, isError) {
     if (!el.photoAiStatus) return;
     if (!message) {
@@ -1026,7 +1052,16 @@
 
   function onDeleteRecord() {
     if (!state.editRecord || !state.editRecord.id) return;
-    if (!window.confirm("このエリア記録を削除しますか？")) return;
+    if (
+      !confirmIrreversibleAction({
+        subject: "このエリア記録",
+        action: "を削除します。",
+        detail: "写真もサーバーから削除されます。",
+        question: "本当に削除しますか？",
+      })
+    ) {
+      return;
+    }
     var areaId = state.editRecord.areaId || currentAreaId();
     if (el.deleteRecord) el.deleteRecord.disabled = true;
 

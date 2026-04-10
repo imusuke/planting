@@ -6,6 +6,7 @@
       document.body.getAttribute("data-growth-page") ||
       "edit").toLowerCase();
   var IS_VIEW = PAGE === "view";
+  var common = window.PlantingEditCommon || {};
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var LS_THUMB_SIZE = "growthThumbSize";
@@ -110,6 +111,32 @@
     showToast._t = setTimeout(function () {
       el.toast.classList.remove("is-visible");
     }, 4200);
+  }
+
+  function confirmIrreversibleAction(options) {
+    if (common.confirmIrreversibleAction) {
+      return common.confirmIrreversibleAction(options);
+    }
+    var opts = options || {};
+    var warning =
+      typeof opts.warning === "string" && opts.warning.trim()
+        ? opts.warning.trim()
+        : "この操作は元に戻せません。";
+    var subject = typeof opts.subject === "string" ? opts.subject.trim() : "";
+    var action =
+      typeof opts.action === "string" && opts.action.trim()
+        ? opts.action.trim()
+        : "削除します。";
+    var detail = typeof opts.detail === "string" ? opts.detail.trim() : "";
+    var question =
+      typeof opts.question === "string" && opts.question.trim()
+        ? opts.question.trim()
+        : "本当に削除しますか？";
+    var lines = [warning];
+    lines.push(subject ? subject + action : action);
+    if (detail) lines.push(detail);
+    lines.push(question);
+    return window.confirm(lines.join("\n"));
   }
 
   function cloudHeaders(jsonBody) {
@@ -2819,7 +2846,19 @@
         showToast("エリアは最低1つ必要です。", true);
         return;
       }
-      if (!window.confirm("このエリアと、その下の植栽行を一覧から外します。よろしいですか？")) return;
+      var label = labelInput && String(labelInput.value || "").trim();
+      var areaName = label || (idInput && String(idInput.value || "").trim()) || "このエリア";
+      if (
+        !confirmIrreversibleAction({
+          warning: "この変更を保存すると元に戻せません。",
+          subject: "「" + areaName + "」",
+          action: "と、その下の植栽行を削除します。",
+          detail: "まだ保存前なので、この画面を閉じるまでは保存されません。",
+          question: "本当に削除しますか？",
+        })
+      ) {
+        return;
+      }
       block.remove();
     });
 
@@ -2867,6 +2906,18 @@
     rm.textContent = "削除";
     rm.addEventListener("click", function () {
       var parent = row.parentElement;
+      var plantName = String(inp.value || "").trim();
+      if (
+        !confirmIrreversibleAction({
+          warning: "この変更を保存すると元に戻せません。",
+          subject: plantName ? "植栽「" + plantName + "」" : "この植栽行",
+          action: "を削除します。",
+          detail: "まだ保存前なので、この画面を閉じるまでは保存されません。",
+          question: "本当に削除しますか？",
+        })
+      ) {
+        return;
+      }
       if (parent && parent.childElementCount <= 1) {
         inp.value = "";
         return;
@@ -4289,7 +4340,16 @@
 
   function onDeleteRecord() {
     if (!state.editRecord || !el.deleteRecordBtn) return;
-    if (!confirm("この記録を削除しますか？（写真もサーバーから削除されます）")) return;
+    if (
+      !confirmIrreversibleAction({
+        subject: "この記録",
+        action: "を削除します。",
+        detail: "写真もサーバーから削除されます。",
+        question: "本当に削除しますか？",
+      })
+    ) {
+      return;
+    }
     var id = state.editRecord.id;
     el.deleteRecordBtn.disabled = true;
     fetch(API_GROWTH + "?id=" + encodeURIComponent(id), {

@@ -154,6 +154,32 @@
     return node;
   }
 
+  function confirmIrreversibleAction(options) {
+    var opts = options || {};
+    var lines = [];
+    var warning = typeof opts.warning === "string" && opts.warning.trim()
+      ? opts.warning.trim()
+      : "この操作は元に戻せません。";
+    var subject = typeof opts.subject === "string" ? opts.subject.trim() : "";
+    var action = typeof opts.action === "string" && opts.action.trim()
+      ? opts.action.trim()
+      : "削除します。";
+    var detail = typeof opts.detail === "string" ? opts.detail.trim() : "";
+    var question = typeof opts.question === "string" && opts.question.trim()
+      ? opts.question.trim()
+      : "本当に削除しますか？";
+
+    lines.push(warning);
+    if (subject) {
+      lines.push(subject + action);
+    } else {
+      lines.push(action);
+    }
+    if (detail) lines.push(detail);
+    lines.push(question);
+    return window.confirm(lines.join("\n"));
+  }
+
   function createGrowthCardScaffold(options) {
     var opts = options || {};
     var card = document.createElement("article");
@@ -260,6 +286,7 @@
     applyStoredCloudToken: applyStoredCloudToken,
     buildCloudHeaders: buildCloudHeaders,
     createButtonElement: createButtonElement,
+    confirmIrreversibleAction: confirmIrreversibleAction,
     createGrowthCardImageWrap: createGrowthCardImageWrap,
     createGrowthCardScaffold: createGrowthCardScaffold,
     createLinkElement: createLinkElement,

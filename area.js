@@ -7,6 +7,7 @@
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
   var AREA_GROWTH_SNAPSHOT_JSON = "./data/area-growth-snapshot.json";
+  var common = window.PlantingEditCommon || {};
 
   var root = document.getElementById("area-detail-root");
   var titleEl = document.getElementById("area-detail-title");
@@ -407,6 +408,32 @@
     }
     if (t) h["x-growth-token"] = t;
     return h;
+  }
+
+  function confirmIrreversibleAction(options) {
+    if (common.confirmIrreversibleAction) {
+      return common.confirmIrreversibleAction(options);
+    }
+    var opts = options || {};
+    var warning =
+      typeof opts.warning === "string" && opts.warning.trim()
+        ? opts.warning.trim()
+        : "この操作は元に戻せません。";
+    var subject = typeof opts.subject === "string" ? opts.subject.trim() : "";
+    var action =
+      typeof opts.action === "string" && opts.action.trim()
+        ? opts.action.trim()
+        : "削除します。";
+    var detail = typeof opts.detail === "string" ? opts.detail.trim() : "";
+    var question =
+      typeof opts.question === "string" && opts.question.trim()
+        ? opts.question.trim()
+        : "本当に削除しますか？";
+    var lines = [warning];
+    lines.push(subject ? subject + action : action);
+    if (detail) lines.push(detail);
+    lines.push(question);
+    return window.confirm(lines.join("\n"));
   }
 
   function createClientId() {
@@ -1031,7 +1058,14 @@
         setPhotoStatus("削除対象の写真情報が見つかりません。", true);
         return;
       }
-      if (!window.confirm("このエリア写真を削除しますか？")) {
+      if (
+        !confirmIrreversibleAction({
+          subject: "このエリア写真",
+          action: "を削除します。",
+          detail: "サーバー上の写真データも削除されます。",
+          question: "本当に削除しますか？",
+        })
+      ) {
         return;
       }
       if (buttonEl) buttonEl.disabled = true;
@@ -1082,7 +1116,14 @@
         setPhotoStatus("削除対象の写真情報が見つかりません。", true);
         return;
       }
-      if (!window.confirm("この植栽写真を削除しますか？")) {
+      if (
+        !confirmIrreversibleAction({
+          subject: "この植栽写真",
+          action: "を削除します。",
+          detail: "サーバー上の写真データも削除されます。",
+          question: "本当に削除しますか？",
+        })
+      ) {
         return;
       }
       if (buttonEl) buttonEl.disabled = true;
