@@ -353,6 +353,8 @@
   /** サムネイルのクリックがそのまま shell に届き、開いた直後に閉じるのを防ぐ */
   var growthLightboxOpenedAt = 0;
   var growthLightboxAiBusy = false;
+  var growthLightboxTimelineOpen = false;
+  var growthLightboxTimelinePlant = "";
   var growthLightboxGallery = {
     urls: [],
     index: 0,
@@ -484,6 +486,7 @@
     growthLightboxSyncCaption(pack);
     growthLightboxSyncEditLink(pack);
     growthLightboxSyncAiButton(pack);
+    growthLightboxSyncTimelineButton(pack);
   }
 
   function growthLightboxCanNavigate() {
@@ -519,6 +522,21 @@
     }
     editLink.hidden = false;
     editLink.href = growthLightboxCurrentEditHref();
+  }
+
+  function growthRecordPlantNames(record) {
+    var out = [];
+    var seen = {};
+    (record && Array.isArray(record.plants) ? record.plants : []).forEach(function (plantName) {
+      var name =
+        typeof plantName === "string"
+          ? normalizeLooseString(plantName)
+          : normalizeLooseString(String(plantName || ""));
+      if (!name || seen[name]) return;
+      seen[name] = true;
+      out.push(name);
+    });
+    return out;
   }
 
   function growthRecordIndexById(recordId) {
@@ -634,8 +652,224 @@
     return slots[idx] && slots[idx].memo != null ? String(slots[idx].memo).trim() : "";
   }
 
+  function growthLightboxCurrentPlantNames() {
+    return growthRecordPlantNames(growthLightboxCurrentRecord());
+  }
+
+  function growthLightboxSelectedTimelinePlant() {
+    var plantNames = growthLightboxCurrentPlantNames();
+    if (!plantNames.length) {
+      growthLightboxTimelinePlant = "";
+      return "";
+    }
+    if (plantNames.indexOf(growthLightboxTimelinePlant) === -1) {
+      growthLightboxTimelinePlant = plantNames[0];
+    }
+    return growthLightboxTimelinePlant;
+  }
+
   function growthLightboxAiButtonLabel() {
     return growthLightboxCurrentMemo() ? "AIでコメント再生成" : "AIでコメント追加";
+  }
+
+  function growthLightboxTimelineButtonLabel() {
+    var plantNames = growthLightboxCurrentPlantNames();
+    if (!plantNames.length) return "植栽を時系列で見る";
+    if (plantNames.length === 1) return plantNames[0] + "を時系列で見る";
+    return "植栽を時系列で見る";
+  }
+
+  function growthTimelinePreviewImageIndex(record, preferredIndex) {
+    var slots = growthImageSlots(record);
+    if (!slots.length) return -1;
+    var want =
+      typeof preferredIndex === "number" ? preferredIndex : parseInt(String(preferredIndex || ""), 10);
+    if (isFinite(want) && want >= 0 && want < slots.length && growthImageSrcFromSlot(slots[want])) {
+      return want;
+    }
+    for (var i = 0; i < slots.length; i++) {
+      if (growthImageSrcFromSlot(slots[i])) return i;
+    }
+    return -1;
+  }
+
+  function growthTimelineItemsForPlant(plantName, areaId, preferredIndex) {
+    var wantedPlant = normalizeLooseString(plantName);
+    var wantedArea = normalizeLooseString(areaId);
+    if (!wantedPlant) return [];
+    var items = [];
+    (state.lastGrowthRecords || []).forEach(function (record) {
+      if (!record) return;
+      var matchesPlant = false;
+      (record.plants || []).forEach(function (rawPlant) {
+        var currentPlant =
+          typeof rawPlant === "string"
+            ? normalizeLooseString(rawPlant)
+            : normalizeLooseString(String(rawPlant || ""));
+        if (currentPlant && currentPlant === wantedPlant) matchesPlant = true;
+      });
+      if (!matchesPlant) return;
+      var recordArea =
+        resolveGrowthRecordAreaIdForPlant(record, wantedPlant) || resolveGrowthRecordAreaId(record);
+      if (wantedArea && recordArea !== wantedArea) return;
+      var imageIndex = growthTimelinePreviewImageIndex(record, preferredIndex);
+      if (imageIndex < 0) return;
+      var slot = growthImageSlots(record)[imageIndex];
+      var src = growthImageSrcFromSlot(slot);
+      if (!src) return;
+      items.push({
+        record: record,
+        imageIndex: imageIndex,
+        src: src,
+        memo: slot && slot.memo != null ? String(slot.memo).trim() : "",
+      });
+    });
+    items.sort(function (a, b) {
+      return compareGrowthRecordsForSort(a.record, b.record, false);
+    });
+    return items;
+  }
+
+  function renderGrowthLightboxTimelinePanel(pack) {
+    var panel = pack && pack.timelinePanel;
+    if (!panel) return;
+    if (!growthLightboxTimelineOpen) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+
+    var ref = growthLightboxCurrentRef();
+    var record = growthLightboxCurrentRecord();
+    var plantNames = growthLightboxCurrentPlantNames();
+    var selectedPlant = growthLightboxSelectedTimelinePlant();
+    if (!ref || !record || !plantNames.length || !selectedPlant) {
+      panel.hidden = true;
+      panel.innerHTML = "";
+      return;
+    }
+
+    panel.hidden = false;
+    panel.innerHTML = "";
+
+    var preferredIndex =
+      typeof ref.imageIndex === "number" ? ref.imageIndex : parseInt(String(ref.imageIndex || ""), 10);
+    if (!isFinite(preferredIndex) || preferredIndex < 0) preferredIndex = 0;
+
+    var areaId =
+      resolveGrowthRecordAreaIdForPlant(record, selectedPlant) || resolveGrowthRecordAreaId(record);
+    var area = findAreaById(areaId);
+    var items = growthTimelineItemsForPlant(selectedPlant, areaId, preferredIndex);
+
+    var head = document.createElement("div");
+    head.className = "growth-photo-lightbox-timeline-head";
+
+    var titleWrap = document.createElement("div");
+    titleWrap.className = "growth-photo-lightbox-timeline-title-wrap";
+    var title = document.createElement("h3");
+    title.className = "growth-photo-lightbox-timeline-title";
+    title.textContent = selectedPlant + "の時系列写真";
+    titleWrap.appendChild(title);
+
+    var lead = document.createElement("p");
+    lead.className = "growth-photo-lightbox-timeline-lead";
+    lead.textContent = area
+      ? "同じエリアの「" + selectedPlant + "」が写っている記録を古い順に並べています。"
+      : "「" + selectedPlant + "」が写っている記録を古い順に並べています。";
+    titleWrap.appendChild(lead);
+    head.appendChild(titleWrap);
+
+    var closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "growth-photo-lightbox-timeline-close";
+    closeBtn.textContent = "閉じる";
+    closeBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      growthLightboxTimelineOpen = false;
+      growthLightboxSyncTimelineButton(pack);
+    });
+    head.appendChild(closeBtn);
+    panel.appendChild(head);
+
+    if (plantNames.length > 1) {
+      var tabs = document.createElement("div");
+      tabs.className = "growth-photo-lightbox-timeline-plants";
+      plantNames.forEach(function (plantName) {
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className =
+          "growth-photo-lightbox-timeline-chip" +
+          (plantName === selectedPlant ? " is-active" : "");
+        chip.textContent = plantName;
+        chip.setAttribute("aria-pressed", plantName === selectedPlant ? "true" : "false");
+        chip.addEventListener("click", function (e) {
+          e.stopPropagation();
+          growthLightboxTimelinePlant = plantName;
+          renderGrowthLightboxTimelinePanel(pack);
+        });
+        tabs.appendChild(chip);
+      });
+      panel.appendChild(tabs);
+    }
+
+    if (!items.length) {
+      var empty = document.createElement("p");
+      empty.className = "growth-photo-lightbox-timeline-empty";
+      empty.textContent = "この植栽の時系列写真はまだありません。";
+      panel.appendChild(empty);
+      return;
+    }
+
+    var list = document.createElement("ol");
+    list.className = "growth-photo-lightbox-timeline-list";
+    items.forEach(function (item) {
+      var li = document.createElement("li");
+      li.className = "growth-photo-lightbox-timeline-item";
+
+      var article = document.createElement("article");
+      article.className = "growth-photo-lightbox-timeline-card";
+
+      var thumbWrap = document.createElement("div");
+      thumbWrap.className = "growth-photo-lightbox-timeline-thumb-wrap";
+      var img = document.createElement("img");
+      img.className = "growth-photo-lightbox-timeline-thumb";
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      img.alt = selectedPlant + " " + (item.record.recordedAt || "").slice(0, 10);
+      img.src = item.src;
+      thumbWrap.appendChild(img);
+
+      var isCurrent =
+        String(item.record.id || "") === String(ref.recordId || "") &&
+        Number(item.imageIndex) === Number(preferredIndex);
+      if (isCurrent) {
+        var badge = document.createElement("span");
+        badge.className = "growth-photo-lightbox-timeline-current";
+        badge.textContent = "表示中";
+        thumbWrap.appendChild(badge);
+      }
+      article.appendChild(thumbWrap);
+
+      var meta = document.createElement("div");
+      meta.className = "growth-photo-lightbox-timeline-meta";
+      var date = document.createElement("time");
+      date.className = "growth-photo-lightbox-timeline-date";
+      date.setAttribute("datetime", item.record.recordedAt || "");
+      date.textContent = (item.record.recordedAt || "").slice(0, 10);
+      meta.appendChild(date);
+
+      if (item.memo) {
+        var memo = document.createElement("p");
+        memo.className = "growth-photo-lightbox-timeline-memo";
+        memo.textContent = item.memo;
+        meta.appendChild(memo);
+      }
+
+      article.appendChild(meta);
+      li.appendChild(article);
+      list.appendChild(li);
+    });
+    panel.appendChild(list);
   }
 
   function growthLightboxSyncAiButton(pack) {
@@ -653,6 +887,39 @@
     aiButton.textContent = growthLightboxAiBusy
       ? "AIコメント更新中…"
       : growthLightboxAiButtonLabel();
+  }
+
+  function growthLightboxSyncTimelineButton(pack) {
+    var timelineButton = pack && pack.timelineButton;
+    if (!timelineButton) return;
+    var hasPlants = !!growthLightboxCurrentPlantNames().length;
+    if (!IS_VIEW || !hasPlants) {
+      growthLightboxTimelineOpen = false;
+      growthLightboxTimelinePlant = "";
+      timelineButton.hidden = true;
+      timelineButton.disabled = true;
+      timelineButton.textContent = "植栽を時系列で見る";
+      if (pack.timelinePanel) {
+        pack.timelinePanel.hidden = true;
+        pack.timelinePanel.innerHTML = "";
+      }
+      return;
+    }
+    timelineButton.hidden = false;
+    timelineButton.disabled = false;
+    timelineButton.textContent = growthLightboxTimelineOpen
+      ? "時系列を閉じる"
+      : growthLightboxTimelineButtonLabel();
+    renderGrowthLightboxTimelinePanel(pack);
+  }
+
+  function toggleGrowthLightboxTimeline(pack) {
+    if (!pack || !growthLightboxCurrentPlantNames().length) return;
+    if (!growthLightboxTimelineOpen) {
+      growthLightboxSelectedTimelinePlant();
+    }
+    growthLightboxTimelineOpen = !growthLightboxTimelineOpen;
+    growthLightboxSyncTimelineButton(pack);
   }
 
   function rebuildGrowthLightboxFromCurrentView(pack, preferredRef) {
@@ -920,6 +1187,17 @@
     var cap = document.createElement("p");
     cap.className = "growth-photo-lightbox-caption";
 
+    var timelineButton = document.createElement("button");
+    timelineButton.type = "button";
+    timelineButton.className = "growth-photo-lightbox-timeline-btn";
+    timelineButton.setAttribute("aria-label", "この写真の植栽を時系列で見る");
+    timelineButton.textContent = "植栽を時系列で見る";
+    timelineButton.hidden = true;
+
+    var timelinePanel = document.createElement("section");
+    timelinePanel.className = "growth-photo-lightbox-timeline-panel";
+    timelinePanel.hidden = true;
+
     var aiButton = document.createElement("button");
     aiButton.type = "button";
     aiButton.className = "growth-photo-lightbox-ai-btn";
@@ -939,6 +1217,7 @@
     inner.appendChild(mediaFrame);
     inner.appendChild(areaRow);
     inner.appendChild(cap);
+    inner.appendChild(timelinePanel);
 
     if (!areaSelect.dataset.lbAreaBound) {
       areaSelect.dataset.lbAreaBound = "1";
@@ -969,6 +1248,7 @@
     cornerNext.className = "growth-photo-lightbox-corner-btn growth-photo-lightbox-corner-next";
     cornerNext.setAttribute("aria-label", "次の写真");
     cornerNext.textContent = "次へ";
+    cornerInner.appendChild(timelineButton);
     cornerInner.appendChild(aiButton);
     cornerInner.appendChild(editLink);
     cornerInner.appendChild(cornerPrev);
@@ -1027,6 +1307,10 @@
       e.stopPropagation();
       showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
     });
+    timelineButton.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleGrowthLightboxTimeline(growthPhotoLightboxEls);
+    });
     aiButton.addEventListener("click", function (e) {
       e.stopPropagation();
       runGrowthLightboxAiRefresh(growthPhotoLightboxEls);
@@ -1045,6 +1329,11 @@
         e.preventDefault();
         showAt(growthPhotoLightboxEls, growthLightboxGallery.index + 1);
       }
+    });
+    dlg.addEventListener("close", function () {
+      growthLightboxTimelineOpen = false;
+      growthLightboxTimelinePlant = "";
+      growthLightboxSyncTimelineButton(growthPhotoLightboxEls);
     });
 
     /**
@@ -1189,6 +1478,8 @@
       dialog: dlg,
       img: bigImg,
       caption: cap,
+      timelineButton: timelineButton,
+      timelinePanel: timelinePanel,
       aiButton: aiButton,
       editLink: editLink,
       prevBtn: prevBtn,
@@ -1280,6 +1571,8 @@
     growthLightboxGallery.timelineCrossPlant = !!options.timelineCrossPlant;
     growthLightboxGallery.anchorRecordId =
       options.anchorRecordId != null ? String(options.anchorRecordId) : "";
+    growthLightboxTimelineOpen = false;
+    growthLightboxTimelinePlant = "";
 
     var pack = ensureGrowthPhotoLightbox();
     pack.img.referrerPolicy = "no-referrer";
