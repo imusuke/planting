@@ -3,6 +3,7 @@
 
   var common = window.PlantingEditCommon || {};
   var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
+  var API_CHANGE_LOG = "/api/change-log";
   var API_PLANTS = "/api/plants";
   var API_PLANT_DETAILS = "/api/plant-details";
 
@@ -183,6 +184,51 @@
       : "アップロード用トークンを入力すると本番データへ保存できます。";
   }
 
+  function matchesPlantChangeLogEntry(item) {
+    if (!item) return false;
+    var areaId = selectedAreaId();
+    var plantName = selectedPlantName();
+    if (!areaId || !plantName) return false;
+    if (String(item.areaId || "").trim() !== areaId) return false;
+    if (normalizePlantName(item.plantName) === plantName) return true;
+    if (!Array.isArray(item.plantNames)) return false;
+    for (var i = 0; i < item.plantNames.length; i++) {
+      if (normalizePlantName(item.plantNames[i]) === plantName) return true;
+    }
+    return false;
+  }
+
+  function refreshChangeLog() {
+    if (!el.changeLogStatus || !el.changeLogList) return Promise.resolve([]);
+    var areaId = selectedAreaId();
+    var plantName = selectedPlantName();
+    if (!areaId || !plantName) {
+      el.changeLogStatus.textContent = "エリアと植栽を選ぶと最近の更新を表示します。";
+      if (common.renderChangeLogItems) common.renderChangeLogItems(el.changeLogList, [], "");
+      else el.changeLogList.innerHTML = "";
+      return Promise.resolve([]);
+    }
+    if (!common.loadChangeLog) {
+      el.changeLogStatus.textContent = "更新履歴を読み込めません。";
+      return Promise.resolve([]);
+    }
+    return common.loadChangeLog({
+      apiPath: API_CHANGE_LOG,
+      storageKey: LS_CLOUD_TOKEN,
+      limit: 40,
+      statusEl: el.changeLogStatus,
+      listEl: el.changeLogList,
+      filter: matchesPlantChangeLogEntry,
+      noTokenMessage: "アップロード用トークンを保存すると、この植栽に関する更新を読み込めます。",
+      emptyMessage: "この植栽に関する更新はまだありません。",
+      successMessage: function (items) {
+        return items.length
+          ? "この植栽に関する最近 " + items.length + " 件の更新です。"
+          : "この植栽に関する更新はまだありません。";
+      },
+    });
+  }
+
   function selectedAreaId() {
     return el.area ? String(el.area.value || "").trim() : "";
   }
@@ -275,11 +321,13 @@
     setPlantOptions(plants.indexOf(currentPlant) !== -1 ? currentPlant : "");
     syncFormFromSelection();
     updateQuery(selectedAreaId(), selectedPlantName());
+    refreshChangeLog().catch(function () {});
   }
 
   function onPlantChange() {
     syncFormFromSelection();
     updateQuery(selectedAreaId(), selectedPlantName());
+    refreshChangeLog().catch(function () {});
   }
 
   function onSaveToken() {
@@ -289,6 +337,7 @@
     else if (token) localStorage.setItem(LS_CLOUD_TOKEN, token);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
     setCloudStatus();
+    refreshChangeLog().catch(function () {});
     showToast(token ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。", false);
   }
 
@@ -326,6 +375,7 @@
         upsertLocalEntry(data && data.entry ? data.entry : payload);
         syncFormFromSelection();
         updateQuery(areaId, plantName);
+        refreshChangeLog().catch(function () {});
         showToast("植栽の詳細を保存しました。", false);
       })
       .catch(function (err) {
@@ -351,6 +401,9 @@
     el.leadDetailLink = $("plant-edit-lead-detail-link");
     el.recordLink = $("plant-edit-record-link");
     el.openDetail = $("plant-edit-open-detail");
+    el.changeLogStatus = $("plant-edit-change-log-status");
+    el.changeLogList = $("plant-edit-change-log-list");
+    el.changeLogReload = $("plant-edit-change-log-reload");
 
     if (!el.form || !el.area || !el.plant) return;
 
@@ -362,6 +415,11 @@
     el.area.addEventListener("change", onAreaChange);
     el.plant.addEventListener("change", onPlantChange);
     el.form.addEventListener("submit", onSubmit);
+    if (el.changeLogReload) {
+      el.changeLogReload.addEventListener("click", function () {
+        refreshChangeLog().catch(function () {});
+      });
+    }
 
     var params = new URLSearchParams(window.location.search);
     var requestedAreaId = String(params.get("area") || "").trim();
@@ -381,6 +439,7 @@
         setPlantOptions(requestedPlantName);
         syncFormFromSelection();
         updateQuery(selectedAreaId(), selectedPlantName());
+        refreshChangeLog().catch(function () {});
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : "初期化に失敗しました。", true);

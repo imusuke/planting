@@ -1,6 +1,7 @@
 const { put, del } = require("@vercel/blob");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+const changeLog = require("../lib/change-log");
 
 const KV_KEY = "planting_area_details_overlay_v1";
 
@@ -258,6 +259,17 @@ module.exports = async function handler(req, res) {
       } catch (kvErr) {
         return jsonError(res, 503, "kv_write_failed", kvErr);
       }
+
+      await changeLog.appendChangeLogSafe({
+        action: "area_detail_saved",
+        targetType: "area_detail",
+        targetId: areaId,
+        areaId: areaId,
+        detail: "エリアの概要を保存",
+        meta: {
+          imageCount: Array.isArray(entry.images) ? entry.images.length : 0,
+        },
+      });
 
       return res.status(200).json({ ok: true, entry: entry });
     } catch (unexpected) {

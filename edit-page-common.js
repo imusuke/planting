@@ -197,6 +197,149 @@
     });
   }
 
+  function formatChangeLogTime(value) {
+    if (!value) return "";
+    try {
+      return new Intl.DateTimeFormat("ja-JP", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    } catch (err) {
+      return String(value);
+    }
+  }
+
+  function describeChangeLogEntry(item) {
+    if (!item) return "";
+    var areaLabel = item.areaLabel ? String(item.areaLabel) : item.areaId ? String(item.areaId) : "";
+    var plantLabel = item.plantName ? String(item.plantName) : "";
+    switch (item.action) {
+      case "catalog_saved":
+        return "エリア・植栽マスタを保存";
+      case "plant_detail_saved":
+        return plantLabel ? plantLabel + " の詳細を保存" : "植栽の詳細を保存";
+      case "area_detail_saved":
+        return areaLabel ? areaLabel + " の概要を保存" : "エリアの概要を保存";
+      case "growth_record_created":
+        return "植栽記録を追加";
+      case "growth_record_updated":
+        return "植栽記録を更新";
+      case "growth_record_archived":
+        return "植栽記録をアーカイブ";
+      case "growth_record_photo_removed":
+        return "植栽記録の写真を削除";
+      case "growth_record_deleted_after_photo_removal":
+        return "植栽記録を削除";
+      case "area_growth_created":
+        return "エリア記録を追加";
+      case "area_growth_updated":
+        return "エリア記録を更新";
+      case "area_growth_archived":
+        return "エリア記録をアーカイブ";
+      case "area_growth_photo_removed":
+        return "エリア記録の写真を削除";
+      case "area_growth_deleted_after_photo_removal":
+        return "エリア記録を削除";
+      default:
+        return "更新";
+    }
+  }
+
+  function renderChangeLogItems(listEl, items, emptyText) {
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    if (!items || !items.length) {
+      if (emptyText) {
+        listEl.appendChild(createTextElement("p", "growth-hint", emptyText));
+      }
+      return;
+    }
+    items.forEach(function (item) {
+      var card = document.createElement("article");
+      card.className = "growth-change-log-item";
+
+      var header = document.createElement("div");
+      header.className = "growth-change-log-item-header";
+      header.appendChild(
+        createTextElement("strong", "growth-change-log-item-title", describeChangeLogEntry(item))
+      );
+      header.appendChild(
+        createTextElement("span", "growth-change-log-item-time", formatChangeLogTime(item.createdAt))
+      );
+      card.appendChild(header);
+
+      var metaParts = [];
+      if (item.areaLabel) metaParts.push(String(item.areaLabel));
+      else if (item.areaId) metaParts.push(String(item.areaId));
+      if (item.plantName) metaParts.push(String(item.plantName));
+      else if (Array.isArray(item.plantNames) && item.plantNames.length) {
+        metaParts.push(item.plantNames.join("、"));
+      }
+      if (metaParts.length) {
+        card.appendChild(createTextElement("p", "growth-change-log-item-meta", metaParts.join(" / ")));
+      }
+      if (item.detail) {
+        card.appendChild(createTextElement("p", "growth-change-log-item-detail", String(item.detail)));
+      }
+      listEl.appendChild(card);
+    });
+  }
+
+  function loadChangeLog(options) {
+    var opts = options || {};
+    var listEl = opts.listEl || null;
+    var statusEl = opts.statusEl || null;
+    if (!listEl || !statusEl) return Promise.resolve([]);
+
+    var storageKey = opts.storageKey || CLOUD_TOKEN_KEY;
+    var token = localStorage.getItem(storageKey);
+    if (!token) {
+      statusEl.textContent =
+        opts.noTokenMessage || "アップロード用トークンを保存すると更新履歴を読み込めます。";
+      renderChangeLogItems(listEl, [], opts.noTokenEmptyText || "");
+      return Promise.resolve([]);
+    }
+
+    var limit = parseInt(String(opts.limit || 20), 10);
+    if (isNaN(limit) || limit < 1) limit = 20;
+    statusEl.textContent = opts.loadingMessage || "更新履歴を読み込んでいます…";
+
+    return fetch((opts.apiPath || "/api/change-log") + "?limit=" + encodeURIComponent(limit), {
+      headers: buildCloudHeaders(false, storageKey),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return apiErrorMessage(res, opts.failurePrefix || "更新履歴の読み込みに失敗しました").then(function (message) {
+            throw new Error(message);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var items = data && Array.isArray(data.items) ? data.items.slice() : [];
+        if (typeof opts.filter === "function") {
+          items = items.filter(opts.filter);
+        }
+        renderChangeLogItems(listEl, items, opts.emptyMessage || "更新履歴はまだありません。");
+        statusEl.textContent =
+          typeof opts.successMessage === "function"
+            ? opts.successMessage(items)
+            : items.length
+              ? "最近 " + items.length + " 件の更新を表示しています。"
+              : opts.emptyMessage || "更新履歴はまだありません。";
+        return items;
+      })
+      .catch(function (err) {
+        statusEl.textContent =
+          err && err.message ? err.message : opts.failurePrefix || "更新履歴の読み込みに失敗しました。";
+        renderChangeLogItems(listEl, [], "");
+        return [];
+      });
+  }
+
   function createTextElement(tagName, className, text) {
     var node = document.createElement(tagName);
     if (className) node.className = className;
@@ -375,16 +518,20 @@
     createGrowthCardScaffold: createGrowthCardScaffold,
     createLinkElement: createLinkElement,
     createTextElement: createTextElement,
+    describeChangeLogEntry: describeChangeLogEntry,
     findAreaById: findAreaById,
+    formatChangeLogTime: formatChangeLogTime,
     imageSrcFromSlot: imageSrcFromSlot,
     isAiCommentJobTerminal: isAiCommentJobTerminal,
     listAreaPlants: listAreaPlants,
+    loadChangeLog: loadChangeLog,
     loadJson: loadJson,
     loadPlantsData: loadPlantsData,
     normalizeName: normalizeName,
     readAiCommentJob: readAiCommentJob,
     normalizeImageSlots: normalizeImageSlots,
     readEmbeddedJson: readEmbeddedJson,
+    renderChangeLogItems: renderChangeLogItems,
     saveCloudToken: saveCloudToken,
     setCloudStatus: setCloudStatus,
     uniqueTrimmedStrings: uniqueTrimmedStrings,

@@ -1283,6 +1283,52 @@ a.growth-card-area-label:focus-visible {
   gap: 8px;
 }
 
+.growth-change-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+.growth-change-log-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.growth-change-log-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.growth-change-log-item-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.growth-change-log-item-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.growth-change-log-item-meta,
+.growth-change-log-item-detail {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.growth-change-log-item-meta {
+  color: var(--muted);
+}
+
+.growth-change-log-item-detail {
+  color: var(--ink);
+}
+
 button.growth-edit {
   font: inherit;
   font-size: 0.82rem;

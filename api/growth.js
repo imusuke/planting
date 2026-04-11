@@ -4,6 +4,7 @@ const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
 const { generateGrowthPhotoComment } = require("../lib/growth-photo-ai");
 const archiveRecords = require("../lib/archive-records");
+const changeLog = require("../lib/change-log");
 
 const KV_KEY = "planting_growth_records_v1";
 const KV_PLANTS = "planting_plants_catalog_v1";
@@ -881,6 +882,20 @@ async function handler(req, res) {
       console.error("appendRecordPlantsToCatalog", catErr);
     }
 
+    await changeLog.appendChangeLogSafe({
+      action: existing ? "growth_record_updated" : "growth_record_created",
+      targetType: "growth_record",
+      targetId: record.id,
+      areaId: record.areaId,
+      areaLabel: record.areaLabel,
+      plantNames: Array.isArray(record.plants) ? record.plants : [],
+      detail: existing ? "植栽記録を更新" : "植栽記録を追加",
+      meta: {
+        imageCount: finalImages.length,
+        aiQueued: aiCommentsQueued,
+      },
+    });
+
     if (aiCommentsQueued) {
       waitUntil(
         refreshGrowthPhotoCommentsInBackground(record, aiCommentTargets, {
@@ -925,6 +940,15 @@ async function handler(req, res) {
         return res.status(404).json({ error: archived.error || "not_found" });
       }
       await writeRecords(archived.records);
+      await changeLog.appendChangeLogSafe({
+        action: "growth_record_archived",
+        targetType: "growth_record",
+        targetId: found.id,
+        areaId: found.areaId,
+        areaLabel: found.areaLabel,
+        plantNames: Array.isArray(found.plants) ? found.plants : [],
+        detail: "植栽記録をアーカイブ",
+      });
       return res.status(200).json({ ok: true, archived: true, record: archived.record });
     }
 
@@ -956,6 +980,15 @@ async function handler(req, res) {
         return r.id !== id;
       });
       await writeRecords(nextDel);
+      await changeLog.appendChangeLogSafe({
+        action: "growth_record_deleted_after_photo_removal",
+        targetType: "growth_record",
+        targetId: found.id,
+        areaId: found.areaId,
+        areaLabel: found.areaLabel,
+        plantNames: Array.isArray(found.plants) ? found.plants : [],
+        detail: "最後の写真削除により植栽記録を削除",
+      });
       return res.status(200).json({ ok: true, deleted: true });
     }
 
@@ -965,6 +998,19 @@ async function handler(req, res) {
     found.updatedAt = new Date().toISOString();
     list[foundIdx] = found;
     await writeRecords(list);
+    await changeLog.appendChangeLogSafe({
+      action: "growth_record_photo_removed",
+      targetType: "growth_record",
+      targetId: found.id,
+      areaId: found.areaId,
+      areaLabel: found.areaLabel,
+      plantNames: Array.isArray(found.plants) ? found.plants : [],
+      detail: "植栽記録の写真を削除",
+      meta: {
+        removedSlot: slot,
+        remainingImageCount: keep.length,
+      },
+    });
     return res.status(200).json({ ok: true, record: found });
   }
 

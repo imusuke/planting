@@ -1,5 +1,6 @@
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+const changeLog = require("../lib/change-log");
 
 const KV_KEY = "planting_plant_details_overlay_v1";
 
@@ -228,6 +229,15 @@ module.exports = async function handler(req, res) {
         entries: Object.keys(overlayMap).map(function (mapKey) {
           return overlayMap[mapKey];
         }),
+      });
+
+      await changeLog.appendChangeLogSafe({
+        action: "plant_detail_saved",
+        targetType: "plant_detail",
+        targetId: areaId + ":" + name,
+        areaId: areaId,
+        plantName: name,
+        detail: "植栽の詳細メモを保存",
       });
 
       return res.status(200).json({ ok: true, entry: nextEntry });

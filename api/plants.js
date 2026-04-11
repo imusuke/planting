@@ -1,5 +1,6 @@
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+const changeLog = require("../lib/change-log");
 let kvClient = kv;
 
 const KV_PLANTS = "planting_plants_catalog_v1";
@@ -315,6 +316,26 @@ async function handler(req, res) {
       console.error("plants kv write", e);
       return res.status(503).json({ error: "kv_write_failed" });
     }
+
+    await changeLog.appendChangeLogSafe({
+      action: "catalog_saved",
+      targetType: "plants_catalog",
+      targetId: "plants_catalog",
+      detail:
+        "エリア " +
+        body.areas.length +
+        "件、エリアID変更 " +
+        areaIdMigrations.length +
+        "件、植栽名変更 " +
+        renames.length +
+        "件",
+      meta: {
+        areaCount: body.areas.length,
+        updatedRecords: needGrowthWrite,
+        migrationCount: areaIdMigrations.length,
+        renameCount: renames.length,
+      },
+    });
 
     return res.status(200).json({
       ok: true,

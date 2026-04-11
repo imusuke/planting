@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260406a" />
-  <link rel="stylesheet" href="./growth.css?v=20260406b" />
+  <link rel="stylesheet" href="./growth.css?v=20260411e" />
 </head>
 <body>
   <main class="panel growth-panel">
@@ -136,6 +136,18 @@
       </p>
       <div id="area-edit-records" class="growth-feed growth-feed--thumb-sm"></div>
     </section>
+
+    <section class="growth-section" aria-labelledby="area-edit-change-log-heading">
+      <h2 id="area-edit-change-log-heading">最近の更新</h2>
+      <p class="growth-hint">
+        今選んでいるエリアに関する最近の保存内容を表示します。アップロード用トークンを保存していると読み込めます。
+      </p>
+      <div class="growth-backup-row growth-backup-row--spaced">
+        <button type="button" id="area-edit-change-log-reload" class="growth-secondary">更新履歴を再読み込み</button>
+      </div>
+      <p id="area-edit-change-log-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div id="area-edit-change-log-list" class="growth-change-log-list"></div>
+    </section>
   </main>
   <script type="application/json" id="plants-embed">
   {
@@ -233,7 +245,7 @@
   </script>
   <script src="./hub-link.js?v=20260405i" defer></script>
   <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
-  <script src="./edit-page-common.js?v=20260411d" defer></script>
-  <script src="./area-edit.js?v=20260411d" defer></script>
+  <script src="./edit-page-common.js?v=20260411e" defer></script>
+  <script src="./area-edit.js?v=20260411e" defer></script>
 </body>
 </html>

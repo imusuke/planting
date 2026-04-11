@@ -12,6 +12,7 @@
   var LS_THUMB_SIZE = "growthThumbSize";
   var LS_FEED_SORT = "growthFeedSort";
   var API_GROWTH = "/api/growth";
+  var API_CHANGE_LOG = "/api/change-log";
   var API_GROWTH_AI_REFRESH = "/api/growth-ai-refresh";
   var API_GROWTH_COMMENT = "/api/growth-photo-comment";
   var API_GROWTH_IMAGE = "/api/growth-image";
@@ -68,11 +69,15 @@
     toast: null,
     filterArea: null,
     filterPlant: null,
+    filterCommentState: null,
     feed: null,
     exportBtn: null,
     cloudToken: null,
     cloudTokenSave: null,
     cloudStatus: null,
+    changeLogStatus: null,
+    changeLogList: null,
+    changeLogReload: null,
     viewStatus: null,
     newHeading: null,
     editBanner: null,
@@ -636,6 +641,28 @@
     return common.isAiCommentJobTerminal
       ? common.isAiCommentJobTerminal(job)
       : !!job && (job.status === "done" || job.status === "failed");
+  }
+
+  function recordMatchesCommentFilter(record, mode) {
+    var wanted = String(mode || "").trim();
+    if (!wanted) return true;
+    var slots = growthImageSlots(record);
+    var job = readRecordAiCommentJob(record);
+    if (wanted === "missing_photo_memo") {
+      if (!slots.length) return false;
+      for (var i = 0; i < slots.length; i++) {
+        var memo = slots[i] && slots[i].memo != null ? String(slots[i].memo).trim() : "";
+        if (!memo) return true;
+      }
+      return false;
+    }
+    if (wanted === "ai_running") {
+      return !!job && (job.status === "queued" || job.status === "running");
+    }
+    if (wanted === "ai_failed") {
+      return !!job && job.status === "failed";
+    }
+    return true;
   }
 
   function growthAiJobResult(record, jobId) {
@@ -1717,6 +1744,127 @@
       var base = fallbackPrefix + "（" + res.status + "）";
       return detail ? base + " — " + detail : base;
     });
+  }
+
+  function formatChangeLogTime(value) {
+    if (!value) return "";
+    try {
+      return new Intl.DateTimeFormat("ja-JP", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value));
+    } catch (err) {
+      return String(value);
+    }
+  }
+
+  function describeChangeLogEntry(item) {
+    if (!item) return "";
+    var areaLabel = item.areaLabel ? String(item.areaLabel) : item.areaId ? String(item.areaId) : "";
+    var plantLabel = item.plantName ? String(item.plantName) : "";
+    var plantList = Array.isArray(item.plantNames) ? item.plantNames.filter(Boolean) : [];
+    switch (item.action) {
+      case "catalog_saved":
+        return "エリア・植栽マスタを保存";
+      case "plant_detail_saved":
+        return plantLabel ? plantLabel + " の詳細を保存" : "植栽の詳細を保存";
+      case "area_detail_saved":
+        return areaLabel ? areaLabel + " の概要を保存" : "エリアの概要を保存";
+      case "growth_record_created":
+        return "植栽記録を追加";
+      case "growth_record_updated":
+        return "植栽記録を更新";
+      case "growth_record_archived":
+        return "植栽記録をアーカイブ";
+      case "growth_record_photo_removed":
+        return "植栽記録の写真を削除";
+      case "growth_record_deleted_after_photo_removal":
+        return "最後の写真削除により植栽記録を削除";
+      case "area_growth_created":
+        return "エリア記録を追加";
+      case "area_growth_updated":
+        return "エリア記録を更新";
+      case "area_growth_archived":
+        return "エリア記録をアーカイブ";
+      case "area_growth_photo_removed":
+        return "エリア記録の写真を削除";
+      case "area_growth_deleted_after_photo_removal":
+        return "最後の写真削除によりエリア記録を削除";
+      default:
+        return item.detail ? String(item.detail) : "更新履歴";
+    }
+  }
+
+  function renderChangeLogItems(items) {
+    if (!el.changeLogList) return;
+    el.changeLogList.innerHTML = "";
+    if (!items || !items.length) {
+      el.changeLogList.appendChild(
+        createTextElement("p", "growth-hint", "まだ更新履歴はありません。")
+      );
+      return;
+    }
+    items.forEach(function (item) {
+      var card = document.createElement("article");
+      card.className = "growth-change-log-item";
+      var header = document.createElement("div");
+      header.className = "growth-change-log-item-header";
+      header.appendChild(
+        createTextElement("strong", "growth-change-log-item-title", describeChangeLogEntry(item))
+      );
+      header.appendChild(
+        createTextElement("span", "growth-change-log-item-time", formatChangeLogTime(item.createdAt))
+      );
+      card.appendChild(header);
+
+      var metaParts = [];
+      if (item.areaLabel) metaParts.push(String(item.areaLabel));
+      else if (item.areaId) metaParts.push(String(item.areaId));
+      if (item.plantName) metaParts.push(String(item.plantName));
+      else if (Array.isArray(item.plantNames) && item.plantNames.length) metaParts.push(item.plantNames.join("、"));
+      if (metaParts.length) {
+        card.appendChild(createTextElement("p", "growth-change-log-item-meta", metaParts.join(" / ")));
+      }
+      if (item.detail) {
+        card.appendChild(createTextElement("p", "growth-change-log-item-detail", String(item.detail)));
+      }
+      el.changeLogList.appendChild(card);
+    });
+  }
+
+  function loadChangeLog() {
+    if (!el.changeLogList || !el.changeLogStatus) return Promise.resolve();
+    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    if (!storedToken) {
+      el.changeLogStatus.textContent = "アップロード用トークンを保存すると更新履歴を読み込めます。";
+      renderChangeLogItems([]);
+      return Promise.resolve();
+    }
+    el.changeLogStatus.textContent = "更新履歴を読み込んでいます…";
+    return fetch(API_CHANGE_LOG + "?limit=12", {
+      headers: cloudHeaders(false),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return apiErrorMessage(res, "更新履歴の読み込みに失敗しました").then(function (msg) {
+            throw new Error(msg);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var items = data && Array.isArray(data.items) ? data.items : [];
+        renderChangeLogItems(items);
+        el.changeLogStatus.textContent = items.length
+          ? "最近 " + items.length + " 件の更新を表示しています。"
+          : "更新履歴はまだありません。";
+      })
+      .catch(function (err) {
+        el.changeLogStatus.textContent = err && err.message ? err.message : "更新履歴の読み込みに失敗しました。";
+      });
   }
 
   function updateCloudStatus(text) {
@@ -3087,6 +3235,7 @@
         renderPlantChecks(el.area.value);
         updateFilterPlantOptions();
         updatePlantsCatalogSourceLabel();
+        loadChangeLog().catch(function () {});
         if (state.editRecord && state.editRecord.plants) {
           applyPlantsToForm(state.editRecord.plants, el.area.value);
         }
@@ -3123,6 +3272,7 @@
         updateFilterPlantOptions();
         renderPlantsCatalogEditor();
         updatePlantsCatalogSourceLabel();
+        loadChangeLog().catch(function () {});
         if (state.editRecord && state.editRecord.plants) {
           applyPlantsToForm(state.editRecord.plants, el.area.value);
         }
@@ -3982,10 +4132,12 @@
 
     var fa = el.filterArea ? el.filterArea.value : "";
     var fp = el.filterPlant ? el.filterPlant.value : "";
+    var fc = el.filterCommentState ? el.filterCommentState.value : "";
 
     var filtered = records.filter(function (r) {
       if (fa && r.areaId !== fa) return false;
       if (fp && (!r.plants || r.plants.indexOf(fp) === -1)) return false;
+      if (fc && !recordMatchesCommentFilter(r, fc)) return false;
       return true;
     });
 
@@ -3996,7 +4148,7 @@
     if (filtered.length === 0) {
       var empty = document.createElement("p");
       empty.className = "growth-hint";
-      empty.textContent = "該当する記録がありません。";
+      empty.textContent = fc ? "この条件に合う記録はありません。" : "該当する記録がありません。";
       el.feed.appendChild(empty);
       return;
     }
@@ -4271,6 +4423,7 @@
           saveMessage += " AIコメントの更新予約は作成しましたが、サーバー側で開始できませんでした。";
         }
         showToast(saveMessage);
+        loadChangeLog().catch(function () {});
         var loadPackPromise = loadPlantsData().catch(function () {
           return null;
         });
@@ -4361,6 +4514,7 @@
     if (v) localStorage.setItem(LS_CLOUD_TOKEN, v);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
     showToast(v ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。");
+    loadChangeLog().catch(function () {});
     if (el.feed) refreshFeed();
   }
 
@@ -4388,6 +4542,7 @@
         }
         if (!res.ok) throw new Error("アーカイブに失敗しました");
         showToast("アーカイブしました");
+        loadChangeLog().catch(function () {});
         clearEditMode();
         if (el.date) el.date.value = todayInputValue();
         populateAreaSelects();
@@ -4468,6 +4623,7 @@
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
     el.filterPlant = $("filter-plant");
+    el.filterCommentState = $("filter-comment-state");
     el.feed = $("growth-feed");
     el.exportBtn = $("export-btn");
     el.viewStatus = $("growth-view-status");
@@ -4534,6 +4690,11 @@
 
     if (el.filterPlant) {
       el.filterPlant.addEventListener("change", function () {
+        refreshFeed();
+      });
+    }
+    if (el.filterCommentState) {
+      el.filterCommentState.addEventListener("change", function () {
         refreshFeed();
       });
     }
@@ -4649,6 +4810,9 @@
     el.cloudToken = $("cloud-token");
     el.cloudTokenSave = $("cloud-token-save");
     el.cloudStatus = $("cloud-status");
+    el.changeLogStatus = $("change-log-status");
+    el.changeLogList = $("change-log-list");
+    el.changeLogReload = $("change-log-reload");
     el.newHeading = $("new-heading");
     el.editBanner = $("growth-edit-banner");
     el.editCancel = $("growth-edit-cancel");
@@ -4688,6 +4852,11 @@
 
     if (el.plantsCatalogReload) {
       el.plantsCatalogReload.addEventListener("click", reloadPlantsCatalogUi);
+    }
+    if (el.changeLogReload) {
+      el.changeLogReload.addEventListener("click", function () {
+        loadChangeLog().catch(function () {});
+      });
     }
     if (el.plantsCatalogAddArea && el.plantsCatalogEditor) {
       el.plantsCatalogAddArea.addEventListener("click", function () {
@@ -4735,6 +4904,7 @@
           updateFilterPlantOptions();
         }
         if (el.date) el.date.value = todayInputValue();
+        loadChangeLog().catch(function () {});
         if (el.feed) refreshFeed();
       })
       .catch(function (err) {

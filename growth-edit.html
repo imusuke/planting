@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260406a" />
-  <link rel="stylesheet" href="./growth.css?v=20260406b" />
+  <link rel="stylesheet" href="./growth.css?v=20260411e" />
 </head>
 <body>
   <main class="panel growth-panel">
@@ -187,6 +187,15 @@
           植栽
           <select id="filter-plant" aria-label="編集する記録の絞り込み・植栽"></select>
         </label>
+        <label>
+          写真コメント
+          <select id="filter-comment-state" aria-label="編集する記録の絞り込み・写真コメント">
+            <option value="">（すべて）</option>
+            <option value="missing_photo_memo">未入力あり</option>
+            <option value="ai_running">AI更新中</option>
+            <option value="ai_failed">AI失敗あり</option>
+          </select>
+        </label>
       </div>
       <div id="growth-feed" class="growth-feed"></div>
     </section>
@@ -199,6 +208,18 @@
       <div class="growth-backup-row growth-backup-row--spaced">
         <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
       </div>
+    </section>
+
+    <section class="growth-section" aria-labelledby="change-log-heading-edit">
+      <h2 id="change-log-heading-edit">最近の更新</h2>
+      <p class="growth-hint">
+        保存・アーカイブ・写真削除などの最近の操作を表示します。アップロード用トークンを保存していると読み込めます。
+      </p>
+      <div class="growth-backup-row growth-backup-row--spaced">
+        <button type="button" id="change-log-reload" class="growth-secondary">更新履歴を再読み込み</button>
+      </div>
+      <p id="change-log-status" class="growth-hint growth-status" aria-live="polite"></p>
+      <div id="change-log-list" class="growth-change-log-list"></div>
     </section>
     </div>
 
@@ -374,7 +395,7 @@
 }
   </script>
   <script src="./hub-link.js?v=20260405i" defer></script>
-  <script src="./edit-page-common.js?v=20260411d" defer></script>
-    <script src="./growth.js?v=20260411d" defer></script>
+  <script src="./edit-page-common.js?v=20260411e" defer></script>
+    <script src="./growth.js?v=20260411e" defer></script>
 </body>
 </html>

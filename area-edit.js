@@ -3,6 +3,7 @@
 
   var common = window.PlantingEditCommon || {};
   var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
+  var API_CHANGE_LOG = "/api/change-log";
   var API_AREA_DETAILS = "/api/area-details";
   var API_AREA_GROWTH = "/api/area-growth";
   var API_GROWTH_IMAGE = "/api/growth-image";
@@ -665,6 +666,44 @@
     });
   }
 
+  function matchesAreaChangeLogEntry(item) {
+    if (!item) return false;
+    var areaId = currentAreaId();
+    if (!areaId) return false;
+    if (String(item.areaId || "").trim() === areaId) return true;
+    return String(item.targetType || "").trim() === "area_detail" && String(item.targetId || "").trim() === areaId;
+  }
+
+  function refreshChangeLog() {
+    if (!el.changeLogStatus || !el.changeLogList) return Promise.resolve([]);
+    var areaId = currentAreaId();
+    if (!areaId) {
+      el.changeLogStatus.textContent = "エリアを選ぶと最近の更新を表示します。";
+      if (common.renderChangeLogItems) common.renderChangeLogItems(el.changeLogList, [], "");
+      else el.changeLogList.innerHTML = "";
+      return Promise.resolve([]);
+    }
+    if (!common.loadChangeLog) {
+      el.changeLogStatus.textContent = "更新履歴を読み込めません。";
+      return Promise.resolve([]);
+    }
+    return common.loadChangeLog({
+      apiPath: API_CHANGE_LOG,
+      storageKey: LS_CLOUD_TOKEN,
+      limit: 40,
+      statusEl: el.changeLogStatus,
+      listEl: el.changeLogList,
+      filter: matchesAreaChangeLogEntry,
+      noTokenMessage: "アップロード用トークンを保存すると、このエリアに関する更新を読み込めます。",
+      emptyMessage: "このエリアに関する更新はまだありません。",
+      successMessage: function (items) {
+        return items.length
+          ? "このエリアに関する最近 " + items.length + " 件の更新です。"
+          : "このエリアに関する更新はまだありません。";
+      },
+    });
+  }
+
   function apiErrorMessage(res, fallbackPrefix) {
     if (common.apiErrorMessage) {
       return common.apiErrorMessage(res, fallbackPrefix);
@@ -1057,6 +1096,7 @@
     applyFormForArea(areaId);
     syncAreaEditContext(areaId);
     renderAreaGrowthFeed(areaId);
+    refreshChangeLog().catch(function () {});
   }
 
   function onDeleteRecord() {
@@ -1094,6 +1134,7 @@
       .then(function (results) {
         state.entries = results[0] || [];
         state.areaGrowthRecords = results[1] || [];
+        refreshChangeLog().catch(function () {});
         clearEditMode(areaId);
         showToast("記録をアーカイブしました");
       })
@@ -1240,6 +1281,7 @@
       .then(function (results) {
         state.entries = results[0] || [];
         state.areaGrowthRecords = results[1] || [];
+        refreshChangeLog().catch(function () {});
         clearEditMode(areaId);
         showToast(editing ? "更新しました。" : "保存しました。");
       })
@@ -1256,6 +1298,9 @@
     el.cloudStatus = $("area-edit-cloud-status");
     el.cloudToken = $("area-edit-cloud-token");
     el.cloudTokenSave = $("area-edit-cloud-token-save");
+    el.changeLogStatus = $("area-edit-change-log-status");
+    el.changeLogList = $("area-edit-change-log-list");
+    el.changeLogReload = $("area-edit-change-log-reload");
     el.form = $("area-edit-form");
     el.formHeading = $("area-edit-form-heading");
     el.editBanner = $("area-edit-banner");
@@ -1289,7 +1334,13 @@
         if (common.saveCloudToken) common.saveCloudToken(value, LS_CLOUD_TOKEN);
         else if (value) localStorage.setItem(LS_CLOUD_TOKEN, value);
         else localStorage.removeItem(LS_CLOUD_TOKEN);
+        refreshChangeLog().catch(function () {});
         showToast(value ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。");
+      });
+    }
+    if (el.changeLogReload) {
+      el.changeLogReload.addEventListener("click", function () {
+        refreshChangeLog().catch(function () {});
       });
     }
     if (el.cloudStatus) {
@@ -1369,6 +1420,7 @@
         syncAreaEditContext(areaId || wanted);
         renderAreaGrowthFeed(areaId || wanted);
         syncPhotoAiButtonState();
+        refreshChangeLog().catch(function () {});
       })
       .catch(function () {
         showToast("データを読み込めませんでした。", true);
