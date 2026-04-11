@@ -52,3 +52,43 @@ test("expandCommentToMinimum uses varied fallback sentences from context", funct
   assert.ok(result.length >= photoAi.COMMENT_MIN_LENGTH);
   assert.match(result, /ミモザ|前回/);
 });
+
+test("expandCommentToMinimum avoids repeating the plant name at each sentence start", function () {
+  const result = photoAi.expandCommentToMinimum("", {
+    areaLabel: "玄関前",
+    recordedDate: "2026-04-10",
+    plantNames: ["ノリウツギ"],
+    photoIndex: 1,
+    photoCount: 1,
+  });
+
+  const sentences = (result.match(/[^。！？]+[。！？]?/g) || []).map((part) => part.trim());
+  const repeatedPlantStarts = sentences.filter((sentence) => sentence.startsWith("ノリウツギ")).length;
+
+  assert.ok(result.length >= photoAi.COMMENT_MIN_LENGTH);
+  assert.ok(repeatedPlantStarts <= 1);
+});
+
+test("expandCommentToMinimum differs across contexts for the same plant", function () {
+  const a = photoAi.expandCommentToMinimum("", {
+    areaLabel: "デッキ",
+    recordedDate: "2026-04-10",
+    plantNames: ["ミモザ"],
+    photoIndex: 1,
+    photoCount: 1,
+    note: "新芽が増えてきた",
+  });
+  const b = photoAi.expandCommentToMinimum("", {
+    areaLabel: "デッキ",
+    recordedDate: "2026-04-18",
+    plantNames: ["ミモザ"],
+    photoIndex: 2,
+    photoCount: 3,
+    note: "つぼみがふくらんできた",
+    previousRecordedDate: "2026-04-10",
+    previousPhotoMemo: "前回は葉先の伸びが目立っていた。",
+  });
+
+  assert.notEqual(a, b);
+  assert.notEqual(a.slice(0, 28), b.slice(0, 28));
+});
