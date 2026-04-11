@@ -1,5 +1,6 @@
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
+let kvClient = kv;
 
 const KV_PLANTS = "planting_plants_catalog_v1";
 const KV_GROWTH = "planting_growth_records_v1";
@@ -15,7 +16,7 @@ function assertAuth(req) {
 
 async function readCatalogKv() {
   try {
-    var raw = await kv.get(KV_PLANTS);
+    var raw = await kvClient.get(KV_PLANTS);
     if (raw == null || raw === "") return null;
     return typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch (e) {
@@ -25,12 +26,12 @@ async function readCatalogKv() {
 }
 
 async function writeCatalogKv(data) {
-  await kv.set(KV_PLANTS, JSON.stringify(data));
+  await kvClient.set(KV_PLANTS, JSON.stringify(data));
 }
 
 async function readGrowthRecords() {
   try {
-    var raw = await kv.get(KV_GROWTH);
+    var raw = await kvClient.get(KV_GROWTH);
     if (raw == null || raw === "") return [];
     var data = typeof raw === "string" ? JSON.parse(raw) : raw;
     return Array.isArray(data) ? data : [];
@@ -41,7 +42,7 @@ async function readGrowthRecords() {
 }
 
 async function writeGrowthRecords(records) {
-  await kv.set(KV_GROWTH, JSON.stringify(records));
+  await kvClient.set(KV_GROWTH, JSON.stringify(records));
 }
 
 function isValidAreaId(id) {
@@ -193,6 +194,17 @@ function mergeMissingAreasFromDefault(kvAreas, defaultAreas) {
   return out;
 }
 
+function buildCatalogResponse(fromKv, defaultAreas) {
+  var hasKv = !!(fromKv && Array.isArray(fromKv.areas) && fromKv.areas.length);
+  var areas = hasKv
+    ? mergeMissingAreasFromDefault(fromKv.areas, defaultAreas)
+    : defaultAreas;
+  return {
+    areas: areas,
+    source: hasKv ? "kv" : "file",
+  };
+}
+
 async function readJsonBody(req) {
   if (Buffer.isBuffer(req.body)) {
     try {
@@ -223,17 +235,10 @@ async function readJsonBody(req) {
   }
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "GET") {
     var fromKv = await readCatalogKv();
-    var hasKv = !!(fromKv && Array.isArray(fromKv.areas) && fromKv.areas.length);
-    var areas = hasKv
-      ? mergeMissingAreasFromDefault(fromKv.areas, defaultCatalog.areas)
-      : defaultCatalog.areas;
-    return res.status(200).json({
-      areas: areas,
-      source: hasKv ? "kv" : "file",
-    });
+    return res.status(200).json(buildCatalogResponse(fromKv, defaultCatalog.areas));
   }
 
   if (req.method === "PUT") {
@@ -319,4 +324,23 @@ module.exports = async function handler(req, res) {
 
   res.setHeader("Allow", "GET, PUT");
   return res.status(405).json({ error: "method_not_allowed" });
+}
+
+module.exports = handler;
+module.exports._test = {
+  applyAreaIdMigrations: applyAreaIdMigrations,
+  applyAreaRenamesToRecord: applyAreaRenamesToRecord,
+  buildCatalogResponse: buildCatalogResponse,
+  dedupePlantOrder: dedupePlantOrder,
+  mergeMissingAreasFromDefault: mergeMissingAreasFromDefault,
+  resetKvClient: function () {
+    kvClient = kv;
+  },
+  setKvClient: function (client) {
+    kvClient = client;
+  },
+  validateAreaIdMigrations: validateAreaIdMigrations,
+  validateAreas: validateAreas,
+  validateRenames: validateRenames,
+  validateUniqueAreaIds: validateUniqueAreaIds,
 };

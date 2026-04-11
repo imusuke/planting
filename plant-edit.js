@@ -254,6 +254,9 @@
   }
 
   function apiErrorMessage(res, fallbackPrefix) {
+    if (common.apiErrorMessage) {
+      return common.apiErrorMessage(res, fallbackPrefix);
+    }
     return res.text().then(function (text) {
       var detail = "";
       try {

@@ -36,9 +36,17 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "missing_targets" });
     }
 
+    var queued = await growthApi.queueGrowthAiCommentJob(id, targets, "manual", "");
+    if (!queued || !queued.record || !queued.job) {
+      return res.status(404).json({ error: "not_found" });
+    }
+
     var refreshResult;
     try {
-      refreshResult = await growthApi.refreshGrowthPhotoCommentsInBackground(record, targets);
+      refreshResult = await growthApi.refreshGrowthPhotoCommentsInBackground(queued.record, targets, {
+        id: queued.job.id,
+        source: "manual",
+      });
     } catch (err) {
       var refreshDetail =
         err && err.message ? String(err.message) : "AIコメントの更新に失敗しました。";
@@ -72,12 +80,16 @@ module.exports = async function handler(req, res) {
     });
     var updated = !!(refreshResult && refreshResult.ok && refreshResult.updated);
     var detail = "";
+    var latestJob = growthApi.readAiCommentJob && latestRecord ? growthApi.readAiCommentJob(latestRecord) : null;
     if (!updated) {
       if (refreshResult && refreshResult.errors) {
         var errorKeys = Object.keys(refreshResult.errors);
         if (errorKeys.length) {
           detail = String(refreshResult.errors[errorKeys[0]] || "");
         }
+      }
+      if (!detail && latestJob && latestJob.detail) {
+        detail = String(latestJob.detail || "");
       }
       if (!detail && refreshResult && refreshResult.skipped) {
         detail = String(refreshResult.skipped);

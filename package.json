@@ -2,6 +2,7 @@
   "name": "planting",
   "private": true,
   "scripts": {
+    "test": "node --test tests/*.test.js",
     "sync:prod": "node scripts/sync-from-prod.cjs",
     "sync:plants": "node scripts/sync-from-prod.cjs --plants-only",
     "sync:growth": "node scripts/sync-from-prod.cjs --growth-only",

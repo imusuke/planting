@@ -5,7 +5,6 @@
   var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
   var API_AREA_DETAILS = "/api/area-details";
   var API_AREA_GROWTH = "/api/area-growth";
-  var API_AREA_AI_REFRESH = "/api/area-ai-refresh";
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_PLANTS = "/api/plants";
   var AREA_GROWTH_SNAPSHOT_JSON = "./data/area-growth-snapshot.json";
@@ -169,6 +168,83 @@
     el.photoAiStatus.textContent = message;
     el.photoAiStatus.className =
       "growth-hint growth-photo-ai-status" + (isError ? " growth-photo-ai-status--error" : "");
+  }
+
+  function readRecordAiCommentJob(record) {
+    if (common.readAiCommentJob) return common.readAiCommentJob(record);
+    var raw = record && record.aiCommentJob && typeof record.aiCommentJob === "object" ? record.aiCommentJob : null;
+    if (!raw) return null;
+    return {
+      id: raw.id ? String(raw.id) : "",
+      status: raw.status ? String(raw.status) : "",
+      detail: raw.detail ? String(raw.detail) : "",
+      updatedCount: typeof raw.updatedCount === "number" ? raw.updatedCount : 0,
+      failedCount: typeof raw.failedCount === "number" ? raw.failedCount : 0,
+    };
+  }
+
+  function isTerminalAiCommentJob(job) {
+    return common.isAiCommentJobTerminal
+      ? common.isAiCommentJobTerminal(job)
+      : !!job && (job.status === "done" || job.status === "failed");
+  }
+
+  function areaAiJobResult(record, jobId) {
+    var job = readRecordAiCommentJob(record);
+    if (!job) return null;
+    if (jobId && job.id && String(job.id) !== String(jobId)) return null;
+    return {
+      job: job,
+      updated: job.status === "done" && job.updatedCount > 0,
+      failed: job.status === "failed",
+      detail: job.detail ? String(job.detail) : "",
+    };
+  }
+
+  function areaAiJobStatusMessage(job) {
+    if (!job) {
+      return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "queued") {
+      return "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "running") {
+      return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "done") {
+      if (job.failedCount && job.updatedCount) {
+        return job.detail
+          ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
+          : "AIコメントを反映しました。一部の写真は更新できませんでした。";
+      }
+      return "AIコメントを反映しました。必要なら確認して保存してください。";
+    }
+    if (job.status === "failed") {
+      return job.detail
+        ? "AIコメントの更新に失敗しました。（" + job.detail + "）"
+        : "AIコメントの更新に失敗しました。";
+    }
+    return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+  }
+
+  function buildAreaAiRefreshResult(record, jobId, fallbackDetail) {
+    var jobResult = areaAiJobResult(record, jobId);
+    if (jobResult) {
+      return {
+        updated: jobResult.updated,
+        failed: jobResult.failed,
+        detail: jobResult.detail || "",
+        record: record || null,
+        job: jobResult.job,
+      };
+    }
+    return {
+      updated: false,
+      failed: false,
+      detail: fallbackDetail ? String(fallbackDetail) : "",
+      record: record || null,
+      job: null,
+    };
   }
 
   function syncPhotoAiButtonState() {
@@ -590,6 +666,9 @@
   }
 
   function apiErrorMessage(res, fallbackPrefix) {
+    if (common.apiErrorMessage) {
+      return common.apiErrorMessage(res, fallbackPrefix);
+    }
     return res.text().then(function (text) {
       var detail = "";
       try {
@@ -771,28 +850,9 @@
       return Promise.resolve({ record: record || null });
     }
 
-    var baseRevision = String(record.updatedAt || record.createdAt || "");
-    var baseSlots = normalizeRecordImages(record);
-    var baseMemos = baseSlots.map(function (slot) {
-      return slot && slot.memo != null ? String(slot.memo).trim() : "";
-    });
+    var job = readRecordAiCommentJob(record);
+    var jobId = job && job.id ? job.id : "";
     var deadline = Date.now() + 35000;
-
-    function latestRecordChanged(latest) {
-      if (!latest) return false;
-      var latestRevision = String(latest.updatedAt || latest.createdAt || "");
-      if (latestRevision && latestRevision !== baseRevision) return true;
-      var latestSlots = normalizeRecordImages(latest);
-      for (var i = 0; i < targetIndexes.length; i++) {
-        var idx = targetIndexes[i];
-        var nextMemo =
-          latestSlots[idx] && latestSlots[idx].memo != null
-            ? String(latestSlots[idx].memo).trim()
-            : "";
-        if (nextMemo !== (baseMemos[idx] || "")) return true;
-      }
-      return false;
-    }
 
     function fetchLatestRecord() {
       return fetch(API_AREA_GROWTH, {
@@ -820,18 +880,23 @@
     function pollUntilUpdated() {
       return fetchLatestRecord()
         .then(function (latest) {
-          if (latest && latestRecordChanged(latest)) {
+          var latestResult = buildAreaAiRefreshResult(latest, jobId, "");
+          if (latest && latestResult.job && isTerminalAiCommentJob(latestResult.job)) {
             startEdit(latest);
-            setPhotoAiStatus("AIコメントを反映しました。必要なら調整して保存してください。", false);
-            return { record: latest, updated: true };
+            setPhotoAiStatus(areaAiJobStatusMessage(latestResult.job), latestResult.failed);
+            return latestResult;
           }
           if (Date.now() >= deadline) {
             if (latest) startEdit(latest);
-            setPhotoAiStatus(
-              "AIコメントの更新は予約済みですが、反映確認に時間がかかっています。少ししてからもう一度開いてください。",
-              false
-            );
-            return { record: latest || record, updated: false, timedOut: true };
+            if (latestResult.job) {
+              setPhotoAiStatus(areaAiJobStatusMessage(latestResult.job), latestResult.failed);
+            } else {
+              setPhotoAiStatus(
+                "AIコメントの更新は予約済みですが、反映確認に時間がかかっています。少ししてからもう一度開いてください。",
+                false
+              );
+            }
+            return Object.assign({ timedOut: true }, buildAreaAiRefreshResult(latest || record, jobId, ""));
           }
           return new Promise(function (resolve) {
             setTimeout(resolve, 2000);
@@ -850,67 +915,11 @@
     state.photoAiBusy = true;
     syncPhotoAiButtonState();
     startEdit(record);
-    setPhotoAiStatus("保存済みのエリア写真にAIコメントを追加しています…", false);
+    setPhotoAiStatus(areaAiJobStatusMessage(job), false);
     return pollUntilUpdated().finally(function () {
       state.photoAiBusy = false;
       syncPhotoAiButtonState();
     });
-  }
-
-  function runAreaAiRefreshAfterSave(record, targetIndexes) {
-    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
-      return Promise.resolve({ record: record || null });
-    }
-
-    startEdit(record);
-    setPhotoAiStatus("保存済みのエリア写真にAIコメントを追加しています…", false);
-
-    return fetch(API_AREA_AI_REFRESH, {
-      method: "POST",
-      cache: "no-store",
-      keepalive: true,
-      headers: cloudHeaders(true),
-      body: JSON.stringify({
-        id: record.id,
-        targets: targetIndexes.slice(),
-      }),
-    })
-      .then(function (res) {
-        if (res.status === 401) {
-          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
-        }
-        if (!res.ok) {
-          return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
-            throw new Error(msg);
-          });
-        }
-        return res.json();
-      })
-      .then(function (data) {
-        var latestRecord = data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
-        if (latestRecord) {
-          startEdit(latestRecord);
-        }
-        if (data && data.updated && latestRecord) {
-          setPhotoAiStatus("AIコメントを更新しました。必要なら確認して保存してください。", false);
-        } else if (data && data.detail) {
-          setPhotoAiStatus(
-            "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + data.detail + ")",
-            true
-          );
-        } else {
-          setPhotoAiStatus(
-            "AIコメントを更新しています。保存後の画面を閉じても処理は続きます。",
-            false
-          );
-        }
-        return {
-          record: latestRecord || record,
-          updated: !!(data && data.updated),
-          detail: data && data.detail ? String(data.detail) : "",
-          raw: data || {},
-        };
-      });
   }
 
   function renderAreaGrowthFeed(areaId) {
@@ -1055,9 +1064,9 @@
     if (
       !confirmIrreversibleAction({
         subject: "このエリア記録",
-        action: "を削除します。",
-        detail: "写真もサーバーから削除されます。",
-        question: "本当に削除しますか？",
+        action: "をアーカイブします。",
+        detail: "サーバー上には残したまま、一覧から非表示にします。",
+        question: "本当にアーカイブしますか？",
       })
     ) {
       return;
@@ -1074,7 +1083,7 @@
           throw new Error("トークンが違います。");
         }
         if (!res.ok) {
-          return apiErrorMessage(res, "記録の削除に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "記録のアーカイブに失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -1086,7 +1095,7 @@
         state.entries = results[0] || [];
         state.areaGrowthRecords = results[1] || [];
         clearEditMode(areaId);
-        showToast("記録を削除しました");
+        showToast("記録をアーカイブしました");
       })
       .catch(function (err) {
         showToast(err && err.message ? err.message : String(err), true);
@@ -1153,7 +1162,7 @@
       }
       if (editing && !state.photoQueue.length && !recordNote) {
         return Promise.reject(
-          new Error("写真も記録メモも空です。消したい場合は『この記録を削除』を使ってください。")
+          new Error("写真も記録メモも空です。消したい場合は『この記録をアーカイブ』を使ってください。")
         );
       }
 
@@ -1214,9 +1223,6 @@
       .then(postAreaGrowth)
       .then(function (saveResult) {
         if (saveResult && saveResult.record && aiCommentTargets.length) {
-          runAreaAiRefreshAfterSave(saveResult.record, aiCommentTargets).catch(function (err) {
-            console.error("runAreaAiRefreshAfterSave", err);
-          });
           return runAreaAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets)
             .catch(function (err) {
               showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);

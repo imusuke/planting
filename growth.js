@@ -619,8 +619,88 @@
       });
   }
 
-  function growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes) {
+  function readRecordAiCommentJob(record) {
+    if (common.readAiCommentJob) return common.readAiCommentJob(record);
+    var raw = record && record.aiCommentJob && typeof record.aiCommentJob === "object" ? record.aiCommentJob : null;
+    if (!raw) return null;
+    return {
+      id: raw.id ? String(raw.id) : "",
+      status: raw.status ? String(raw.status) : "",
+      detail: raw.detail ? String(raw.detail) : "",
+      updatedCount: typeof raw.updatedCount === "number" ? raw.updatedCount : 0,
+      failedCount: typeof raw.failedCount === "number" ? raw.failedCount : 0,
+    };
+  }
+
+  function isTerminalAiCommentJob(job) {
+    return common.isAiCommentJobTerminal
+      ? common.isAiCommentJobTerminal(job)
+      : !!job && (job.status === "done" || job.status === "failed");
+  }
+
+  function growthAiJobResult(record, jobId) {
+    var job = readRecordAiCommentJob(record);
+    if (!job) return null;
+    if (jobId && job.id && String(job.id) !== String(jobId)) return null;
+    return {
+      job: job,
+      updated: job.status === "done" && job.updatedCount > 0,
+      failed: job.status === "failed",
+      detail: job.detail ? String(job.detail) : "",
+    };
+  }
+
+  function growthAiJobStatusMessage(job, options) {
+    var opts = options || {};
+    if (!job) {
+      return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "queued") {
+      return opts.queuedMessage || "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "running") {
+      return opts.runningMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "done") {
+      if (job.failedCount && job.updatedCount) {
+        return job.detail
+          ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
+          : "AIコメントを反映しました。一部の写真は更新できませんでした。";
+      }
+      return opts.doneMessage || "AIコメントを反映しました。必要なら微調整して保存してください。";
+    }
+    if (job.status === "failed") {
+      return job.detail
+        ? "AIコメントの更新に失敗しました。（" + job.detail + "）"
+        : "AIコメントの更新に失敗しました。";
+    }
+    return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+  }
+
+  function buildGrowthAiRefreshResult(record, jobId, fallbackDetail) {
+    var jobResult = growthAiJobResult(record, jobId);
+    if (jobResult) {
+      return {
+        updated: jobResult.updated,
+        failed: jobResult.failed,
+        detail: jobResult.detail || "",
+        latestRecord: record || null,
+        job: jobResult.job,
+      };
+    }
+    return {
+      updated: false,
+      failed: false,
+      detail: fallbackDetail ? String(fallbackDetail) : "",
+      latestRecord: record || null,
+      job: null,
+    };
+  }
+
+  function growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes, jobId) {
     if (!latestRecord) return false;
+    var jobResult = growthAiJobResult(latestRecord, jobId);
+    if (jobResult && isTerminalAiCommentJob(jobResult.job)) return true;
     var baseRevision = String((baseRecord && (baseRecord.updatedAt || baseRecord.createdAt)) || "");
     var latestRevision = String(latestRecord.updatedAt || latestRecord.createdAt || "");
     if (baseRevision && latestRevision && latestRevision !== baseRevision) return true;
@@ -638,10 +718,10 @@
     return false;
   }
 
-  function pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt) {
+  function pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt, jobId) {
     return fetchGrowthRecordById(baseRecord.id)
       .then(function (latestRecord) {
-        if (latestRecord && growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes)) {
+        if (latestRecord && growthRecordChangedForTargets(baseRecord, latestRecord, targetIndexes, jobId)) {
           return latestRecord;
         }
         if (Date.now() >= deadlineAt) {
@@ -650,7 +730,7 @@
         return new Promise(function (resolve) {
           setTimeout(resolve, 1800);
         }).then(function () {
-          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt);
+          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt, jobId);
         });
       })
       .catch(function (err) {
@@ -658,7 +738,7 @@
         return new Promise(function (resolve) {
           setTimeout(resolve, 1800);
         }).then(function () {
-          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt);
+          return pollGrowthRecordUntilUpdated(baseRecord, targetIndexes, deadlineAt, jobId);
         });
       });
   }
@@ -1057,45 +1137,47 @@
       .then(function (data) {
         var latestRecord =
           data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
+        var latestJob = readRecordAiCommentJob(latestRecord);
+        var jobId = latestJob && latestJob.id ? latestJob.id : "";
         if (latestRecord) {
           applyLightboxLatestRecord(pack, ref, latestRecord);
         }
         if (data && data.updated) {
-          return {
-            updated: true,
-            detail: "",
-            latestRecord: latestRecord,
-          };
+          return buildGrowthAiRefreshResult(latestRecord, jobId, "");
         }
         if (!baseRecord) {
-          return {
-            updated: false,
-            detail: data && data.detail ? String(data.detail) : "",
-            latestRecord: latestRecord,
-          };
+          return buildGrowthAiRefreshResult(
+            latestRecord,
+            jobId,
+            data && data.detail ? String(data.detail) : ""
+          );
         }
-        return pollGrowthRecordUntilUpdated(baseRecord, targets, Date.now() + 12000).then(function (polledRecord) {
-          if (polledRecord && growthRecordChangedForTargets(baseRecord, polledRecord, targets)) {
+        return pollGrowthRecordUntilUpdated(baseRecord, targets, Date.now() + 12000, jobId).then(function (polledRecord) {
+          if (polledRecord && growthRecordChangedForTargets(baseRecord, polledRecord, targets, jobId)) {
             applyLightboxLatestRecord(pack, ref, polledRecord);
-            return {
-              updated: true,
-              detail: "",
-              latestRecord: polledRecord,
-            };
+            return buildGrowthAiRefreshResult(
+              polledRecord,
+              jobId,
+              data && data.detail ? String(data.detail) : ""
+            );
           }
           if (polledRecord) {
             applyLightboxLatestRecord(pack, ref, polledRecord);
           }
-          return {
-            updated: false,
-            detail: data && data.detail ? String(data.detail) : "",
-            latestRecord: polledRecord || latestRecord,
-          };
+          return buildGrowthAiRefreshResult(
+            polledRecord || latestRecord,
+            jobId,
+            data && data.detail ? String(data.detail) : ""
+          );
         });
       })
       .then(function (result) {
         if (result && result.updated) {
           showToast("AIコメントを更新しました。");
+          return;
+        }
+        if (result && result.job) {
+          showToast(growthAiJobStatusMessage(result.job, { doneMessage: "AIコメントを更新しました。" }), !!result.failed);
           return;
         }
         var detail = result && result.detail ? String(result.detail) : "";
@@ -1622,6 +1704,9 @@
   }
 
   function apiErrorMessage(res, fallbackPrefix) {
+    if (common.apiErrorMessage) {
+      return common.apiErrorMessage(res, fallbackPrefix);
+    }
     return res.text().then(function (text) {
       var detail = "";
       try {
@@ -2370,89 +2455,14 @@
     renderPhotoQueueUi();
   }
 
-  function runAiRefreshAfterSave(record, targetIndexes) {
-    if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
-      return Promise.resolve({ record: record || null });
-    }
-
-    startEdit(record);
-    setPhotoAiStatus("保存済みの写真にAIコメントを追加しています…", false);
-
-    return fetch(API_GROWTH_AI_REFRESH, {
-      method: "POST",
-      cache: "no-store",
-      keepalive: true,
-      headers: cloudHeaders(true),
-      body: JSON.stringify({
-        id: record.id,
-        targets: targetIndexes.slice(),
-      }),
-    })
-      .then(function (res) {
-        if (res.status === 401) {
-          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
-        }
-        if (!res.ok) {
-          return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
-            throw new Error(msg);
-          });
-        }
-        return res.json();
-      })
-      .then(function (data) {
-        var latestRecord = data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
-        if (latestRecord) {
-          startEdit(latestRecord);
-        }
-        if (data && data.updated && latestRecord) {
-          setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
-        } else if (data && data.detail) {
-          setPhotoAiStatus(
-            "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + data.detail + ")",
-            true
-          );
-        } else {
-          setPhotoAiStatus(
-            "AIコメントを更新しています。保存後は画面を離れても大丈夫です。",
-            false
-          );
-        }
-        return {
-          record: latestRecord || record,
-          updated: !!(data && data.updated),
-          detail: data && data.detail ? String(data.detail) : "",
-          raw: data || {},
-        };
-      });
-  }
-
   function runAiRefreshAfterSaveByPolling(record, targetIndexes) {
     if (!record || !record.id || !targetIndexes || !targetIndexes.length) {
       return Promise.resolve({ record: record || null });
     }
 
-    var baseRevision = String(record.updatedAt || record.createdAt || "");
-    var baseSlots = growthImageSlots(record);
-    var baseMemos = baseSlots.map(function (slot) {
-      return slot && slot.memo != null ? String(slot.memo).trim() : "";
-    });
+    var job = readRecordAiCommentJob(record);
+    var jobId = job && job.id ? job.id : "";
     var deadline = Date.now() + 35000;
-
-    function latestRecordChanged(latest) {
-      if (!latest) return false;
-      var latestRevision = String(latest.updatedAt || latest.createdAt || "");
-      if (latestRevision && latestRevision !== baseRevision) return true;
-      var latestSlots = growthImageSlots(latest);
-      for (var i = 0; i < targetIndexes.length; i++) {
-        var idx = targetIndexes[i];
-        var nextMemo =
-          latestSlots[idx] && latestSlots[idx].memo != null
-            ? String(latestSlots[idx].memo).trim()
-            : "";
-        if (nextMemo !== (baseMemos[idx] || "")) return true;
-      }
-      return false;
-    }
 
     function fetchLatestRecord() {
       return fetch(API_GROWTH, { headers: cloudHeaders(false) })
@@ -2475,18 +2485,34 @@
     function pollUntilUpdated() {
       return fetchLatestRecord()
         .then(function (latest) {
-          if (latest && latestRecordChanged(latest)) {
+          if (latest && growthRecordChangedForTargets(record, latest, targetIndexes, jobId)) {
+            var immediate = buildGrowthAiRefreshResult(latest, jobId, "");
             startEdit(latest);
-            setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
-            return { record: latest, updated: true };
+            if (immediate && immediate.job) {
+              setPhotoAiStatus(
+                growthAiJobStatusMessage(immediate.job),
+                immediate.failed
+              );
+            } else {
+              setPhotoAiStatus("AIコメントを反映しました。必要なら微調整して保存してください。", false);
+            }
+            return Object.assign({ record: latest }, immediate || {});
           }
           if (Date.now() >= deadline) {
             if (latest) startEdit(latest);
-            setPhotoAiStatus(
-              "AIコメントの更新は継続中の可能性があります。少ししてからもう一度開くと確認しやすいです。",
-              false
+            var timeoutJob = latest ? readRecordAiCommentJob(latest) : null;
+            if (timeoutJob) {
+              setPhotoAiStatus(growthAiJobStatusMessage(timeoutJob), timeoutJob.status === "failed");
+            } else {
+              setPhotoAiStatus(
+                "AIコメントの更新は継続中の可能性があります。少ししてからもう一度開くと確認しやすいです。",
+                false
+              );
+            }
+            return Object.assign(
+              { record: latest || record, timedOut: true },
+              buildGrowthAiRefreshResult(latest || record, jobId, "")
             );
-            return { record: latest || record, updated: false, timedOut: true };
           }
           return new Promise(function (resolve) {
             setTimeout(resolve, 2000);
@@ -2503,7 +2529,7 @@
     }
 
     startEdit(record);
-    setPhotoAiStatus("保存済みの写真にAIコメントを追加しています…", false);
+    setPhotoAiStatus(growthAiJobStatusMessage(job), false);
     return pollUntilUpdated();
   }
 
@@ -4236,8 +4262,11 @@
       })
       .then(function (saveResult) {
         var saveMessage = wasEdit ? "更新しました" : "保存しました";
+        var saveJob = saveResult && saveResult.record ? readRecordAiCommentJob(saveResult.record) : null;
         if (saveResult && saveResult.aiCommentsQueued) {
           saveMessage += " AIコメントはサーバー側でバックグラウンド更新中です。保存後は画面を離れても大丈夫です。";
+        } else if (saveJob && saveJob.status === "failed" && saveJob.detail) {
+          saveMessage += " " + growthAiJobStatusMessage(saveJob);
         } else if (saveResult && saveResult.aiCommentTargetCount) {
           saveMessage += " AIコメントの更新予約は作成しましたが、サーバー側で開始できませんでした。";
         }
@@ -4246,9 +4275,6 @@
           return null;
         });
         if (saveResult && saveResult.record && aiCommentTargets.length) {
-          runAiRefreshAfterSave(saveResult.record, aiCommentTargets).catch(function (err) {
-            console.error("runAiRefreshAfterSave", err);
-          });
           return runAiRefreshAfterSaveByPolling(saveResult.record, aiCommentTargets)
             .catch(function (err) {
               showToast(err && err.message ? err.message : "AIコメントの更新に失敗しました", true);
@@ -4343,9 +4369,9 @@
     if (
       !confirmIrreversibleAction({
         subject: "この記録",
-        action: "を削除します。",
-        detail: "写真もサーバーから削除されます。",
-        question: "本当に削除しますか？",
+        action: "をアーカイブします。",
+        detail: "サーバー上には残したまま、一覧から非表示にします。",
+        question: "本当にアーカイブしますか？",
       })
     ) {
       return;
@@ -4360,8 +4386,8 @@
         if (res.status === 401) {
           throw new Error("トークンが必要です。上の欄に正しい文字列を入れて保存してください。");
         }
-        if (!res.ok) throw new Error("削除に失敗しました");
-        showToast("削除しました");
+        if (!res.ok) throw new Error("アーカイブに失敗しました");
+        showToast("アーカイブしました");
         clearEditMode();
         if (el.date) el.date.value = todayInputValue();
         populateAreaSelects();
@@ -4370,7 +4396,7 @@
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "削除に失敗しました", true);
+        showToast(err && err.message ? err.message : "アーカイブに失敗しました", true);
       })
       .finally(function () {
         el.deleteRecordBtn.disabled = false;

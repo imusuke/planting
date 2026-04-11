@@ -114,6 +114,89 @@
     return slot.imageUrl || null;
   }
 
+  function normalizeAiCommentJobTargets(value) {
+    var out = [];
+    var seen = {};
+    if (!Array.isArray(value)) return out;
+    for (var i = 0; i < value.length; i++) {
+      var n = parseInt(String(value[i]), 10);
+      if (isNaN(n) || n < 0 || seen[n]) continue;
+      seen[n] = true;
+      out.push(n);
+    }
+    return out;
+  }
+
+  function readAiCommentJob(record) {
+    var raw = record && record.aiCommentJob && typeof record.aiCommentJob === "object" ? record.aiCommentJob : null;
+    if (!raw) return null;
+    return {
+      id: raw.id ? String(raw.id) : "",
+      source: raw.source ? String(raw.source) : "",
+      status: raw.status ? String(raw.status) : "",
+      targets: normalizeAiCommentJobTargets(raw.targets),
+      requestedAt: raw.requestedAt ? String(raw.requestedAt) : "",
+      startedAt: raw.startedAt ? String(raw.startedAt) : "",
+      finishedAt: raw.finishedAt ? String(raw.finishedAt) : "",
+      updatedAt: raw.updatedAt ? String(raw.updatedAt) : "",
+      detail: raw.detail ? String(raw.detail) : "",
+      updatedCount: typeof raw.updatedCount === "number" ? raw.updatedCount : 0,
+      failedCount: typeof raw.failedCount === "number" ? raw.failedCount : 0,
+    };
+  }
+
+  function isAiCommentJobTerminal(job) {
+    return !!job && (job.status === "done" || job.status === "failed");
+  }
+
+  function humanizeApiErrorCode(code) {
+    var normalized = typeof code === "string" ? code.trim() : "";
+    if (!normalized) return "";
+    var map = {
+      unauthorized: "トークンが違います。サイト管理者が設定した文字列と同じか確認してください。",
+      kv_unavailable: "サーバー側の保存先に接続できませんでした。",
+      kv_write_failed: "サーバー側の保存先への書き込みに失敗しました。",
+      blob_unavailable: "画像保存の設定が見つかりません。",
+      blob_put_failed: "写真の保存に失敗しました。",
+      source_copy_failed: "既存写真のコピーに失敗しました。",
+      source_image_not_found: "元の写真が見つかりませんでした。",
+      source_image_empty: "元の写真を読み込めませんでした。",
+      missing_id: "対象の記録が見つかりませんでした。",
+      missing_targets: "更新対象の写真が見つかりませんでした。",
+      not_found: "対象のデータが見つかりませんでした。",
+      refresh_failed: "AIコメントの更新に失敗しました。",
+      internal_error: "サーバー側で予期しないエラーが起きました。",
+      method_not_allowed: "この操作は現在の画面からは実行できません。",
+      too_many_images: "写真の枚数が上限を超えています。",
+      invalid_image_data: "写真データを読み取れませんでした。",
+      invalid_slot: "対象の写真が見つかりませんでした。",
+      missing_area_id: "エリアが選ばれていません。",
+      missing_images_and_note: "写真か記録メモを入力してください。",
+      gemini_unavailable: "Gemini API の設定が見つかりません。",
+      no_targets: "対象の写真が見つかりませんでした。",
+      no_results: "AIコメントを生成できませんでした。",
+      record_deleted: "対象の記録が見つかりませんでした。",
+      record_changed: "記録が更新されていたため、AIコメントは反映しませんでした。",
+      job_replaced: "新しいAI更新が始まったため、前の処理結果は反映しませんでした。",
+    };
+    return map[normalized] || normalized;
+  }
+
+  function apiErrorMessage(res, fallbackPrefix) {
+    return res.text().then(function (text) {
+      var detail = "";
+      try {
+        var json = JSON.parse(text);
+        if (json && json.detail) detail = String(json.detail);
+        else if (json && json.error) detail = humanizeApiErrorCode(json.error);
+      } catch (err) {
+        detail = text ? String(text).trim() : "";
+      }
+      var base = fallbackPrefix + "（" + res.status + "）";
+      return detail ? base + " " + detail : base;
+    });
+  }
+
   function createTextElement(tagName, className, text) {
     var node = document.createElement(tagName);
     if (className) node.className = className;
@@ -284,6 +367,7 @@
   window.PlantingEditCommon = {
     CLOUD_TOKEN_KEY: CLOUD_TOKEN_KEY,
     applyStoredCloudToken: applyStoredCloudToken,
+    apiErrorMessage: apiErrorMessage,
     buildCloudHeaders: buildCloudHeaders,
     createButtonElement: createButtonElement,
     confirmIrreversibleAction: confirmIrreversibleAction,
@@ -293,10 +377,12 @@
     createTextElement: createTextElement,
     findAreaById: findAreaById,
     imageSrcFromSlot: imageSrcFromSlot,
+    isAiCommentJobTerminal: isAiCommentJobTerminal,
     listAreaPlants: listAreaPlants,
     loadJson: loadJson,
     loadPlantsData: loadPlantsData,
     normalizeName: normalizeName,
+    readAiCommentJob: readAiCommentJob,
     normalizeImageSlots: normalizeImageSlots,
     readEmbeddedJson: readEmbeddedJson,
     saveCloudToken: saveCloudToken,

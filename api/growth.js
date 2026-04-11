@@ -3,9 +3,15 @@ const { waitUntil } = require("@vercel/functions");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
 const { generateGrowthPhotoComment } = require("../lib/growth-photo-ai");
+const archiveRecords = require("../lib/archive-records");
 
 const KV_KEY = "planting_growth_records_v1";
 const KV_PLANTS = "planting_plants_catalog_v1";
+const archiveRecordInList = archiveRecords.archiveRecordInList;
+const filterActiveRecords = archiveRecords.filterActiveRecords;
+const findActiveRecordIndex = archiveRecords.findActiveRecordIndex;
+const findRecordIndex = archiveRecords.findRecordIndex;
+const isArchivedRecord = archiveRecords.isArchivedRecord;
 
 /** @type {{ areas: Array<{ id: string, label: string, plants: string[] }> }} */
 const defaultCatalog = require("../data/plants.json");
@@ -242,6 +248,150 @@ function normalizeAiCommentTargets(value, imageCount) {
   return out;
 }
 
+function normalizeStoredAiTargets(value) {
+  if (!Array.isArray(value) || !value.length) return [];
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < value.length; i++) {
+    var n = parseInt(String(value[i]), 10);
+    if (isNaN(n) || n < 0 || seen[n]) continue;
+    seen[n] = true;
+    out.push(n);
+  }
+  return out;
+}
+
+function createAiCommentJobId() {
+  return "gcj_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+}
+
+function readAiCommentJob(record) {
+  var raw = record && record.aiCommentJob && typeof record.aiCommentJob === "object" ? record.aiCommentJob : null;
+  if (!raw) return null;
+  return {
+    id: raw.id ? String(raw.id) : "",
+    source: raw.source ? String(raw.source) : "",
+    status: raw.status ? String(raw.status) : "",
+    targets: normalizeStoredAiTargets(raw.targets),
+    requestedAt: raw.requestedAt ? String(raw.requestedAt) : "",
+    startedAt: raw.startedAt ? String(raw.startedAt) : "",
+    finishedAt: raw.finishedAt ? String(raw.finishedAt) : "",
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : "",
+    detail: raw.detail ? String(raw.detail) : "",
+    updatedCount: typeof raw.updatedCount === "number" ? raw.updatedCount : 0,
+    failedCount: typeof raw.failedCount === "number" ? raw.failedCount : 0,
+  };
+}
+
+function buildAiCommentJob(status, targets, options) {
+  var opts = options || {};
+  var current = opts.current || null;
+  var now = opts.now || new Date().toISOString();
+  var detail = opts.detail;
+  if (detail == null && current && current.detail) detail = current.detail;
+  var updatedCount =
+    typeof opts.updatedCount === "number"
+      ? opts.updatedCount
+      : current && typeof current.updatedCount === "number"
+        ? current.updatedCount
+        : 0;
+  var failedCount =
+    typeof opts.failedCount === "number"
+      ? opts.failedCount
+      : current && typeof current.failedCount === "number"
+        ? current.failedCount
+        : 0;
+  var requestedAt = opts.requestedAt || (current && current.requestedAt) || now;
+  var startedAt =
+    opts.startedAt !== undefined
+      ? opts.startedAt
+      : status === "running"
+        ? (current && current.startedAt) || now
+        : current && current.startedAt
+          ? current.startedAt
+          : "";
+  var finishedAt =
+    opts.finishedAt !== undefined
+      ? opts.finishedAt
+      : status === "done" || status === "failed"
+        ? now
+        : "";
+  var job = {
+    id: opts.id || (current && current.id) || createAiCommentJobId(),
+    source: opts.source || (current && current.source) || "save",
+    status: String(status || ""),
+    targets:
+      Array.isArray(targets) && targets.length
+        ? normalizeStoredAiTargets(targets)
+        : current && Array.isArray(current.targets)
+          ? normalizeStoredAiTargets(current.targets)
+          : [],
+    requestedAt: String(requestedAt),
+    updatedAt: now,
+    detail: detail ? String(detail) : "",
+    updatedCount: updatedCount,
+    failedCount: failedCount,
+  };
+  if (startedAt) job.startedAt = String(startedAt);
+  if (finishedAt) job.finishedAt = String(finishedAt);
+  return job;
+}
+
+function setAiCommentJobOnRecord(record, status, targets, options) {
+  var next = Object.assign({}, record);
+  next.aiCommentJob = buildAiCommentJob(status, targets, Object.assign({}, options, {
+    current: readAiCommentJob(record),
+  }));
+  return next;
+}
+
+function updateAiCommentJobOnRecords(records, recordId, status, targets, options) {
+  var idx = findActiveRecordIndex(records, recordId);
+  if (idx < 0) return { missing: true, idx: -1, record: null, job: null };
+  var current = records[idx];
+  var currentJob = readAiCommentJob(current);
+  var wantedJobId = options && options.id ? String(options.id) : "";
+  if (wantedJobId && currentJob && currentJob.id && currentJob.id !== wantedJobId) {
+    return {
+      missing: false,
+      replaced: true,
+      idx: idx,
+      record: current,
+      job: currentJob,
+    };
+  }
+  var next = setAiCommentJobOnRecord(current, status, targets, options);
+  records[idx] = next;
+  return {
+    missing: false,
+    replaced: false,
+    idx: idx,
+    record: next,
+    job: readAiCommentJob(next),
+  };
+}
+
+async function queueGrowthAiCommentJob(recordId, targets, source, detail) {
+  var records = await readRecords();
+  if (records === null) {
+    throw new Error("kv_unavailable");
+  }
+  var nextJobId = createAiCommentJobId();
+  var queued = updateAiCommentJobOnRecords(records, recordId, "queued", targets, {
+    id: nextJobId,
+    source: source || "manual",
+    detail: detail || "",
+    updatedCount: 0,
+    failedCount: 0,
+  });
+  if (queued.missing) return null;
+  await writeRecords(records);
+  return {
+    record: queued.record,
+    job: queued.job,
+  };
+}
+
 function recordPlantsOverlap(record, candidate) {
   var left = record && Array.isArray(record.plants) ? record.plants : [];
   var right = candidate && Array.isArray(candidate.plants) ? candidate.plants : [];
@@ -263,6 +413,7 @@ function findPreviousComparableRecord(records, record) {
   var currentStamp = String(record.recordedAt || record.createdAt || "");
   var candidates = records.filter(function (item) {
     if (!item || item.id === record.id) return false;
+    if (isArchivedRecord(item)) return false;
     if (String(item.areaId || "") !== String(record.areaId || "")) return false;
     if (!recordPlantsOverlap(record, item)) return false;
     if (!normalizeRecordImages(item).length) return false;
@@ -306,14 +457,67 @@ function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount, pr
 
 async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   if (!record || !record.id) return { ok: false, skipped: "missing_record" };
-  if (!process.env.GEMINI_API_KEY) return { ok: false, skipped: "gemini_unavailable" };
+  var options = arguments.length > 2 && arguments[2] ? arguments[2] : {};
+  var jobId = options.id ? String(options.id) : "";
+  var jobSource = options.source ? String(options.source) : "save";
+  var expectedRevision = !jobId ? record.updatedAt || record.createdAt || "" : "";
+
+  async function markFailed(skipCode, detailText, failedCount) {
+    if (jobId) {
+      var recordsFail = await readRecords();
+      if (recordsFail !== null) {
+        var failedUpdate = updateAiCommentJobOnRecords(recordsFail, record.id, "failed", targetIndexes, {
+          id: jobId,
+          source: jobSource,
+          detail: detailText || skipCode,
+          updatedCount: 0,
+          failedCount: typeof failedCount === "number" ? failedCount : 0,
+        });
+        if (!failedUpdate.missing && !failedUpdate.replaced) {
+          await writeRecords(recordsFail);
+        }
+      }
+    }
+    return {
+      ok: false,
+      skipped: skipCode,
+      detail: detailText || "",
+    };
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return markFailed("gemini_unavailable", "Gemini APIの設定が見つかりません。");
+  }
+
+  if (jobId) {
+    var recordsStart = await readRecords();
+    if (recordsStart === null) {
+      throw new Error("kv_unavailable");
+    }
+    var running = updateAiCommentJobOnRecords(recordsStart, record.id, "running", targetIndexes, {
+      id: jobId,
+      source: jobSource,
+      detail: "",
+      updatedCount: 0,
+      failedCount: 0,
+    });
+    if (running.missing) {
+      return { ok: false, skipped: "record_deleted" };
+    }
+    if (running.replaced) {
+      return { ok: false, skipped: "job_replaced" };
+    }
+    await writeRecords(recordsStart);
+    record = running.record;
+  }
 
   var images = normalizeRecordImages(record);
   var targets = normalizeAiCommentTargets(targetIndexes, images.length);
-  if (!targets.length) return { ok: false, skipped: "no_targets" };
+  if (!targets.length) {
+    return markFailed("no_targets", "対象の写真が見つかりません。");
+  }
 
   var token = process.env.BLOB_READ_WRITE_TOKEN;
-  var expectedRevision = record.updatedAt || record.createdAt || "";
   var generated = {};
   var failed = {};
   var recordsForComparison = await readRecords();
@@ -370,12 +574,12 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
 
   var keys = Object.keys(generated);
   if (!keys.length) {
-    return {
-      ok: false,
-      skipped: "no_results",
-      failed: Object.keys(failed).length,
-      errors: failed,
-    };
+    var firstFailedKey = Object.keys(failed)[0];
+    var failedDetail = firstFailedKey ? String(failed[firstFailedKey] || "") : "AIコメントを生成できませんでした。";
+    var emptyResult = await markFailed("no_results", failedDetail, Object.keys(failed).length || targets.length);
+    emptyResult.failed = Object.keys(failed).length;
+    emptyResult.errors = failed;
+    return emptyResult;
   }
 
   var records = await readRecords();
@@ -383,14 +587,16 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     throw new Error("kv_unavailable");
   }
 
-  var idx = records.findIndex(function (r) {
-    return r && r.id === record.id;
-  });
+  var idx = findActiveRecordIndex(records, record.id);
   if (idx < 0) return { ok: false, skipped: "record_deleted" };
 
   var latest = records[idx];
+  var latestJob = readAiCommentJob(latest);
+  if (jobId && latestJob && latestJob.id && latestJob.id !== jobId) {
+    return { ok: false, skipped: "job_replaced" };
+  }
   var latestRevision = latest.updatedAt || latest.createdAt || "";
-  if (expectedRevision && latestRevision !== expectedRevision) {
+  if (!jobId && expectedRevision && latestRevision !== expectedRevision) {
     return { ok: false, skipped: "record_changed" };
   }
 
@@ -407,6 +613,17 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   latest.imageUrl = latestImages[0] ? latestImages[0].imageUrl : null;
   latest.imagePathname = latestImages[0] ? latestImages[0].imagePathname : null;
   latest.updatedAt = new Date().toISOString();
+  latest.aiCommentJob = buildAiCommentJob("done", targets, {
+    current: latestJob,
+    id: jobId || (latestJob && latestJob.id) || createAiCommentJobId(),
+    source: jobSource,
+    detail:
+      Object.keys(failed).length && Object.keys(failed)[0]
+        ? String(failed[Object.keys(failed)[0]] || "")
+        : "",
+    updatedCount: keys.length,
+    failedCount: Object.keys(failed).length,
+  });
   records[idx] = latest;
   await writeRecords(records);
   return {
@@ -414,6 +631,7 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     updated: keys.length,
     failed: Object.keys(failed).length,
     errors: failed,
+    record: latest,
   };
 }
 
@@ -452,7 +670,7 @@ async function handler(req, res) {
     if (records === null) {
       return res.status(503).json({ error: "kv_unavailable" });
     }
-    return res.status(200).json({ records: records });
+    return res.status(200).json({ records: filterActiveRecords(records) });
   }
 
   if (!assertAuth(req)) {
@@ -471,9 +689,8 @@ async function handler(req, res) {
       return res.status(503).json({ error: "kv_unavailable" });
     }
 
-    var idx0 = records.findIndex(function (r) {
-      return r.id === body.id;
-    });
+    var idx0 = findActiveRecordIndex(records, body.id);
+    if (idx0 < 0) idx0 = findRecordIndex(records, body.id);
     var existing = idx0 >= 0 ? records[idx0] : null;
     var token = process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -624,13 +841,26 @@ async function handler(req, res) {
       imagePathname: finalImages[0] ? finalImages[0].imagePathname : null,
       createdAt: createdAtStored,
     };
+    delete record.archivedAt;
+    delete record.archivedReason;
     if (existing) {
       record.updatedAt = new Date().toISOString();
     }
 
-    var idx = records.findIndex(function (r) {
-      return r.id === record.id;
-    });
+    var aiCommentTargets = normalizeAiCommentTargets(body.aiCommentTargets, finalImages.length);
+    var aiCommentsQueued = aiCommentTargets.length > 0 && !!process.env.GEMINI_API_KEY;
+    if (aiCommentTargets.length) {
+      record = setAiCommentJobOnRecord(record, aiCommentsQueued ? "queued" : "failed", aiCommentTargets, {
+        source: "save",
+        detail: aiCommentsQueued ? "" : "Gemini APIの設定が見つかりません。",
+        updatedCount: 0,
+        failedCount: aiCommentsQueued ? 0 : aiCommentTargets.length,
+      });
+    } else {
+      delete record.aiCommentJob;
+    }
+
+    var idx = idx0 >= 0 ? idx0 : findRecordIndex(records, record.id);
     if (idx >= 0) {
       records[idx] = record;
     } else {
@@ -651,11 +881,12 @@ async function handler(req, res) {
       console.error("appendRecordPlantsToCatalog", catErr);
     }
 
-    var aiCommentTargets = normalizeAiCommentTargets(body.aiCommentTargets, finalImages.length);
-    var aiCommentsQueued = aiCommentTargets.length > 0 && !!process.env.GEMINI_API_KEY;
     if (aiCommentsQueued) {
       waitUntil(
-        refreshGrowthPhotoCommentsInBackground(record, aiCommentTargets).catch(function (err) {
+        refreshGrowthPhotoCommentsInBackground(record, aiCommentTargets, {
+          id: record.aiCommentJob && record.aiCommentJob.id ? record.aiCommentJob.id : "",
+          source: "save",
+        }).catch(function (err) {
           console.error("refreshGrowthPhotoCommentsInBackground", err);
         })
       );
@@ -681,9 +912,7 @@ async function handler(req, res) {
     if (list === null) {
       return res.status(503).json({ error: "kv_unavailable" });
     }
-    var foundIdx = list.findIndex(function (r) {
-      return r.id === id;
-    });
+    var foundIdx = findActiveRecordIndex(list, id);
     var found = foundIdx >= 0 ? list[foundIdx] : null;
     if (!found) {
       return res.status(404).json({ error: "not_found" });
@@ -691,12 +920,12 @@ async function handler(req, res) {
     var slotRaw = req.query && req.query.slot;
     var hasSlot = slotRaw !== undefined && slotRaw !== null && String(slotRaw).trim() !== "";
     if (!hasSlot) {
-      await deleteAllRecordImages(found, process.env.BLOB_READ_WRITE_TOKEN);
-      var next = list.filter(function (r) {
-        return r.id !== id;
-      });
-      await writeRecords(next);
-      return res.status(200).json({ ok: true });
+      var archived = archiveRecordInList(list, id, { reason: "user_archive" });
+      if (!archived.ok) {
+        return res.status(404).json({ error: archived.error || "not_found" });
+      }
+      await writeRecords(archived.records);
+      return res.status(200).json({ ok: true, archived: true, record: archived.record });
     }
 
     var slot = parseInt(String(slotRaw), 10);
@@ -748,4 +977,6 @@ module.exports.assertAuth = assertAuth;
 module.exports.normalizeAiCommentTargets = normalizeAiCommentTargets;
 module.exports.readJsonBody = readJsonBody;
 module.exports.readRecords = readRecords;
+module.exports.readAiCommentJob = readAiCommentJob;
+module.exports.queueGrowthAiCommentJob = queueGrowthAiCommentJob;
 module.exports.refreshGrowthPhotoCommentsInBackground = refreshGrowthPhotoCommentsInBackground;
