@@ -109,6 +109,22 @@ test("legacy generic memo is not preserved in prompt context", function () {
   assert.doesNotMatch(prompt, /見どころが少し増えてきたように見えます/);
 });
 
+test("fragmentary broken memo is not preserved in prompt context", function () {
+  const brokenMemo =
+    "ウッドデッキの鉢から伸びた細い花茎の先に、星。細かな花びらの先が星のように開き、淡いピンク色の濃淡。細かな花びらの先が星のように開き、淡いピンクから。ウッドデッキの鉢から細い花茎が何本も立ち上がり。ウッドデッキで育つツボサンゴの株元から細い花。";
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "ウッドデッキ",
+    recordedDate: "2026-04-11",
+    plantNames: ["ヒューケラ（ツボサンゴ）"],
+    currentPhotoMemo: brokenMemo,
+    previousPhotoMemo: brokenMemo,
+  });
+
+  assert.doesNotMatch(prompt, /既存の写真メモ:/);
+  assert.doesNotMatch(prompt, /前回写真メモ:/);
+  assert.doesNotMatch(prompt, /ウッドデッキの鉢から伸びた細い花茎の先に、星/);
+});
+
 test("getJapaneseNaturalnessError detects repetitive sentence starts", function () {
   const text =
     "ミモザは葉先の伸びが見えています。ミモザは株元にも動きがありそうです。ミモザはこの先も変化が続きそうです。";
