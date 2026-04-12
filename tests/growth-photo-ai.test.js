@@ -92,3 +92,19 @@ test("expandCommentToMinimum differs across contexts for the same plant", functi
   assert.notEqual(a, b);
   assert.notEqual(a.slice(0, 28), b.slice(0, 28));
 });
+
+test("legacy generic memo is not preserved in prompt context", function () {
+  const legacyMemo =
+    "ミモザの動きが一枚の中にはっきり出ています。葉の向きや株の広がりからも、生育の勢いが感じられる段階です。前回の印象と比べると、見どころが少し増えてきたように見えます。";
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "デッキ",
+    recordedDate: "2026-04-20",
+    plantNames: ["ミモザ"],
+    currentPhotoMemo: legacyMemo,
+    previousPhotoMemo: legacyMemo,
+  });
+
+  assert.doesNotMatch(prompt, /既存の写真メモ:/);
+  assert.doesNotMatch(prompt, /前回写真メモ:/);
+  assert.doesNotMatch(prompt, /見どころが少し増えてきたように見えます/);
+});
