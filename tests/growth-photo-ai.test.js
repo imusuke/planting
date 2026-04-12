@@ -149,7 +149,7 @@ test("getJapaneseNaturalnessError detects explanatory stock phrases", function (
   assert.match(error, /硬く単調|単調/);
 });
 
-test("generateGrowthPhotoComment retries with japanese naturalness prompt when wording is awkward", async function () {
+test("generateGrowthPhotoComment retries with japanese review prompts when wording is awkward", async function () {
   const originalFetch = global.fetch;
   const prompts = [];
   let call = 0;
@@ -162,7 +162,9 @@ test("generateGrowthPhotoComment retries with japanese naturalness prompt when w
     const text =
       call === 1
         ? "葉先の緑が前より濃くなって見えています。株元にも新しい芽の動きが出てきています。外側へ広がる向きもそろって見えていて、写真全体で枝先のまとまりも少しずつ整ってきています。花や葉の位置関係も追いやすくなっていて、次の変化を比べる準備もできています。"
-        : "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが無理なく伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。";
+        : call === 2
+          ? "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが無理なく伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。"
+          : "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが自然に伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。";
 
     return {
       ok: true,
@@ -193,9 +195,11 @@ test("generateGrowthPhotoComment retries with japanese naturalness prompt when w
       },
     });
 
-    assert.equal(call, 2);
+    assert.equal(call, 3);
     assert.match(prompts[1], /日本語として自然で読みやすい文章に整えてください/);
-    assert.match(result.comment, /輪郭のまとまりも増している/);
+    assert.match(prompts[2], /最終校正してください/);
+    assert.match(prompts[2], /送り仮名、助詞、漢字の使い分け/);
+    assert.match(result.comment, /自然に伝わってきます/);
   } finally {
     global.fetch = originalFetch;
   }
