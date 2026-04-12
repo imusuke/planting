@@ -149,22 +149,42 @@ test("getJapaneseNaturalnessError detects explanatory stock phrases", function (
   assert.match(error, /硬く単調|単調/);
 });
 
-test("generateGrowthPhotoComment retries with japanese review prompts when wording is awkward", async function () {
+test("getJapaneseNaturalnessError detects fragmentary caption-style japanese", function () {
+  const text =
+    "ウッドデッキの鉢から伸びた細い花茎の先に、星。細かな花びらの先が星のように開き、淡いピンク色の濃淡。細かな花びらの先が星のように開き、淡いピンクから。ウッドデッキの鉢から細い花茎が何本も立ち上がり。ウッドデッキで育つツボサンゴの株元から細い花。ウッドデッキで過ごすヒューケラの株元から細く伸び。";
+  const error = photoAi.getJapaneseNaturalnessError(text, {
+    areaLabel: "ウッドデッキ",
+    plantNames: ["ヒューケラ（ツボサンゴ）"],
+  });
+
+  assert.match(error, /成立していません|断片的|不自然/);
+});
+
+test("generateGrowthPhotoComment runs proofread and final quality review before accepting comment", async function () {
   const originalFetch = global.fetch;
   const prompts = [];
+  const temperatures = [];
   let call = 0;
 
   global.fetch = async function (_url, options) {
     call += 1;
     const body = JSON.parse(options.body);
     prompts.push(body.contents[0].parts[0].text);
+    temperatures.push(body.generationConfig.temperature);
 
     const text =
       call === 1
         ? "葉先の緑が前より濃くなって見えています。株元にも新しい芽の動きが出てきています。外側へ広がる向きもそろって見えていて、写真全体で枝先のまとまりも少しずつ整ってきています。花や葉の位置関係も追いやすくなっていて、次の変化を比べる準備もできています。"
         : call === 2
           ? "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが無理なく伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。"
-          : "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが自然に伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。";
+          : call === 3
+            ? "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが自然に伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。"
+            : JSON.stringify({
+                ok: false,
+                issues: ["文末の硬さが少し残っています。"],
+                revisedComment:
+                  "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いがやわらかく広がっています。輪郭のまとまりも増してきたので、次は厚みや株姿の変化まで見比べやすくなりそうです。",
+              });
 
     return {
       ok: true,
@@ -195,11 +215,14 @@ test("generateGrowthPhotoComment retries with japanese review prompts when wordi
       },
     });
 
-    assert.equal(call, 3);
+    assert.equal(call, 4);
     assert.match(prompts[1], /日本語として自然で読みやすい文章に整えてください/);
     assert.match(prompts[2], /最終校正してください/);
     assert.match(prompts[2], /送り仮名、助詞、漢字の使い分け/);
-    assert.match(result.comment, /自然に伝わってきます/);
+    assert.match(prompts[3], /返答は必ず次のJSONだけにしてください/);
+    assert.ok(temperatures[2] < temperatures[0]);
+    assert.ok(temperatures[3] <= temperatures[2]);
+    assert.match(result.comment, /やわらかく広がっています/);
   } finally {
     global.fetch = originalFetch;
   }
