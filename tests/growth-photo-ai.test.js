@@ -243,3 +243,55 @@ test("generateGrowthPhotoComment runs proofread and final quality review before 
     global.fetch = originalFetch;
   }
 });
+
+test("generateGrowthPhotoComment falls back safely when final quality review is not json", async function () {
+  const originalFetch = global.fetch;
+  let call = 0;
+
+  global.fetch = async function (_url, options) {
+    call += 1;
+
+    const text =
+      call === 1
+        ? "葉先の緑が前より濃くなって見えています。株元にも新しい芽の動きが出てきています。外側へ広がる向きもそろって見えていて、写真全体で枝先のまとまりも少しずつ整ってきています。花や葉の位置関係も追いやすくなっていて、次の変化を比べる準備もできています。"
+        : call === 2
+          ? "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが無理なく伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。"
+          : call === 3
+            ? "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが自然に伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。"
+            : "葉先の緑が前より濃くなり、外側へ開く向きもそろってきました。株元には新しい芽の動きが重なり、株全体の勢いが自然に伝わってきます。輪郭のまとまりも増しているので、次は厚みの出方まで比べやすくなりそうです。";
+
+    return {
+      ok: true,
+      json: async function () {
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [{ text }],
+              },
+            },
+          ],
+        };
+      },
+    };
+  };
+
+  try {
+    const result = await photoAi.generateGrowthPhotoComment({
+      apiKey: "test-key",
+      imageBase64: Buffer.from("fake-image").toString("base64"),
+      context: {
+        areaLabel: "デッキ",
+        recordedDate: "2026-04-20",
+        plantNames: ["ミモザ"],
+        photoIndex: 1,
+        photoCount: 1,
+      },
+    });
+
+    assert.equal(call, 4);
+    assert.match(result.comment, /自然に伝わってきます/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
