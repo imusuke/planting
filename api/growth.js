@@ -2,7 +2,11 @@ const { put, del, get } = require("@vercel/blob");
 const { waitUntil } = require("@vercel/functions");
 const { kv } = require("@vercel/kv");
 const getRawBody = require("raw-body");
-const { generateGrowthPhotoComment } = require("../lib/growth-photo-ai");
+const {
+  buildFallbackGrowthPhotoComment,
+  generateGrowthPhotoComment,
+  shouldReplaceMemoWithFallback,
+} = require("../lib/growth-photo-ai");
 const archiveRecords = require("../lib/archive-records");
 const changeLog = require("../lib/change-log");
 
@@ -456,6 +460,13 @@ function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount, pr
   };
 }
 
+function fallbackDetailText(originalDetail) {
+  var detail = originalDetail ? String(originalDetail).trim() : "";
+  return detail
+    ? "AI生成に失敗したため、自然な補助コメントで置き換えました。（" + detail + "）"
+    : "AI生成に失敗したため、自然な補助コメントで置き換えました。";
+}
+
 async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   if (!record || !record.id) return { ok: false, skipped: "missing_record" };
   var options = arguments.length > 2 && arguments[2] ? arguments[2] : {};
@@ -521,6 +532,7 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   var token = process.env.BLOB_READ_WRITE_TOKEN;
   var generated = {};
   var failed = {};
+  var fallbackUsed = {};
   var recordsForComparison = await readRecords();
   if (recordsForComparison === null) recordsForComparison = [];
   var previousRecord = findPreviousComparableRecord(recordsForComparison, record);
@@ -530,9 +542,17 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     var slotIndex = targets[i];
     var slot = images[slotIndex];
     if (!slot) continue;
+    var previousSlot = pickComparisonImage(previousImages, slotIndex);
+    var aiContext = buildAiContextFromRecord(
+      record,
+      slotIndex,
+      slot.memo || "",
+      images.length,
+      previousRecord,
+      previousSlot && previousSlot.memo ? previousSlot.memo : ""
+    );
     try {
       var buf = await readSourceImageBuffer(slot, token);
-      var previousSlot = pickComparisonImage(previousImages, slotIndex);
       var referenceImages = [];
       if (previousSlot) {
         try {
@@ -555,19 +575,32 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
         imageBase64: buf.toString("base64"),
         imageMimeType: "image/jpeg",
         referenceImages: referenceImages,
-        context: buildAiContextFromRecord(
-          record,
-          slotIndex,
-          slot.memo || "",
-          images.length,
-          previousRecord,
-          previousSlot && previousSlot.memo ? previousSlot.memo : ""
-        ),
+        context: aiContext,
         timeoutMs: 30000,
       });
       generated[slotIndex] = result.comment;
     } catch (err) {
       var detail = err && err.message ? String(err.message) : "ai_comment_failed";
+      if (shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext)) {
+        try {
+          generated[slotIndex] = buildFallbackGrowthPhotoComment(aiContext);
+          fallbackUsed[slotIndex] = detail;
+          console.warn(
+            "refreshGrowthPhotoCommentsInBackground:fallback",
+            record.id,
+            slotIndex,
+            detail
+          );
+          continue;
+        } catch (fallbackErr) {
+          console.error(
+            "refreshGrowthPhotoCommentsInBackground:fallback_failed",
+            record.id,
+            slotIndex,
+            fallbackErr && fallbackErr.message ? fallbackErr.message : fallbackErr
+          );
+        }
+      }
       failed[slotIndex] = detail;
       console.error("refreshGrowthPhotoCommentsInBackground:slot", record.id, slotIndex, detail);
     }
@@ -614,6 +647,7 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   latest.imageUrl = latestImages[0] ? latestImages[0].imageUrl : null;
   latest.imagePathname = latestImages[0] ? latestImages[0].imagePathname : null;
   latest.updatedAt = new Date().toISOString();
+  var fallbackKeys = Object.keys(fallbackUsed);
   latest.aiCommentJob = buildAiCommentJob("done", targets, {
     current: latestJob,
     id: jobId || (latestJob && latestJob.id) || createAiCommentJobId(),
@@ -621,6 +655,8 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     detail:
       Object.keys(failed).length && Object.keys(failed)[0]
         ? String(failed[Object.keys(failed)[0]] || "")
+        : fallbackKeys.length && fallbackKeys[0]
+          ? fallbackDetailText(fallbackUsed[fallbackKeys[0]])
         : "",
     updatedCount: keys.length,
     failedCount: Object.keys(failed).length,
@@ -632,6 +668,7 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
     updated: keys.length,
     failed: Object.keys(failed).length,
     errors: failed,
+    fallbackUsed: fallbackKeys.length,
     record: latest,
   };
 }

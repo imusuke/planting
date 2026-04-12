@@ -694,6 +694,9 @@
           ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
           : "AIコメントを反映しました。一部の写真は更新できませんでした。";
       }
+      if (job.detail && /自然な補助コメント/.test(job.detail)) {
+        return job.detail;
+      }
       return opts.doneMessage || "AIコメントを反映しました。必要なら微調整して保存してください。";
     }
     if (job.status === "failed") {
