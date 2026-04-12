@@ -108,3 +108,23 @@ test("legacy generic memo is not preserved in prompt context", function () {
   assert.doesNotMatch(prompt, /前回写真メモ:/);
   assert.doesNotMatch(prompt, /見どころが少し増えてきたように見えます/);
 });
+
+test("getJapaneseNaturalnessError detects repetitive sentence starts", function () {
+  const text =
+    "ミモザは葉先の伸びが見えています。ミモザは株元にも動きがありそうです。ミモザはこの先も変化が続きそうです。";
+  const error = photoAi.getJapaneseNaturalnessError(text, {
+    plantNames: ["ミモザ"],
+  });
+
+  assert.match(error, /単調|続き/);
+});
+
+test("getJapaneseNaturalnessError allows a natural varied comment", function () {
+  const text =
+    "葉先の緑が少し濃くなり、外側へ開く向きが前よりそろって見えます。株元には新しい動きも重なり、写真全体でミモザの勢いが落ち着いて広がってきたことが伝わります。次の記録では輪郭のまとまりがさらに見えやすくなりそうです。";
+  const error = photoAi.getJapaneseNaturalnessError(text, {
+    plantNames: ["ミモザ"],
+  });
+
+  assert.equal(error, "");
+});
