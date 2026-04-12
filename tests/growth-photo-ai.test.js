@@ -139,6 +139,16 @@ test("getJapaneseNaturalnessError detects overused polite progressive endings", 
   assert.match(error, /単調/);
 });
 
+test("getJapaneseNaturalnessError detects explanatory stock phrases", function () {
+  const text =
+    "葉先の緑が前より濃く見えます。株元にも新しい動きが出てきていて、全体のまとまりも整ってきています。次の変化も追いやすくなっています。";
+  const error = photoAi.getJapaneseNaturalnessError(text, {
+    plantNames: ["ミモザ"],
+  });
+
+  assert.match(error, /硬く単調|単調/);
+});
+
 test("generateGrowthPhotoComment retries with japanese naturalness prompt when wording is awkward", async function () {
   const originalFetch = global.fetch;
   const prompts = [];
