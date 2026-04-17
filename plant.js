@@ -14,6 +14,11 @@
   var recordEditLinkEl = document.getElementById("plant-page-record-edit-link");
   var detailPage = window.PlantingDetailPage || {};
   if (!root || !titleEl) return;
+  var sanitizeDetailText =
+    detailPage.sanitizeAiPlainText ||
+    function (value) {
+      return String(value || "").trim();
+    };
 
   var bindLightboxImage =
     detailPage.bindLightboxImage ||
@@ -512,9 +517,10 @@
           (function (slot) {
             var src = growthImageSrcFromSlot(slot);
             if (!src) return;
+            var photoMemo = sanitizeDetailText(slot && slot.memo);
             var captionText = formatDateLabel(record.recordedAt);
-            if (slot.memo) {
-              captionText += " — " + slot.memo;
+            if (photoMemo) {
+              captionText += " — " + photoMemo;
             }
             appendDetailGalleryFigure(grid, galleryNodes, galleryCaptions, {
               figureClass: "plant-timeline-photo",
@@ -525,7 +531,7 @@
               apiPath: API_GROWTH_IMAGE,
               datasetKey: "plantPhotoFb",
               captionClass: "plant-timeline-photo-caption",
-              captionText: slot.memo ? slot.memo : "",
+              captionText: photoMemo,
               galleryCaptionText: captionText,
             });
           })(slots[si]);
@@ -619,7 +625,7 @@
     if (entry && entry.summary) {
       var sum = document.createElement("p");
       sum.className = "detail-page-summary";
-      sum.textContent = entry.summary;
+      sum.textContent = sanitizeDetailText(entry.summary);
       root.appendChild(sum);
     }
 

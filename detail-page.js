@@ -17,6 +17,13 @@
     return el;
   }
 
+  function sanitizeAiPlainText(value, options) {
+    if (common.sanitizeAiPlainText) {
+      return common.sanitizeAiPlainText(value, options);
+    }
+    return String(value || "").trim();
+  }
+
   function createLink(href, text, className, title) {
     var a = document.createElement("a");
     if (className) a.className = className;
@@ -65,7 +72,7 @@
     if (!raw.trim()) return 0;
     var count = 0;
     raw.split(/\n\n+/).forEach(function (part) {
-      var chunk = part.trim();
+      var chunk = sanitizeAiPlainText(part);
       if (!chunk) return;
       container.appendChild(createMessage(paragraphClass || "detail-page-body-p", chunk));
       count += 1;
@@ -327,5 +334,6 @@
     readEmbeddedJson: readEmbeddedJson,
     readWindowSnapshotRecords: readWindowSnapshotRecords,
     renderBody: renderBody,
+    sanitizeAiPlainText: sanitizeAiPlainText,
   });
 })();

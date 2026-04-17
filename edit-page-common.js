@@ -59,6 +59,51 @@
     return typeof value === "string" ? value.trim() : "";
   }
 
+  function stripEmbeddedImageMarkup(value) {
+    return String(value || "")
+      .replace(/\r\n/g, "\n")
+      .replace(/```[^\n]*\n?/g, "")
+      .replace(/```/g, "")
+      .replace(/<\/?image\b[^>]*>/gi, " ")
+      .replace(/<img\b[^>]*>/gi, " ")
+      .replace(/!\[[^\]]*]\((?:[^()\\]|\\.)*\)/g, " ")
+      .replace(/!\[[^\]]*]/g, " ")
+      .replace(/\[([^\]]+)]\((?:[^()\\]|\\.)*\)/g, "$1")
+      .replace(/`([^`]*)`/g, "$1")
+      .replace(/data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi, " ")
+      .replace(/https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg)(?:\?\S*)?/gi, " ");
+  }
+
+  function sanitizeAiPlainText(value, options) {
+    var opts = options || {};
+    var text = stripEmbeddedImageMarkup(value)
+      .replace(/\u3000/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .trim();
+
+    if (!text) return "";
+
+    if (opts.preserveParagraphs) {
+      text = text
+        .split(/\n{2,}/)
+        .map(function (part) {
+          return part
+            .split(/\n+/)
+            .map(function (line) {
+              return line.trim();
+            })
+            .filter(Boolean)
+            .join(" ");
+        })
+        .filter(Boolean)
+        .join("\n\n");
+    } else {
+      text = text.replace(/\n+/g, " ");
+    }
+
+    return text.replace(/\s{2,}/g, " ").trim();
+  }
+
   function uniqueTrimmedStrings(values) {
     var out = [];
     var seen = {};
@@ -533,6 +578,7 @@
     readEmbeddedJson: readEmbeddedJson,
     renderChangeLogItems: renderChangeLogItems,
     saveCloudToken: saveCloudToken,
+    sanitizeAiPlainText: sanitizeAiPlainText,
     setCloudStatus: setCloudStatus,
     uniqueTrimmedStrings: uniqueTrimmedStrings,
   };

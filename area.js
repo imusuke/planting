@@ -16,6 +16,11 @@
   var detailPage = window.PlantingDetailPage || {};
   var listCommon = window.PlantingListPage || {};
   if (!root || !titleEl) return;
+  var sanitizeDetailText =
+    detailPage.sanitizeAiPlainText ||
+    function (value) {
+      return String(value || "").trim();
+    };
 
   var bindLightboxImage =
     detailPage.bindLightboxImage ||
@@ -567,7 +572,7 @@
     for (var k = 0; k < items.length; k++) {
       (function (it) {
         var line1 = formatDateLabel(it.recordedAt);
-        var memo = String((it.slot && it.slot.memo) || "").trim();
+        var memo = sanitizeDetailText(it.slot && it.slot.memo);
         var note = it.recordNote;
         var sub = memo || note || "";
         var captionText = sub ? line1 + " — " + sub : line1;
@@ -776,7 +781,7 @@
     if (entry && entry.summary) {
       var sum = document.createElement("p");
       sum.className = "detail-page-summary";
-      sum.textContent = entry.summary;
+      sum.textContent = sanitizeDetailText(entry.summary);
       root.appendChild(sum);
     }
 

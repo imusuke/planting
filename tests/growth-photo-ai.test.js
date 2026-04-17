@@ -284,6 +284,20 @@ test("generateGrowthPhotoComment runs proofread and final quality review before 
   }
 });
 
+test("normalizeComment strips image embed code from AI output", function () {
+  const comment = photoAi.normalizeComment(
+    [
+      "![花の写真](https://example.com/flower.png)",
+      "<img src=\"https://example.com/flower.jpg\" alt=\"flower\">",
+      "淡い花色が重なって見え、株元から先端へ視線が流れる一枚です。",
+    ].join("\n")
+  );
+
+  assert.doesNotMatch(comment, /!\[/);
+  assert.doesNotMatch(comment, /<img/i);
+  assert.match(comment, /淡い花色/);
+});
+
 test("generateGrowthPhotoComment falls back safely when final quality review is not json", async function () {
   const originalFetch = global.fetch;
   let call = 0;

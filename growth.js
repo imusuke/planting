@@ -7,6 +7,11 @@
       "edit").toLowerCase();
   var IS_VIEW = PAGE === "view";
   var common = window.PlantingEditCommon || {};
+  var sanitizeAiPlainText =
+    common.sanitizeAiPlainText ||
+    function (value) {
+      return String(value || "").trim();
+    };
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var LS_THUMB_SIZE = "growthThumbSize";
@@ -262,7 +267,7 @@
     for (var si = 0; si < slots.length; si++) {
       var u = growthImageSrcFromSlot(slots[si]);
       if (!u) continue;
-      var m = slots[si] && slots[si].memo && String(slots[si].memo).trim();
+      var m = sanitizeAiPlainText(slots[si] && slots[si].memo);
       if (m) {
         out.push(base + (base ? " · " : "") + "写真メモ: " + m);
       } else {
@@ -297,7 +302,7 @@
             recordId: rec && rec.id != null ? String(rec.id) : "",
             imageIndex: si,
           });
-          var pm = slots[si] && slots[si].memo && String(slots[si].memo).trim();
+          var pm = sanitizeAiPlainText(slots[si] && slots[si].memo);
           if (pm) {
             captions.push(capLine + (capLine ? " · " : "") + "写真メモ: " + pm);
           } else {
@@ -786,7 +791,7 @@
     var idx = typeof ref.imageIndex === "number" ? ref.imageIndex : parseInt(String(ref.imageIndex), 10);
     if (!isFinite(idx) || idx < 0) return "";
     var slots = growthImageSlots(record);
-    return slots[idx] && slots[idx].memo != null ? String(slots[idx].memo).trim() : "";
+    return sanitizeAiPlainText(slots[idx] && slots[idx].memo);
   }
 
   function growthLightboxCurrentPlantNames() {
@@ -858,7 +863,7 @@
         record: record,
         imageIndex: imageIndex,
         src: src,
-        memo: slot && slot.memo != null ? String(slot.memo).trim() : "",
+        memo: sanitizeAiPlainText(slot && slot.memo),
       });
     });
     items.sort(function (a, b) {
