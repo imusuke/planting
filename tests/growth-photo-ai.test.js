@@ -335,3 +335,74 @@ test("generateGrowthPhotoComment falls back safely when final quality review is 
     global.fetch = originalFetch;
   }
 });
+
+test("generateGrowthPhotoComment rewrites when manual refresh stays too close to old memo", async function () {
+  const originalFetch = global.fetch;
+  const prompts = [];
+  let call = 0;
+  const previousMemo =
+    "枝先の桃色の花が前より厚く重なり、外側へゆるく弧を描く流れが写真でもはっきり見えます。濃い花と淡い花が隣り合うため、ふくらみ方の違いまで追いやすく、株全体の華やぎが一段前へ出てきた印象です。次の記録では先端の開き方がさらにそろい、見頃への移り方を落ち着いて見比べられそうです。";
+  const rewrittenMemo =
+    "先端に集まった花がやわらかく持ち上がり、枝先ごとに見え方の差が出てきたことが写真から素直に読めます。濃い桃色の花と少し淡い花が隣り合うので、ふくらみの進み具合までひと目で追え、前回より株全体の華やぎが前へ出てきました。次は開き方のそろい具合を見比べると、この株の見頃の入り方がさらに掴みやすくなりそうです。";
+
+  global.fetch = async function (_url, options) {
+    call += 1;
+    const body = JSON.parse(options.body);
+    prompts.push(body.contents[0].parts[0].text);
+
+    const text =
+      call === 1
+        ? previousMemo
+        : call === 2
+          ? previousMemo
+          : call === 3
+            ? JSON.stringify({
+                ok: true,
+                issues: [],
+                revisedComment: previousMemo,
+              })
+            : rewrittenMemo;
+
+    return {
+      ok: true,
+      json: async function () {
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [{ text }],
+              },
+            },
+          ],
+        };
+      },
+    };
+  };
+
+  try {
+    const result = await photoAi.generateGrowthPhotoComment({
+      apiKey: "test-key",
+      imageBase64: Buffer.from("fake-image").toString("base64"),
+      forceFreshRewrite: true,
+      forceRewriteAgainstMemo: previousMemo,
+      context: {
+        areaLabel: "ウッドデッキ",
+        recordedDate: "2026-04-11",
+        plantNames: ["グレヴィレア・プーリンダ・ロイヤルマントル"],
+        photoIndex: 3,
+        photoCount: 129,
+      },
+    });
+
+    assert.equal(call, 5);
+    assert.ok(
+      prompts.some(function (prompt) {
+        return /前のコメントと同じ言い回しや文の並びを避けてください/.test(prompt);
+      })
+    );
+    assert.notEqual(result.comment, previousMemo);
+    assert.equal(photoAi.isMemoTooSimilar(previousMemo, result.comment), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

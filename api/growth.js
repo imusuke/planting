@@ -578,6 +578,8 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
         imageMimeType: "image/jpeg",
         referenceImages: referenceImages,
         context: aiContext,
+        forceFreshRewrite: jobSource === "manual",
+        forceRewriteAgainstMemo: slot.memo || "",
         timeoutMs: 30000,
       });
       if (isMemoTooSimilar(slot && slot.memo ? slot.memo : "", result.comment)) {
@@ -593,10 +595,13 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
       generated[slotIndex] = result.comment;
     } catch (err) {
       var detail = err && err.message ? String(err.message) : "ai_comment_failed";
-      if (shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext)) {
+      if (jobSource === "manual" || shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext)) {
         try {
           generated[slotIndex] = buildFallbackGrowthPhotoComment(aiContext);
-          fallbackUsed[slotIndex] = detail;
+          fallbackUsed[slotIndex] =
+            jobSource === "manual"
+              ? "AI再生成が完了しなかったため、新しい表現で差し替えました。"
+              : detail;
           console.warn(
             "refreshGrowthPhotoCommentsInBackground:fallback",
             record.id,
