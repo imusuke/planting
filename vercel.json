@@ -20,6 +20,10 @@
     "api/area-details.js": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "api/area-description.js": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }

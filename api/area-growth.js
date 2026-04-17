@@ -915,8 +915,10 @@ module.exports = async function handler(req, res) {
 
 module.exports.assertAuth = assertAuth;
 module.exports.normalizeAiCommentTargets = normalizeAiCommentTargets;
+module.exports.normalizeRecordImages = normalizeRecordImages;
 module.exports.readJsonBody = readJsonBody;
 module.exports.readRecords = readRecords;
 module.exports.readAiCommentJob = readAiCommentJob;
+module.exports.readSourceImageBuffer = readSourceImageBuffer;
 module.exports.queueAreaAiCommentJob = queueAreaAiCommentJob;
 module.exports.refreshAreaPhotoCommentsInBackground = refreshAreaPhotoCommentsInBackground;
