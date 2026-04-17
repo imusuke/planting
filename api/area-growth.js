@@ -452,10 +452,11 @@ async function refreshAreaPhotoCommentsInBackground(record, targetIndexes) {
     var slot = images[slotIndex];
     if (!slot) continue;
     var previousSlot = pickComparisonImage(previousImages, slotIndex);
+    var currentMemoForGeneration = jobSource === "manual" ? "" : slot.memo || "";
     var aiContext = buildAiContextFromAreaRecord(
       record,
       slotIndex,
-      slot.memo || "",
+      currentMemoForGeneration,
       images.length,
       previousRecord,
       previousSlot && previousSlot.memo ? previousSlot.memo : ""
@@ -487,13 +488,15 @@ async function refreshAreaPhotoCommentsInBackground(record, targetIndexes) {
         context: aiContext,
         timeoutMs: 30000,
       });
-      if (
-        shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext) &&
-        isMemoTooSimilar(slot && slot.memo ? slot.memo : "", result.comment)
-      ) {
+      if (isMemoTooSimilar(slot && slot.memo ? slot.memo : "", result.comment)) {
         generated[slotIndex] = buildFallbackGrowthPhotoComment(aiContext);
-        fallbackUsed[slotIndex] = "既存の壊れたコメントとほぼ同じ内容になったため差し替えました。";
-        continue;
+        fallbackUsed[slotIndex] =
+          jobSource === "manual"
+            ? "再生成しても既存コメントとほぼ同じだったため、新しい表現で差し替えました。"
+            : shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext)
+              ? "既存の壊れたコメントとほぼ同じ内容になったため差し替えました。"
+              : "";
+        if (fallbackUsed[slotIndex]) continue;
       }
       generated[slotIndex] = result.comment;
     } catch (err) {
