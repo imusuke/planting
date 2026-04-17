@@ -156,6 +156,15 @@ test("buildFallbackGrowthPhotoComment returns natural japanese for broken contex
   assert.equal(photoAi.getJapaneseNaturalnessError(comment, { currentPhotoMemo: "" }), "");
 });
 
+test("isMemoTooSimilar detects near-identical broken rewrites", function () {
+  const left =
+    "鮮やかな濃い桃色の花が、前回よりも。(In。枝先に集まった鮮やかな濃い桃色の花が、くるりと曲線を描。色の濃淡やふくらみ方に季節の進みがにじみます。";
+  const right =
+    "鮮やかな濃い桃色の花が前回よりも目立ち、枝先に集まった濃い桃色の花がくるりと曲線を描きます。色の濃淡やふくらみ方にも季節の進みがにじみます。";
+
+  assert.equal(photoAi.isMemoTooSimilar(left, right), true);
+});
+
 test("getJapaneseNaturalnessError detects repetitive sentence starts", function () {
   const text =
     "ミモザは葉先の伸びが見えています。ミモザは株元にも動きがありそうです。ミモザはこの先も変化が続きそうです。";

@@ -5,6 +5,7 @@ const getRawBody = require("raw-body");
 const {
   buildFallbackGrowthPhotoComment,
   generateGrowthPhotoComment,
+  isMemoTooSimilar,
   shouldReplaceMemoWithFallback,
 } = require("../lib/growth-photo-ai");
 const archiveRecords = require("../lib/archive-records");
@@ -578,6 +579,14 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
         context: aiContext,
         timeoutMs: 30000,
       });
+      if (
+        shouldReplaceMemoWithFallback(slot && slot.memo ? slot.memo : "", aiContext) &&
+        isMemoTooSimilar(slot && slot.memo ? slot.memo : "", result.comment)
+      ) {
+        generated[slotIndex] = buildFallbackGrowthPhotoComment(aiContext);
+        fallbackUsed[slotIndex] = "既存の壊れたコメントとほぼ同じ内容になったため差し替えました。";
+        continue;
+      }
       generated[slotIndex] = result.comment;
     } catch (err) {
       var detail = err && err.message ? String(err.message) : "ai_comment_failed";
