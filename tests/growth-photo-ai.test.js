@@ -22,6 +22,18 @@ test("pickStyleProfile varies by context seed", function () {
   assert.notEqual(a.id, b.id);
 });
 
+test("prompt frames user notes as supporting context instead of overriding the photo", function () {
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "deck",
+    recordedDate: "2026-04-18",
+    plantNames: ["heuchera"],
+    userInstruction: "花色の濃淡を中心に見てほしい",
+  });
+
+  assert.ok(prompt.includes("その内容を踏まえつつ"));
+  assert.ok(prompt.includes("写真そのものの説明として読めるコメント"));
+});
+
 test("prompt includes optional user instruction when supplied", function () {
   const prompt = photoAi.buildGrowthPhotoCommentPrompt({
     areaLabel: "deck",
