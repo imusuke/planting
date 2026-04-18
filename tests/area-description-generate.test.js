@@ -81,3 +81,30 @@ test("generateAreaDescription falls back instead of returning caption-style body
     global.fetch = originalFetch;
   }
 });
+
+test("buildFallbackAreaBody ignores generic ai photo-comment phrases", function () {
+  const body = areaDescriptionAi.buildFallbackAreaBody({
+    areaLabel: "玄関前",
+    timelineRecords: [
+      {
+        recordedDate: "2026-03-28",
+        note: "白い壁の前で青い花が見え始めた",
+        photoMemos: [
+          "前回の印象と比べると、見どころが少し増えてきたように見えます。色や形の変化が重なり、季節の進み方まで伝わってくる記録になっています。",
+        ],
+      },
+      {
+        recordedDate: "2026-04-10",
+        note: "青い花の面積が広がって入口が明るく見える",
+        photoMemos: [
+          "葉や株の動きが重なり、生育の流れが自然に読み取れる段階です。",
+        ],
+      },
+    ],
+  });
+
+  assert.match(body, /白い壁の前で青い花が見え始めた/);
+  assert.match(body, /青い花の面積が広がって入口が明るく見える/);
+  assert.doesNotMatch(body, /前回の印象と比べると/);
+  assert.doesNotMatch(body, /見どころが少し増えてきたように見えます/);
+});
