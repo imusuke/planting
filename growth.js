@@ -303,6 +303,23 @@
     return n;
   }
 
+  function growthRecordPhotoCommentStats(r) {
+    var slots = growthImageSlots(r);
+    var total = 0;
+    var filled = 0;
+    for (var i = 0; i < slots.length; i++) {
+      if (!growthImageSrcFromSlot(slots[i])) continue;
+      total += 1;
+      var memo = slots[i] && slots[i].memo != null ? String(slots[i].memo).trim() : "";
+      if (memo) filled += 1;
+    }
+    return {
+      total: total,
+      filled: filled,
+      missing: total - filled,
+    };
+  }
+
   function flattenGrowthRecordsForLightbox(records) {
     var urls = [];
     var captions = [];
@@ -899,29 +916,35 @@
         });
     }
 
-    runNext().finally(function () {
-      syncBulkMissingCommentsAiButton();
-      if (updated && !failed) {
-        var successMessage = updated + "件の記録にAIコメントを追加しました。";
-        setBulkMissingCommentsAiStatus(successMessage, false);
-        showToast(successMessage);
-        return;
-      }
-      if (updated) {
-        var mixedMessage =
-          updated +
-          "件の記録にAIコメントを追加しました。失敗: " +
-          failed +
-          "件" +
-          (firstError ? "（" + firstError + "）" : "");
-        setBulkMissingCommentsAiStatus(mixedMessage, true);
-        showToast(mixedMessage, true);
-        return;
-      }
-      var failedMessage = firstError || "AIコメントの追加に失敗しました。";
-      setBulkMissingCommentsAiStatus(failedMessage, true);
-      showToast(failedMessage, true);
-    });
+    runNext()
+      .then(function () {
+        if (el.feed) {
+          return refreshFeed().catch(function () {});
+        }
+      })
+      .finally(function () {
+        syncBulkMissingCommentsAiButton();
+        if (updated && !failed) {
+          var successMessage = updated + "件の記録にAIコメントを追加しました。";
+          setBulkMissingCommentsAiStatus(successMessage, false);
+          showToast(successMessage);
+          return;
+        }
+        if (updated) {
+          var mixedMessage =
+            updated +
+            "件の記録にAIコメントを追加しました。失敗: " +
+            failed +
+            "件" +
+            (firstError ? "（" + firstError + "）" : "");
+          setBulkMissingCommentsAiStatus(mixedMessage, true);
+          showToast(mixedMessage, true);
+          return;
+        }
+        var failedMessage = firstError || "AIコメントの追加に失敗しました。";
+        setBulkMissingCommentsAiStatus(failedMessage, true);
+        showToast(failedMessage, true);
+      });
   }
 
   function buildGrowthAiRefreshResult(record, jobId, fallbackDetail) {
@@ -4111,6 +4134,25 @@
       note.className = "growth-card-note";
       note.textContent = r.note;
       body.appendChild(note);
+    }
+
+    if (!IS_VIEW) {
+      var commentStats = growthRecordPhotoCommentStats(r);
+      if (commentStats.total > 0) {
+        var commentStatus = document.createElement("p");
+        commentStatus.className = "growth-card-comment-status";
+        commentStatus.textContent =
+          commentStats.missing > 0
+            ? "写真コメント: " +
+              commentStats.filled +
+              " / " +
+              commentStats.total +
+              " 入力済み（未入力 " +
+              commentStats.missing +
+              " 件）"
+            : "写真コメント: " + commentStats.total + " / " + commentStats.total + " 入力済み";
+        body.appendChild(commentStatus);
+      }
     }
 
     card.appendChild(body);

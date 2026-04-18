@@ -1374,6 +1374,13 @@ a.growth-card-area-label:focus-visible {
   line-height: 1.55;
 }
 
+.growth-card-comment-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .growth-card-actions {
   padding: 0 14px 14px;
   display: flex;
