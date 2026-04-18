@@ -5,6 +5,7 @@
   var gallery = {
     items: [],
     index: 0,
+    actions: [],
   };
 
   function normalizeItems(items) {
@@ -23,9 +24,33 @@
         src: src,
         alt: String(item.alt || "").trim(),
         caption: String(item.caption || "").trim(),
+        meta: item.meta && typeof item.meta === "object" ? item.meta : null,
       });
     }
     return out;
+  }
+
+  function normalizeActions(actions) {
+    return Array.isArray(actions)
+      ? actions.filter(function (action) {
+          return !!action;
+        })
+      : [];
+  }
+
+  function buildActionContext(sync, close) {
+    return {
+      item: gallery.items[gallery.index] || null,
+      index: gallery.index,
+      items: gallery.items,
+      sync: sync,
+      close: close,
+      dialog: pack && pack.dialog ? pack.dialog : null,
+    };
+  }
+
+  function resolveActionValue(value, actionContext) {
+    return typeof value === "function" ? value(actionContext) : value;
   }
 
   function ensurePack() {
@@ -61,6 +86,10 @@
     var caption = document.createElement("p");
     caption.className = "site-photo-lightbox-caption";
 
+    var actionsRow = document.createElement("div");
+    actionsRow.className = "site-photo-lightbox-actions";
+    actionsRow.hidden = true;
+
     var navRow = document.createElement("div");
     navRow.className = "site-photo-lightbox-nav-row";
 
@@ -82,9 +111,50 @@
     shell.appendChild(top);
     shell.appendChild(media);
     shell.appendChild(caption);
+    shell.appendChild(actionsRow);
     shell.appendChild(navRow);
     dialog.appendChild(shell);
     document.body.appendChild(dialog);
+
+    function close() {
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
+    }
+
+    function renderActions() {
+      actionsRow.innerHTML = "";
+      var actions = gallery.actions || [];
+      if (!actions.length) {
+        actionsRow.hidden = true;
+        return;
+      }
+      var actionContext = buildActionContext(sync, close);
+      actions.forEach(function (action) {
+        if (!action) return;
+        if (resolveActionValue(action.hidden, actionContext)) return;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className =
+          "site-photo-lightbox-action" + (action.className ? " " + String(action.className).trim() : "");
+        var label = resolveActionValue(action.label, actionContext);
+        btn.textContent = label != null ? String(label) : "";
+        var ariaLabel = resolveActionValue(action.ariaLabel, actionContext);
+        if (ariaLabel) btn.setAttribute("aria-label", String(ariaLabel));
+        btn.disabled = !!resolveActionValue(action.disabled, actionContext);
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof action.onClick === "function") {
+            action.onClick(buildActionContext(sync, close));
+          }
+        });
+        actionsRow.appendChild(btn);
+      });
+      actionsRow.hidden = actionsRow.childElementCount === 0;
+    }
 
     function sync() {
       var items = gallery.items;
@@ -99,19 +169,12 @@
       var canNavigate = items.length > 1;
       prevBtn.hidden = !canNavigate;
       nextBtn.hidden = !canNavigate;
+      renderActions();
     }
 
     function showAt(index) {
       gallery.index = typeof index === "number" ? index : 0;
       sync();
-    }
-
-    function close() {
-      if (typeof dialog.close === "function") {
-        dialog.close();
-      } else {
-        dialog.removeAttribute("open");
-      }
     }
 
     shell.addEventListener("click", function (e) {
@@ -143,15 +206,18 @@
     pack = {
       dialog: dialog,
       showAt: showAt,
+      sync: sync,
+      close: close,
     };
     return pack;
   }
 
-  function open(items, startIndex) {
+  function open(items, startIndex, options) {
     var normalized = normalizeItems(items);
     if (!normalized.length) return;
     gallery.items = normalized;
     gallery.index = typeof startIndex === "number" ? startIndex : 0;
+    gallery.actions = normalizeActions(options && options.actions);
     var box = ensurePack();
     box.showAt(gallery.index);
     if (typeof box.dialog.showModal === "function") {
@@ -184,6 +250,7 @@
     return {
       items: items,
       index: typeof cfg.index === "number" ? cfg.index : 0,
+      actions: normalizeActions(cfg.actions),
     };
   }
 
@@ -200,7 +267,7 @@
       if (!cfg.items.length) return;
       e.preventDefault();
       e.stopPropagation();
-      open(cfg.items, cfg.index);
+      open(cfg.items, cfg.index, { actions: cfg.actions });
     });
 
     if (!img.closest("a,button")) {
@@ -210,7 +277,7 @@
         var cfg = resolveConfig(img, configOrFactory);
         if (!cfg.items.length) return;
         e.preventDefault();
-        open(cfg.items, cfg.index);
+        open(cfg.items, cfg.index, { actions: cfg.actions });
       });
     }
   }

@@ -2423,6 +2423,39 @@
     return /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif|tiff?)$/i.test(name);
   }
 
+  function revokePhotoQueuePreview(item) {
+    if (!item || item.kind !== "new") return;
+    var url = typeof item.previewUrl === "string" ? item.previewUrl : "";
+    if (url.indexOf("blob:") !== 0) {
+      item.previewUrl = "";
+      return;
+    }
+    try {
+      URL.revokeObjectURL(url);
+    } catch (previewErr) {}
+    item.previewUrl = "";
+  }
+
+  function revokePhotoQueuePreviews(items) {
+    if (!Array.isArray(items)) return;
+    items.forEach(function (item) {
+      revokePhotoQueuePreview(item);
+    });
+  }
+
+  function ensurePhotoQueuePreviewUrl(item) {
+    if (!item || item.kind !== "new" || !item.file) return "";
+    if (typeof item.previewUrl === "string" && item.previewUrl) {
+      return item.previewUrl;
+    }
+    try {
+      item.previewUrl = URL.createObjectURL(item.file);
+    } catch (previewErr) {
+      item.previewUrl = "";
+    }
+    return item.previewUrl || "";
+  }
+
   function appendFilesToPhotoQueue(fileList) {
     if (!fileList || !fileList.length) return;
     var n = 0;
@@ -2430,7 +2463,13 @@
       if (state.photoQueue.length >= MAX_GROWTH_PHOTOS) break;
       var f = fileList[i];
       if (!growthFileLooksLikeImage(f)) continue;
-      state.photoQueue.push({ kind: "new", file: f, memo: "", aiState: "pending" });
+      state.photoQueue.push({
+        kind: "new",
+        file: f,
+        memo: "",
+        aiState: "pending",
+        previewUrl: "",
+      });
       state.photosTouched = true;
       n++;
     }
@@ -2442,6 +2481,7 @@
 
   function removePhotoQueueIndex(idx) {
     if (idx < 0 || idx >= state.photoQueue.length) return;
+    revokePhotoQueuePreview(state.photoQueue[idx]);
     state.photoQueue.splice(idx, 1);
     state.photosTouched = true;
     renderPhotoQueueUi();
@@ -2449,15 +2489,6 @@
 
   function renderPhotoQueueUi() {
     if (!el.photoQueueEl) return;
-    var oldImgs = el.photoQueueEl.querySelectorAll("img.growth-photo-queue-thumb");
-    for (var oi = 0; oi < oldImgs.length; oi++) {
-      var ou = oldImgs[oi].src || "";
-      if (ou.indexOf("blob:") === 0) {
-        try {
-          URL.revokeObjectURL(ou);
-        } catch (revErr) {}
-      }
-    }
     el.photoQueueEl.innerHTML = "";
     if (el.photoQueueEmpty) {
       el.photoQueueEmpty.hidden = state.photoQueue.length > 0;
@@ -2476,11 +2507,9 @@
       thumb.className = "growth-photo-queue-thumb";
       thumb.alt = "";
       if (item.kind === "new" && item.file) {
-        try {
-          thumb.src = URL.createObjectURL(item.file);
-        } catch (e1) {
-          thumb.removeAttribute("src");
-        }
+        var previewUrl = ensurePhotoQueuePreviewUrl(item);
+        if (previewUrl) thumb.src = previewUrl;
+        else thumb.removeAttribute("src");
       } else if (item.kind === "saved" && item.slot) {
         var ssrc = growthImageSrcFromSlot(item.slot);
         if (ssrc) thumb.src = ssrc;
@@ -2575,6 +2604,7 @@
   }
 
   function resetPhotoQueueFromRecord(r) {
+    revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = growthImageSlots(r).map(function (slot) {
       var m = typeof slot.memo === "string" ? slot.memo : "";
       return { kind: "saved", slot: slot, memo: m, aiState: "idle" };
@@ -2584,6 +2614,7 @@
   }
 
   function clearPhotoQueueCompletely() {
+    revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = [];
     state.photosTouched = true;
     renderPhotoQueueUi();
@@ -3105,6 +3136,7 @@
 
   function clearEditMode() {
     state.editRecord = null;
+    revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = [];
     state.photosTouched = false;
     syncEditUrlParam("");
@@ -3121,6 +3153,7 @@
 
   function prepareNextRecordInSameArea(areaId, dateVal) {
     state.editRecord = null;
+    revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = [];
     state.photosTouched = false;
     state.pendingEditPhotoIndex = null;
