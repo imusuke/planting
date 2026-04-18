@@ -859,7 +859,7 @@
     var recordHref = wanted
       ? "./growth-edit.html?area=" + encodeURIComponent(wanted)
       : "./growth-edit.html";
-    var recordText = wanted ? "このエリアの記録を追加・編集" : "記録の追加・編集";
+    var recordText = wanted ? "このエリアの活動報告を追加・編集" : "活動報告・一覧の修正";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
     if (el.detailLink) el.detailLink.href = viewHref;
@@ -877,7 +877,7 @@
   function syncEditFormUI() {
     var editing = !!state.editRecord;
     if (el.formHeading) {
-      el.formHeading.textContent = editing ? "エリア記録を編集" : "エリア記録を追加";
+      el.formHeading.textContent = editing ? "このエリアの活動報告を編集" : "今日のエリア活動報告を追加";
     }
     if (el.save) {
       el.save.textContent = editing ? "更新して保存" : "保存する";
@@ -907,32 +907,32 @@
 
     if (area) {
       if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = area.label || area.id;
-      if (crumbEl) crumbEl.textContent = state.editRecord ? "エリア記録を編集" : "エリアの概要・記録を編集";
+      if (crumbEl) crumbEl.textContent = state.editRecord ? "このエリアの活動報告を編集" : "エリアの説明と活動報告を編集";
       if (titleEl) {
         titleEl.textContent =
-          area.label + (state.editRecord ? "の記録を編集" : "の概要・記録を編集");
+          area.label + (state.editRecord ? "の活動報告を編集" : "の説明と活動報告を編集");
       }
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = state.editRecord
-          ? "このエリアの過去記録、写真コメント、概要メモを編集します。"
-          : "このエリアの記録メモ、概要、本文、写真をまとめて追加・更新できます。";
+          ? "このエリアの過去の活動報告、写真コメント、説明文を編集します。"
+          : "このエリアの説明、活動報告メモ、写真をまとめて追加・更新できます。";
       }
       document.title =
         "植栽メモ — " +
         area.label +
-        (state.editRecord ? "の記録を編集" : "の概要・記録を編集");
+        (state.editRecord ? "の活動報告を編集" : "の説明と活動報告を編集");
       return;
     }
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = "エリア";
-    if (crumbEl) crumbEl.textContent = "エリアの概要・記録を編集";
-    if (titleEl) titleEl.textContent = "エリアの概要・記録を編集";
+    if (crumbEl) crumbEl.textContent = "エリアの説明と活動報告を編集";
+    if (titleEl) titleEl.textContent = "エリアの説明と活動報告を編集";
     if (contextEl) {
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "植栽メモ — エリアの概要・記録を編集";
+    document.title = "植栽メモ — エリアの説明と活動報告を編集";
   }
 
   function recordDateLabel(record) {

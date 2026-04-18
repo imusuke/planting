@@ -4037,12 +4037,12 @@
       }
       if (areaSecondaryEl) {
         areaSecondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-        areaSecondaryEl.textContent = "このエリアの概要・記録を編集";
+        areaSecondaryEl.textContent = "このエリアの説明と活動報告を編集";
       }
       if (areaTertiaryEl) {
         areaTertiaryEl.hidden = false;
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-        areaTertiaryEl.textContent = "このエリアの記録を追加・編集";
+        areaTertiaryEl.textContent = "このエリアの活動報告を追加・編集";
       }
       document.title = "植栽メモ — " + area.label + "の記録一覧";
       return;
@@ -4056,7 +4056,7 @@
     if (leadEl) {
       setLeadTextKeepingButton(
         leadEl,
-        "このサイト全体の入口です。エリア一覧・植栽一覧・記録一覧の閲覧へ進めます。"
+        "やりたいことから選べる入口です。活動報告を書く・直す、一覧を直す、エリアや植栽から見る、の入口をここにまとめています。"
       );
     }
     document.title = "植栽メモ";
@@ -4262,7 +4262,7 @@
         if (data === null || data === undefined) return;
         if (IS_VIEW) {
           updateCloudStatus(
-            "記録と写真を表示できています。追加・編集・削除は「記録の追加・編集」から行ってください。"
+            "記録と写真を表示できています。追加・編集・削除は「活動報告・一覧の修正」から行ってください。"
           );
         } else {
           updateCloudStatus(
@@ -4600,10 +4600,14 @@
       quick.className = "growth-section home-quick";
       quick.setAttribute("aria-labelledby", "home-quick-heading");
       quick.innerHTML =
-        '<h2 id="home-quick-heading">メニュー</h2>' +
+        '<h2 id="home-quick-heading">やりたいことから選ぶ</h2>' +
         '<div class="home-quick-grid">' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">エリア</span><h2>エリア一覧を見る</h2><p>各エリアの概要と記録へ進みます。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">植栽</span><h2>植栽一覧を見る</h2><p>植栽名とエリアの対応から探せます。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">活動報告</span><h2>活動報告を書く・直す</h2><p>今日の投稿や過去の写真コメントを編集します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html#areas"><span class="card-label">一覧修正</span><h2>エリア一覧を直す</h2><p>エリア名やエリアIDを整理します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html#plants"><span class="card-label">一覧修正</span><h2>植栽一覧を直す</h2><p>植栽名の表記や並びを直します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリアから見る</h2><p>各エリアの説明と活動報告を見ます。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽から見る</h2><p>植栽名とエリアの対応から探します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>ページの役割を確認する</h2><p>どこで何をするかを一覧で確認します。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);

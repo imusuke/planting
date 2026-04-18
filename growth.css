@@ -47,27 +47,32 @@ main.growth-panel {
   max-width: 920px;
 }
 
-.home-quick .card {
+.home-quick .card,
+.growth-task-guide .card {
   min-height: 112px;
   padding: 16px;
   gap: 8px;
   border-radius: 16px;
 }
 
-.home-quick .card h2 {
+.home-quick .card h2,
+.growth-task-guide .card h2 {
   font-size: 1.1rem;
 }
 
-.home-quick .card p {
+.home-quick .card p,
+.growth-task-guide .card p {
   font-size: 0.84rem;
   line-height: 1.5;
 }
 
-.home-quick .card .open {
+.home-quick .card .open,
+.growth-task-guide .card .open {
   font-size: 0.78rem;
 }
 
-.home-quick-grid {
+.home-quick-grid,
+.growth-task-guide-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
@@ -162,6 +167,30 @@ main.growth-panel .growth-section:last-of-type {
   display: grid;
   gap: 16px;
   max-width: 36rem;
+}
+
+.growth-form-group {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.growth-form-group .section-heading-row {
+  margin-bottom: 0;
+}
+
+.growth-form-group h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.growth-form-group > .growth-hint {
+  margin: 0;
 }
 
 .growth-form label.block,

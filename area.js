@@ -771,11 +771,11 @@
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-      editLink.textContent = "このエリアの概要・記録を編集";
+      editLink.textContent = "このエリアの説明と活動報告を編集";
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-      growthEditLinkEl.textContent = "このエリアの記録を追加・編集";
+      growthEditLinkEl.textContent = "このエリアの活動報告を追加・編集";
     }
 
     if (entry && entry.summary) {
@@ -1180,7 +1180,7 @@
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
-        ctaText: "このエリアの概要・記録を編集",
+        ctaText: "このエリアの説明と活動報告を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1192,7 +1192,7 @@
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
         emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
-        ctaText: "このエリアの記録を追加・編集",
+        ctaText: "このエリアの活動報告を追加・編集",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1228,7 +1228,7 @@
     actions.className = "detail-page-actions";
     var aRecord = createDetailLink(
       "./area-edit.html?area=" + encodeURIComponent(area.id),
-      "このエリアの概要・記録を編集",
+      "このエリアの説明と活動報告を編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);

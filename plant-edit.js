@@ -253,6 +253,8 @@
     if (el.leadDetailLink) el.leadDetailLink.href = detailHref;
     if (el.openDetail) el.openDetail.href = detailHref;
     if (el.recordLink) el.recordLink.href = recordHref;
+    if (el.guideDetailLink) el.guideDetailLink.href = detailHref;
+    if (el.guideRecordLink) el.guideRecordLink.href = recordHref;
   }
 
   function syncFormFromSelection() {
@@ -262,10 +264,10 @@
     var entry = findEntry(areaId, plantName);
 
     if (el.pageTitle) {
-      el.pageTitle.textContent = plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集";
+      el.pageTitle.textContent = plantName ? plantName + "の説明を編集" : "植栽の説明を編集";
     }
     if (el.breadcrumbCurrent) {
-      el.breadcrumbCurrent.textContent = plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集";
+      el.breadcrumbCurrent.textContent = plantName ? plantName + "の説明を編集" : "植栽の説明を編集";
     }
     if (el.detailBreadcrumbLink) {
       el.detailBreadcrumbLink.textContent = plantName ? plantName : "植栽";
@@ -285,7 +287,7 @@
     if (el.summary) el.summary.value = entry && entry.summary ? String(entry.summary) : "";
     if (el.body) el.body.value = entry && entry.body ? String(entry.body) : "";
     syncLinks(areaId, plantName);
-    document.title = "植栽メモ — " + (plantName ? plantName + "の詳細を編集" : "植栽の詳細を編集");
+    document.title = "植栽メモ — " + (plantName ? plantName + "の説明を編集" : "植栽の説明を編集");
   }
 
   function updateQuery(areaId, plantName) {
@@ -401,6 +403,8 @@
     el.leadDetailLink = $("plant-edit-lead-detail-link");
     el.recordLink = $("plant-edit-record-link");
     el.openDetail = $("plant-edit-open-detail");
+    el.guideRecordLink = $("plant-edit-guide-record-link");
+    el.guideDetailLink = $("plant-edit-guide-detail-link");
     el.changeLogStatus = $("plant-edit-change-log-status");
     el.changeLogList = $("plant-edit-change-log-list");
     el.changeLogReload = $("plant-edit-change-log-reload");

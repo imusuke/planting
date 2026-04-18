@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 植栽の詳細を編集</title>
+  <title>植栽メモ — 植栽の説明を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260406a" />
-  <link rel="stylesheet" href="./growth.css?v=20260411e" />
+  <link rel="stylesheet" href="./growth.css?v=20260418b" />
 </head>
 <body>
   <main class="panel growth-panel">
@@ -17,11 +17,11 @@
         <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./plants.html">植栽一覧</a></li>
         <li><a href="./plant.html" id="plant-edit-detail-breadcrumb-link">植栽</a></li>
-        <li aria-current="page" id="plant-edit-breadcrumb-current">植栽の詳細を編集</li>
+        <li aria-current="page" id="plant-edit-breadcrumb-current">植栽の説明を編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html" id="plant-edit-record-link" class="growth-nav-cta">この植栽の記録を追加・編集</a>
+        <a href="./growth-edit.html" id="plant-edit-record-link" class="growth-nav-cta">この植栽の活動報告を追加・編集</a>
         <a href="./plant.html" id="plant-edit-detail-link">この植栽を見る</a>
       </div>
     </nav>
@@ -30,14 +30,38 @@
 
     <header class="page-header">
       <p class="eyebrow">植栽</p>
-      <h1 id="plant-edit-page-title">植栽の詳細を編集</h1>
+      <h1 id="plant-edit-page-title">植栽の説明を編集</h1>
       <p id="plant-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p class="lead">
-        植栽の概要と詳細メモを編集します。閲覧は
+        ここは植栽ページ上部の説明専用です。活動報告や写真コメントは別画面で編集します。閲覧は
         <a href="./plant.html" id="plant-edit-lead-detail-link" class="detail-page-link">この植栽を見る</a>
         から確認できます。
       </p>
     </header>
+
+    <section class="growth-section growth-task-guide" aria-labelledby="plant-edit-guide-heading">
+      <h2 id="plant-edit-guide-heading">この画面でやること</h2>
+      <div class="growth-task-guide-grid">
+        <a class="card growthlog" href="./growth-edit.html" id="plant-edit-guide-record-link">
+          <span class="card-label">活動報告</span>
+          <h2>この植栽の活動報告を直す</h2>
+          <p>写真、活動報告メモ、写真コメントを編集します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="./plant.html" id="plant-edit-guide-detail-link">
+          <span class="card-label">確認</span>
+          <h2>植栽ページを見る</h2>
+          <p>今の概要、詳細メモ、活動報告の見え方を確認します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="./plants.html">
+          <span class="card-label">一覧</span>
+          <h2>植栽一覧へ戻る</h2>
+          <p>別の植栽へ切り替えるときはこちらです。</p>
+          <span class="open">開く</span>
+        </a>
+      </div>
+    </section>
 
     <section class="growth-section" aria-labelledby="plant-edit-connection-h2">
       <h2 id="plant-edit-connection-h2">保存先への接続</h2>
@@ -55,7 +79,7 @@
     </section>
 
     <form id="plant-edit-form" class="growth-section growth-section--composer growth-form">
-      <h2>植栽の詳細を編集</h2>
+      <h2>植栽ページ上部の説明</h2>
 
       <label class="block">
         <span class="growth-label">エリア</span>
@@ -510,6 +534,6 @@
   </script>
   <script src="./hub-link.js?v=20260405i" defer></script>
   <script src="./edit-page-common.js?v=20260418a" defer></script>
-  <script src="./plant-edit.js?v=20260411e" defer></script>
+  <script src="./plant-edit.js?v=20260418b" defer></script>
 </body>
 </html>

@@ -4,35 +4,78 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 記録の追加・編集</title>
+  <title>植栽メモ — 活動報告・一覧の修正</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260406a" />
-  <link rel="stylesheet" href="./growth.css?v=20260411e" />
+  <link rel="stylesheet" href="./growth.css?v=20260418b" />
 </head>
 <body>
   <main class="panel growth-panel">
     <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
         <li><a href="./index.html">植栽メモ</a></li>
-        <li aria-current="page" id="growth-edit-breadcrumb-current">記録の追加・編集</li>
+        <li aria-current="page" id="growth-edit-breadcrumb-current">活動報告・一覧の修正</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./area-edit.html">エリアの概要・記録を編集</a>
+        <a href="./area-edit.html">エリアの説明を編集</a>
+        <a href="./plant-edit.html">植栽の説明を編集</a>
       </div>
     </nav>
 
     <div id="growth-toast" class="growth-toast" role="status" aria-live="polite"></div>
 
     <header class="page-header">
-      <p class="eyebrow">記録</p>
-      <h1 id="growth-edit-page-title">記録の追加・編集</h1>
+      <p class="eyebrow">編集</p>
+      <h1 id="growth-edit-page-title">活動報告・一覧の修正</h1>
       <p id="growth-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="growth-edit-page-lead" class="lead">
-        記録の追加・編集、<strong>エリア</strong>と<strong>植栽名</strong>の整理、バックアップをこのページでまとめて行えます。
+        活動報告を書く・直すページです。タブを切り替えると、<strong>エリア一覧</strong>と<strong>植栽一覧</strong>の修正もできます。
       </p>
     </header>
+
+    <section class="growth-section growth-task-guide" aria-labelledby="growth-edit-guide-heading">
+      <h2 id="growth-edit-guide-heading">やりたいことから選ぶ</h2>
+      <div class="growth-task-guide-grid">
+        <a class="card growthlog" href="#edit-record-section">
+          <span class="card-label">活動報告</span>
+          <h2>今日の活動報告を書く</h2>
+          <p>日付、エリア、植栽、写真を追加します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="#past-records-heading">
+          <span class="card-label">活動報告</span>
+          <h2>過去の活動報告を直す</h2>
+          <p>過去の写真コメントや記録メモを編集します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="#areas">
+          <span class="card-label">一覧修正</span>
+          <h2>エリア一覧を直す</h2>
+          <p>エリア名やエリアIDを整理します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="#plants">
+          <span class="card-label">一覧修正</span>
+          <h2>植栽一覧を直す</h2>
+          <p>植栽名の表記や並びを直します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="./area-edit.html">
+          <span class="card-label">説明</span>
+          <h2>エリアの説明を直す</h2>
+          <p>エリアページ上部の概要と本文を編集します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="./plant-edit.html">
+          <span class="card-label">説明</span>
+          <h2>植栽の説明を直す</h2>
+          <p>植栽ページ上部の概要と詳細メモを編集します。</p>
+          <span class="open">開く</span>
+        </a>
+      </div>
+    </section>
 
     <section class="growth-section growth-section--composer" aria-labelledby="growth-storage-h2">
       <h2 id="growth-storage-h2">保存先への接続</h2>
@@ -58,7 +101,7 @@
         aria-selected="true"
         aria-controls="growth-tab-panel-record"
       >
-        記録の追加・編集
+        活動報告
       </button>
       <button
         type="button"
@@ -69,7 +112,7 @@
         aria-controls="growth-tab-panel-master"
         tabindex="-1"
       >
-        エリア
+        エリア一覧
       </button>
       <button
         type="button"
@@ -80,7 +123,7 @@
         aria-controls="growth-tab-panel-master"
         tabindex="-1"
       >
-        植栽名
+        植栽一覧
       </button>
     </div>
 
@@ -95,9 +138,9 @@
       id="edit-record-section"
       aria-labelledby="new-heading"
     >
-      <h2 id="new-heading">新しい記録を追加</h2>
+      <h2 id="new-heading">新しい活動報告を追加</h2>
       <p id="growth-edit-banner" class="growth-edit-banner" role="status" hidden>
-        この記録を編集しています。保存で上書きするか、「編集をやめる」で取り消せます。写真一覧を変えなければ今の画像のままです。
+        この活動報告を編集しています。保存で上書きするか、「編集をやめる」で取り消せます。写真一覧を変えなければ今の画像のままです。
       </p>
       <form id="growth-form" class="growth-form">
         <label class="block">
@@ -174,10 +217,8 @@
     </section>
 
     <section class="growth-section" aria-labelledby="past-records-heading">
-      <h2 id="past-records-heading">過去の記録を編集</h2>
-      <p class="growth-hint">
-        ここから過去の投稿を選ぶと、写真・記録メモ・写真ごとのコメントを上のフォームで編集できます。
-      </p>
+      <h2 id="past-records-heading">過去の活動報告を編集</h2>
+      <p class="growth-hint">ここから過去の投稿を選ぶと、写真、活動報告メモ、写真ごとのコメントを上のフォームで編集できます。</p>
       <div class="growth-filters">
         <label>
           エリア
@@ -236,22 +277,22 @@
       aria-labelledby="plants-catalog-heading"
     >
       <div class="section-heading-row plants-catalog-heading-tabs">
-        <h2 id="plants-catalog-heading" class="plants-catalog-heading-swap plants-catalog-heading-swap--areas">エリア</h2>
-        <h2 class="plants-catalog-heading-swap plants-catalog-heading-swap--plants">植栽名（マスタ）</h2>
+        <h2 id="plants-catalog-heading" class="plants-catalog-heading-swap plants-catalog-heading-swap--areas">エリア一覧を修正</h2>
+        <h2 class="plants-catalog-heading-swap plants-catalog-heading-swap--plants">植栽一覧を修正</h2>
       </div>
       <p id="plants-catalog-source" class="growth-hint" aria-live="polite"></p>
       <div id="plants-catalog-editor" class="plants-catalog-editor" hidden></div>
       <div class="plants-catalog-actions">
-        <button type="button" id="plants-catalog-reload" class="growth-secondary">一覧を再読み込み</button>
-        <button type="button" id="plants-catalog-add-area" class="growth-secondary plants-catalog-action--areas-only">エリアを追加</button>
-        <button type="button" id="plants-catalog-save" class="growth-primary">マスタをサーバーに保存</button>
+        <button type="button" id="plants-catalog-reload" class="growth-secondary">最新の一覧を読み直す</button>
+        <button type="button" id="plants-catalog-add-area" class="growth-secondary plants-catalog-action--areas-only">新しいエリアを追加</button>
+        <button type="button" id="plants-catalog-save" class="growth-primary">一覧の修正を保存</button>
       </div>
       <p class="growth-hint plants-catalog-hint-swap plants-catalog-hint-swap--areas">
-        保存には<strong>上</strong>の「アップロード用トークン」と同じ合言葉が必要です。各エリアの<strong>エリアID</strong>は英小文字・数字・ハイフンのみ（例:
-        <code>north-garden</code>）です。IDを変えると、既存の成長記録のエリア紐づけも保存時に更新されます。
+        ここではエリア一覧そのものを直します。保存には<strong>上</strong>の「アップロード用トークン」が必要です。各エリアの<strong>エリアID</strong>は英小文字・数字・ハイフンのみ（例:
+        <code>north-garden</code>）です。IDを変えると、既存の活動報告のエリア紐づけも保存時に更新されます。
       </p>
       <p class="growth-hint plants-catalog-hint-swap plants-catalog-hint-swap--plants">
-        保存には<strong>上</strong>のトークンが必要です。チェックボックス用の名前を<strong>行単位</strong>で編集します。名前を変えた行について、同じエリアの成長記録に含まれる旧名を新名へ置き換えます（行の追加・削除や並べ替えだけでは記録は自動では変わりません）。
+        ここでは植栽一覧そのものを直します。保存には<strong>上</strong>のトークンが必要です。名前を変えた行について、同じエリアの活動報告に含まれる旧名を新名へ置き換えます（行の追加・削除や並べ替えだけでは活動報告は自動では変わりません）。
       </p>
       <div class="plants-catalog-record-rename plants-catalog-plants-tab-only" aria-label="記録内の旧名をまとめて置き換え（任意）">
         <p class="growth-hint plants-catalog-record-rename-title">記録にだけ古い名前が残っているとき（任意）</p>
@@ -272,8 +313,8 @@
           </label>
         </div>
         <p class="growth-hint">
-          一覧の名前はすでに新しくても、過去の記録だけ旧表記のまま、というときに使います。「マスタをサーバーに保存」と同時に、指定したエリアの記録だけ置き換えます。
-        </p>
+          一覧の名前はすでに新しくても、過去の活動報告だけ旧表記のまま、というときに使います。「一覧の修正を保存」と同時に、指定したエリアの記録だけ置き換えます。
+      </p>
       </div>
     </section>
     </div>
@@ -396,6 +437,6 @@
   </script>
   <script src="./hub-link.js?v=20260405i" defer></script>
   <script src="./edit-page-common.js?v=20260418a" defer></script>
-    <script src="./growth.js?v=20260418a" defer></script>
+    <script src="./growth.js?v=20260418b" defer></script>
 </body>
 </html>

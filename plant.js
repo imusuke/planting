@@ -439,7 +439,7 @@
     if (!bodyWrap.childElementCount) {
       bodyWrap.appendChild(
         createDetailPlaceholder(
-          "この植栽の詳細メモや手入れメモは、まだ登録されていません。植栽の詳細を編集から追加できます。",
+          "この植栽の説明は、まだ登録されていません。植栽の説明を編集から追加できます。",
           "detail-page-placeholder"
         )
       );
@@ -600,14 +600,14 @@
         area: area.id,
         plant: plantName,
       });
-      detailEditLinkEl.textContent = "この植栽の詳細を編集";
+      detailEditLinkEl.textContent = "この植栽の説明を編集";
     }
     if (recordEditLinkEl) {
       recordEditLinkEl.href = buildQuery("./growth-edit.html", {
         area: area.id,
         plant: plantName,
       });
-      recordEditLinkEl.textContent = "この植栽の記録を追加・編集";
+      recordEditLinkEl.textContent = "この植栽の活動報告を追加・編集";
     }
 
     if (areaLineEl) {
@@ -640,7 +640,7 @@
         area: area.id,
         plant: plantName,
       }),
-      "この植栽の詳細を編集",
+      "この植栽の説明を編集",
       "detail-page-cta"
     );
     actions.appendChild(aDetail);
@@ -650,7 +650,7 @@
         area: area.id,
         plant: plantName,
       }),
-      "この植栽の記録を追加・編集",
+      "この植栽の活動報告を追加・編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);
