@@ -34,6 +34,18 @@ test("prompt includes optional user instruction when supplied", function () {
   assert.ok(prompt.includes("花色の濃淡を中心に見てほしい"));
 });
 
+test("prompt tells ai to analyze from the user's viewpoint", function () {
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "deck",
+    recordedDate: "2026-04-18",
+    plantNames: ["heuchera"],
+    userInstruction: "花色の濃淡を中心に見てほしい",
+  });
+
+  assert.ok(prompt.includes("写真の中で確かめられる根拠"));
+  assert.ok(prompt.includes("補足メモをそのまま言い換えるだけで終わらせず"));
+});
+
 test("prompt omits optional user instruction line when blank", function () {
   const prompt = photoAi.buildGrowthPhotoCommentPrompt({
     areaLabel: "deck",
