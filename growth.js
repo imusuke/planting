@@ -62,12 +62,15 @@
     area: null,
     plantChecks: null,
     customPlant: null,
+    submitNext: null,
     photoCamera: null,
     photoLibrary: null,
     photoStatus: null,
     photoClear: null,
     photoAiGenerate: null,
     photoAiStatus: null,
+    bulkMissingCommentsAiBtn: null,
+    bulkMissingCommentsAiStatus: null,
     photoQueueEl: null,
     photoQueueEmpty: null,
     submit: null,
@@ -102,6 +105,10 @@
     growthTabBtnPlants: null,
     growthTabPanelRecord: null,
     growthTabPanelMaster: null,
+    sequenceGuide: null,
+    sequenceArea: null,
+    sequencePlants: null,
+    sequenceClear: null,
     viewModeGridRadio: null,
     viewModeTimelineRadio: null,
     plantTimeline: null,
@@ -710,6 +717,198 @@
         : "AIコメントの更新に失敗しました。";
     }
     return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+  }
+
+  function setBulkMissingCommentsAiStatus(message, isError) {
+    if (!el.bulkMissingCommentsAiStatus) return;
+    el.bulkMissingCommentsAiStatus.textContent = message || "";
+    el.bulkMissingCommentsAiStatus.className =
+      "growth-hint growth-status" + (isError ? " growth-status--error" : "");
+  }
+
+  function getFilteredEditRecords(records) {
+    var list = Array.isArray(records) ? records.slice() : [];
+    var fa = el.filterArea ? el.filterArea.value : "";
+    var fp = el.filterPlant ? el.filterPlant.value : "";
+    var fc = el.filterCommentState ? el.filterCommentState.value : "";
+    return list.filter(function (r) {
+      if (fa && r.areaId !== fa) return false;
+      if (fp && (!r.plants || r.plants.indexOf(fp) === -1)) return false;
+      if (fc && !recordMatchesCommentFilter(r, fc)) return false;
+      return true;
+    });
+  }
+
+  function collectVisibleMissingCommentTargets() {
+    return getFilteredEditRecords(state.lastGrowthRecords).reduce(function (out, record) {
+      var job = readRecordAiCommentJob(record);
+      if (job && (job.status === "queued" || job.status === "running")) return out;
+      var targets = [];
+      growthImageSlots(record).forEach(function (slot, idx) {
+        var memo = slot && slot.memo != null ? String(slot.memo).trim() : "";
+        if (!memo) targets.push(idx);
+      });
+      if (targets.length) {
+        out.push({
+          id: String(record.id || ""),
+          record: record,
+          targets: targets,
+        });
+      }
+      return out;
+    }, []);
+  }
+
+  function syncBulkMissingCommentsAiButton() {
+    if (!el.bulkMissingCommentsAiBtn) return;
+    var targets = collectVisibleMissingCommentTargets();
+    el.bulkMissingCommentsAiBtn.disabled = state.photoAiBusy || !targets.length;
+    el.bulkMissingCommentsAiBtn.textContent = targets.length
+      ? "表示中の未入力コメントにAIコメントを追加（" + targets.length + "件）"
+      : "表示中の未入力コメントにAIコメントを追加";
+    if (!targets.length && el.bulkMissingCommentsAiStatus && !el.bulkMissingCommentsAiStatus.textContent) {
+      setBulkMissingCommentsAiStatus("未入力コメントのある記録を絞り込むと、ここからまとめて追加できます。", false);
+    }
+  }
+
+  function runBulkMissingCommentsAiRefresh() {
+    if (!el.bulkMissingCommentsAiBtn) return;
+    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    if (!storedToken) {
+      showToast("アップロード用トークンを保存するとAIコメントを追加できます。", true);
+      return;
+    }
+
+    var queue = collectVisibleMissingCommentTargets();
+    if (!queue.length) {
+      setBulkMissingCommentsAiStatus("表示中の記録に、未入力の写真コメントはありません。", false);
+      showToast("未入力コメントのある記録はありません。");
+      syncBulkMissingCommentsAiButton();
+      return;
+    }
+
+    var completed = 0;
+    var updated = 0;
+    var failed = 0;
+    var firstError = "";
+    el.bulkMissingCommentsAiBtn.disabled = true;
+    setBulkMissingCommentsAiStatus(
+      queue.length + "件の記録について、未入力コメントへAIコメントを追加しています…",
+      false
+    );
+
+    function runNext() {
+      if (!queue.length) return Promise.resolve();
+      var entry = queue.shift();
+      var baseRecord = growthRecordById(entry.id) || entry.record;
+      var pendingLabel =
+        (baseRecord && Array.isArray(baseRecord.plants) && baseRecord.plants.length
+          ? baseRecord.plants.join("、")
+          : "この記録") + " の未入力コメントを追加しています…";
+      setBulkMissingCommentsAiStatus(
+        pendingLabel + " (" + (completed + 1) + "/" + (completed + queue.length + 1) + ")",
+        false
+      );
+
+      return fetch(API_GROWTH_AI_REFRESH, {
+        method: "POST",
+        cache: "no-store",
+        keepalive: true,
+        headers: cloudHeaders(true),
+        body: JSON.stringify({
+          id: entry.id,
+          targets: entry.targets.slice(),
+        }),
+      })
+        .then(function (res) {
+          if (res.status === 401) {
+            throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+          }
+          if (!res.ok) {
+            return apiErrorMessage(res, "AIコメントの追加に失敗しました").then(function (msg) {
+              throw new Error(msg);
+            });
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          var latestRecord =
+            data && (data.record || data.latestRecord) ? data.record || data.latestRecord : null;
+          var latestJob = readRecordAiCommentJob(latestRecord);
+          var jobId = latestJob && latestJob.id ? latestJob.id : "";
+          if (latestRecord) {
+            replaceGrowthRecordInState(latestRecord);
+          }
+          if (data && data.updated) {
+            updated += 1;
+            completed += 1;
+            return;
+          }
+          if (!baseRecord) {
+            completed += 1;
+            if (data && data.detail) {
+              failed += 1;
+              if (!firstError) firstError = String(data.detail);
+            }
+            return;
+          }
+          return pollGrowthRecordUntilUpdated(baseRecord, entry.targets, Date.now() + 12000, jobId)
+            .then(function (polledRecord) {
+              if (polledRecord) {
+                replaceGrowthRecordInState(polledRecord);
+                var result = buildGrowthAiRefreshResult(polledRecord, jobId, data && data.detail ? String(data.detail) : "");
+                if (result.updated || (result.job && result.job.status === "done" && !result.failed)) {
+                  updated += 1;
+                } else if (result.failed || (result.job && result.job.status === "failed")) {
+                  failed += 1;
+                  if (!firstError) firstError = result.detail || (result.job && result.job.detail) || "";
+                }
+              } else {
+                failed += 1;
+                if (!firstError && data && data.detail) firstError = String(data.detail);
+              }
+              completed += 1;
+            })
+            .catch(function (err) {
+              failed += 1;
+              completed += 1;
+              if (!firstError) firstError = err && err.message ? String(err.message) : "AIコメントの追加に失敗しました。";
+            });
+        })
+        .catch(function (err) {
+          failed += 1;
+          completed += 1;
+          if (!firstError) firstError = err && err.message ? String(err.message) : "AIコメントの追加に失敗しました。";
+        })
+        .then(function () {
+          renderFeed(state.lastGrowthRecords);
+          return runNext();
+        });
+    }
+
+    runNext().finally(function () {
+      syncBulkMissingCommentsAiButton();
+      if (updated && !failed) {
+        var successMessage = updated + "件の記録にAIコメントを追加しました。";
+        setBulkMissingCommentsAiStatus(successMessage, false);
+        showToast(successMessage);
+        return;
+      }
+      if (updated) {
+        var mixedMessage =
+          updated +
+          "件の記録にAIコメントを追加しました。失敗: " +
+          failed +
+          "件" +
+          (firstError ? "（" + firstError + "）" : "");
+        setBulkMissingCommentsAiStatus(mixedMessage, true);
+        showToast(mixedMessage, true);
+        return;
+      }
+      var failedMessage = firstError || "AIコメントの追加に失敗しました。";
+      setBulkMissingCommentsAiStatus(failedMessage, true);
+      showToast(failedMessage, true);
+    });
   }
 
   function buildGrowthAiRefreshResult(record, jobId, fallbackDetail) {
@@ -2103,6 +2302,64 @@
       boxes[j].checked = plantNames.indexOf(boxes[j].value) !== -1;
     }
     el.customPlant.value = extras.join("、");
+    renderSequentialComposerGuide();
+  }
+
+  function setComposerPlantSelection(plantNames) {
+    applyPlantsToForm(Array.isArray(plantNames) ? plantNames : [], el.area ? el.area.value : "");
+  }
+
+  function selectSequentialPlant(plantName) {
+    if (!el.area) return;
+    setComposerPlantSelection(plantName ? [plantName] : []);
+    renderSequentialComposerGuide();
+    showToast("「" + plantName + "」を選びました。写真を追加して保存できます。");
+  }
+
+  function clearComposerPlantSelection() {
+    setComposerPlantSelection([]);
+    renderSequentialComposerGuide();
+  }
+
+  function renderSequentialComposerGuide() {
+    if (!el.sequenceGuide || !el.sequencePlants || !el.area) return;
+    var areaId = String(el.area.value || "").trim();
+    var area = findAreaById(areaId);
+    var editing = !!state.editRecord;
+    if (editing || !area || !Array.isArray(area.plants) || !area.plants.length) {
+      el.sequenceGuide.hidden = true;
+      el.sequencePlants.innerHTML = "";
+      if (el.sequenceArea) el.sequenceArea.textContent = "";
+      if (el.sequenceClear) el.sequenceClear.disabled = true;
+      return;
+    }
+
+    el.sequenceGuide.hidden = false;
+    if (el.sequenceArea) {
+      el.sequenceArea.textContent =
+        "「" + area.label + "」の植栽を続けて記録できます。次の植栽は下のボタンから選べます。";
+    }
+
+    var selectedPlants = getSelectedPlants();
+    var customPlant = el.customPlant ? String(el.customPlant.value || "").trim() : "";
+    var activePlant = !customPlant && selectedPlants.length === 1 ? selectedPlants[0] : "";
+    el.sequencePlants.innerHTML = "";
+    area.plants.forEach(function (plantName) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className =
+        "growth-sequence-plant" + (activePlant === plantName ? " is-active" : "");
+      button.textContent = plantName;
+      button.setAttribute("aria-pressed", activePlant === plantName ? "true" : "false");
+      button.addEventListener("click", function () {
+        selectSequentialPlant(plantName);
+      });
+      el.sequencePlants.appendChild(button);
+    });
+
+    if (el.sequenceClear) {
+      el.sequenceClear.disabled = !selectedPlants.length && !customPlant;
+    }
   }
 
   function growthFileLooksLikeImage(f) {
@@ -2711,9 +2968,14 @@
     if (el.submit) {
       el.submit.textContent = editing ? "更新して保存" : "保存";
     }
+    if (el.submitNext) {
+      el.submitNext.hidden = editing;
+      el.submitNext.disabled = editing;
+    }
     if (el.editBanner) el.editBanner.hidden = !editing;
     if (el.editCancel) el.editCancel.hidden = !editing;
     if (el.deleteRecordBtn) el.deleteRecordBtn.hidden = !editing;
+    renderSequentialComposerGuide();
   }
 
   function syncEditPageContext(record) {
@@ -2799,8 +3061,35 @@
     el.form.reset();
     if (el.date) el.date.value = todayInputValue();
     renderPlantChecks(el.area.value);
+    clearComposerPlantSelection();
     clearPhotoInputs();
     renderPhotoQueueUi();
+  }
+
+  function prepareNextRecordInSameArea(areaId, dateVal) {
+    state.editRecord = null;
+    state.photoQueue = [];
+    state.photosTouched = false;
+    state.pendingEditPhotoIndex = null;
+    syncEditUrlParam("");
+    syncEditFormUI();
+    syncEditPageContext();
+    if (!el.form || !el.area) return;
+    el.form.reset();
+    if (areaId) {
+      el.area.value = areaId;
+    }
+    if (el.date) el.date.value = dateVal || todayInputValue();
+    renderPlantChecks(el.area.value);
+    clearComposerPlantSelection();
+    clearPhotoInputs();
+    renderPhotoQueueUi();
+    requestAnimationFrame(function () {
+      var section = document.getElementById("edit-record-section");
+      if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+      var firstPlant = el.sequencePlants ? el.sequencePlants.querySelector("button") : null;
+      if (firstPlant) firstPlant.focus();
+    });
   }
 
   function startEdit(r) {
@@ -3307,6 +3596,7 @@
 
   function populateAreaSelects() {
     if (el.area) {
+      var keepArea = el.area.value;
       el.area.innerHTML = "";
       state.areas.forEach(function (a) {
         var opt = document.createElement("option");
@@ -3314,6 +3604,8 @@
         opt.textContent = a.label;
         el.area.appendChild(opt);
       });
+      if (keepArea) el.area.value = keepArea;
+      if (!el.area.value && state.areas.length) el.area.value = state.areas[0].id;
     }
     if (el.filterArea) {
       var keep = el.filterArea.value;
@@ -3328,6 +3620,7 @@
     }
     populateRecordRenameAreaSelect();
     updateFilterPlantOptions();
+    renderSequentialComposerGuide();
   }
 
   function allPlantNames() {
@@ -4056,7 +4349,7 @@
     if (leadEl) {
       setLeadTextKeepingButton(
         leadEl,
-        "やりたいことから選べる入口です。活動報告を書く・直す、一覧を直す、エリアや植栽から見る、の入口をここにまとめています。"
+        "まずはエリアや植栽から見て、必要に応じて活動報告や一覧を直せる入口です。"
       );
     }
     document.title = "植栽メモ";
@@ -4138,25 +4431,20 @@
   function renderFeed(records) {
     if (!el.feed) return;
 
-    var fa = el.filterArea ? el.filterArea.value : "";
-    var fp = el.filterPlant ? el.filterPlant.value : "";
-    var fc = el.filterCommentState ? el.filterCommentState.value : "";
-
-    var filtered = records.filter(function (r) {
-      if (fa && r.areaId !== fa) return false;
-      if (fp && (!r.plants || r.plants.indexOf(fp) === -1)) return false;
-      if (fc && !recordMatchesCommentFilter(r, fc)) return false;
-      return true;
-    });
+    var filtered = getFilteredEditRecords(records);
 
     sortFilteredGrowthRecords(filtered);
 
     el.feed.innerHTML = "";
+    syncBulkMissingCommentsAiButton();
 
     if (filtered.length === 0) {
       var empty = document.createElement("p");
       empty.className = "growth-hint";
-      empty.textContent = fc ? "この条件に合う記録はありません。" : "該当する記録がありません。";
+      empty.textContent =
+        el.filterCommentState && el.filterCommentState.value
+          ? "この条件に合う記録はありません。"
+          : "該当する記録がありません。";
       el.feed.appendChild(empty);
       return;
     }
@@ -4311,8 +4599,10 @@
 
   function onSubmit(e) {
     e.preventDefault();
+    var submitter = e && e.submitter ? e.submitter : null;
     var editing = state.editRecord;
     var wasEdit = !!editing;
+    var continueInSameArea = !wasEdit && submitter && submitter.id === "growth-submit-next";
     var areaId = el.area.value;
     var area = state.areas.find(function (a) {
       return a.id === areaId;
@@ -4334,6 +4624,7 @@
     }
 
     el.submit.disabled = true;
+    if (el.submitNext) el.submitNext.disabled = true;
 
     var id = editing ? editing.id : uuid();
     var recordedAt = dateVal + "T12:00:00.000Z";
@@ -4422,6 +4713,9 @@
       })
       .then(function (saveResult) {
         var saveMessage = wasEdit ? "更新しました" : "保存しました";
+        if (continueInSameArea) {
+          saveMessage += " 同じエリアで続けて投稿できます。";
+        }
         var saveJob = saveResult && saveResult.record ? readRecordAiCommentJob(saveResult.record) : null;
         if (saveResult && saveResult.aiCommentsQueued) {
           saveMessage += " AIコメントはサーバー側でバックグラウンド更新中です。保存後は画面を離れても大丈夫です。";
@@ -4461,7 +4755,9 @@
         populateAreaSelects();
         renderPlantsCatalogEditor();
         updatePlantsCatalogSourceLabel();
-        if (result && result.refreshResult && result.refreshResult.record) {
+        if (continueInSameArea) {
+          prepareNextRecordInSameArea(areaId, dateVal);
+        } else if (result && result.refreshResult && result.refreshResult.record) {
           startEdit(result.refreshResult.record);
         } else {
           clearEditMode();
@@ -4476,6 +4772,7 @@
       })
       .finally(function () {
         el.submit.disabled = false;
+        if (el.submitNext) el.submitNext.disabled = false;
       });
   }
 
@@ -4602,11 +4899,11 @@
       quick.innerHTML =
         '<h2 id="home-quick-heading">やりたいことから選ぶ</h2>' +
         '<div class="home-quick-grid">' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリアから見る</h2><p>各エリアの説明と活動報告を見ます。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽から見る</h2><p>植栽名とエリアの対応から探します。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">活動報告</span><h2>活動報告を書く・直す</h2><p>今日の投稿や過去の写真コメントを編集します。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./growth-edit.html#areas"><span class="card-label">一覧修正</span><h2>エリア一覧を直す</h2><p>エリア名やエリアIDを整理します。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./growth-edit.html#plants"><span class="card-label">一覧修正</span><h2>植栽一覧を直す</h2><p>植栽名の表記や並びを直します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリアから見る</h2><p>各エリアの説明と活動報告を見ます。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽から見る</h2><p>植栽名とエリアの対応から探します。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>ページの役割を確認する</h2><p>どこで何をするかを一覧で確認します。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
@@ -4805,12 +5102,15 @@
     el.area = $("field-area");
     el.plantChecks = $("plant-checks");
     el.customPlant = $("field-custom-plant");
+    el.submitNext = $("growth-submit-next");
     el.photoCamera = $("field-photo-camera");
     el.photoLibrary = $("field-photo-library");
     el.photoStatus = $("field-photo-status");
     el.photoClear = $("photo-clear");
     el.photoAiGenerate = $("photo-ai-generate");
     el.photoAiStatus = $("photo-ai-status");
+    el.bulkMissingCommentsAiBtn = $("bulk-missing-comments-ai");
+    el.bulkMissingCommentsAiStatus = $("bulk-missing-comments-ai-status");
     el.photoQueueEl = $("growth-photo-queue");
     el.photoQueueEmpty = $("growth-photo-queue-empty");
     el.submit = $("growth-submit");
@@ -4842,6 +5142,10 @@
     el.growthTabBtnPlants = $("growth-tab-btn-plants");
     el.growthTabPanelRecord = $("growth-tab-panel-record");
     el.growthTabPanelMaster = $("growth-tab-panel-master");
+    el.sequenceGuide = $("growth-sequence-guide");
+    el.sequenceArea = $("growth-sequence-area");
+    el.sequencePlants = $("growth-sequence-plants");
+    el.sequenceClear = $("growth-sequence-clear");
 
     if (!el.form || !el.area) return;
 
@@ -4868,6 +5172,11 @@
     if (el.changeLogReload) {
       el.changeLogReload.addEventListener("click", function () {
         loadChangeLog().catch(function () {});
+      });
+    }
+    if (el.bulkMissingCommentsAiBtn) {
+      el.bulkMissingCommentsAiBtn.addEventListener("click", function () {
+        runBulkMissingCommentsAiRefresh();
       });
     }
     if (el.plantsCatalogAddArea && el.plantsCatalogEditor) {
@@ -4915,6 +5224,8 @@
           renderPlantChecks(el.area.value);
           updateFilterPlantOptions();
         }
+        renderSequentialComposerGuide();
+        syncBulkMissingCommentsAiButton();
         if (el.date) el.date.value = todayInputValue();
         loadChangeLog().catch(function () {});
         if (el.feed) refreshFeed();
@@ -4930,7 +5241,26 @@
       }
       updateFilterPlantOptions();
       syncEditPageContext(state.editRecord);
+      renderSequentialComposerGuide();
     });
+
+    if (el.plantChecks) {
+      el.plantChecks.addEventListener("change", function () {
+        renderSequentialComposerGuide();
+      });
+    }
+
+    if (el.customPlant) {
+      el.customPlant.addEventListener("input", function () {
+        renderSequentialComposerGuide();
+      });
+    }
+
+    if (el.sequenceClear) {
+      el.sequenceClear.addEventListener("click", function () {
+        clearComposerPlantSelection();
+      });
+    }
 
     if (el.filterArea) {
       el.filterArea.addEventListener("change", function () {
@@ -4942,6 +5272,12 @@
 
     if (el.filterPlant) {
       el.filterPlant.addEventListener("change", function () {
+        refreshFeed();
+      });
+    }
+
+    if (el.filterCommentState) {
+      el.filterCommentState.addEventListener("change", function () {
         refreshFeed();
       });
     }

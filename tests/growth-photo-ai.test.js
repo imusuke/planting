@@ -156,6 +156,19 @@ test("buildFallbackGrowthPhotoComment returns natural japanese for broken contex
   assert.equal(photoAi.getJapaneseNaturalnessError(comment, { currentPhotoMemo: "" }), "");
 });
 
+test("buildFallbackGrowthPhotoComment clears minimum length for sparse context", function () {
+  const comment = photoAi.buildFallbackGrowthPhotoComment({
+    areaLabel: "玄関前",
+    recordedDate: "2026-04-18",
+    plantNames: ["アジサイ"],
+    photoIndex: 1,
+    photoCount: 1,
+  });
+
+  assert.ok(comment.length >= photoAi.COMMENT_MIN_LENGTH);
+  assert.equal(photoAi.getValidationError(comment, { currentPhotoMemo: "" }), "");
+});
+
 test("isMemoTooSimilar detects near-identical broken rewrites", function () {
   const left =
     "鮮やかな濃い桃色の花が、前回よりも。(In。枝先に集まった鮮やかな濃い桃色の花が、くるりと曲線を描。色の濃淡やふくらみ方に季節の進みがにじみます。";
@@ -345,6 +358,58 @@ test("generateGrowthPhotoComment falls back safely when final quality review is 
 
     assert.equal(call, 4);
     assert.match(result.comment, /自然に伝わってきます/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("generateGrowthPhotoComment falls back when all ai drafts stay too short", async function () {
+  const originalFetch = global.fetch;
+  let call = 0;
+
+  global.fetch = async function () {
+    call += 1;
+    const text = call === 4
+      ? JSON.stringify({
+          ok: false,
+          issues: ["too_short"],
+          revisedComment: "葉が少し伸びています。",
+        })
+      : "葉が少し伸びています。";
+
+    return {
+      ok: true,
+      json: async function () {
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [{ text }],
+              },
+            },
+          ],
+        };
+      },
+    };
+  };
+
+  try {
+    const result = await photoAi.generateGrowthPhotoComment({
+      apiKey: "test-key",
+      imageBase64: Buffer.from("fake-image").toString("base64"),
+      context: {
+        areaLabel: "玄関前",
+        recordedDate: "2026-04-20",
+        plantNames: ["アジサイ"],
+        photoIndex: 1,
+        photoCount: 1,
+      },
+    });
+
+    assert.ok(call >= 4);
+    assert.ok(result.comment.length >= photoAi.COMMENT_MIN_LENGTH);
+    assert.equal(photoAi.getValidationError(result.comment, { currentPhotoMemo: "" }), "");
+    assert.equal(photoAi.getJapaneseNaturalnessError(result.comment, { currentPhotoMemo: "" }), "");
   } finally {
     global.fetch = originalFetch;
   }

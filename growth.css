@@ -254,6 +254,75 @@ main.growth-panel .growth-section:last-of-type {
   font-style: italic;
 }
 
+.growth-sequence-guide {
+  margin: 8px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(217, 238, 225, 0.72), rgba(255, 255, 255, 0.94));
+}
+
+.growth-sequence-guide-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.growth-sequence-guide h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.growth-sequence-area {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #245b44;
+}
+
+.growth-sequence-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.growth-sequence-plants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.growth-sequence-plant {
+  appearance: none;
+  border: 1px solid rgba(45, 106, 79, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.growth-sequence-plant:hover,
+.growth-sequence-plant:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(45, 106, 79, 0.45);
+  box-shadow: 0 8px 18px rgba(19, 54, 38, 0.08);
+  outline: none;
+}
+
+.growth-sequence-plant.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #2d6a4f, #3a7f5f);
+  box-shadow: 0 10px 20px rgba(45, 106, 79, 0.22);
+}
+
 .growth-actions {
   display: flex;
   flex-wrap: wrap;

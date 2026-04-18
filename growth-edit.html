@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260406a" />
-  <link rel="stylesheet" href="./growth.css?v=20260418b" />
+  <link rel="stylesheet" href="./growth.css?v=20260418c" />
 </head>
 <body>
   <main class="panel growth-panel">
@@ -163,6 +163,20 @@
           <input id="field-custom-plant" type="text" placeholder="例: 今年植えた苗の名前" autocomplete="off" />
         </label>
 
+        <section id="growth-sequence-guide" class="growth-sequence-guide" aria-labelledby="growth-sequence-heading" hidden>
+          <div class="growth-sequence-guide-head">
+            <h3 id="growth-sequence-heading">同じエリアで続けて投稿</h3>
+            <p id="growth-sequence-area" class="growth-sequence-area"></p>
+            <p class="growth-hint">
+              植栽を選んで写真を追加し、<strong>保存して次の植栽へ</strong> を押すと、エリアと日付を残したまま次の投稿へ進めます。
+            </p>
+          </div>
+          <div class="growth-sequence-guide-actions">
+            <button type="button" id="growth-sequence-clear" class="growth-secondary">植栽の選択をクリア</button>
+          </div>
+          <div id="growth-sequence-plants" class="growth-sequence-plants" aria-live="polite"></div>
+        </section>
+
         <label class="block">
           <span>メモ（任意）</span>
           <textarea name="note" placeholder="葉の様子、花、灌水など"></textarea>
@@ -206,6 +220,7 @@
 
         <div class="growth-actions">
         <button type="submit" id="growth-submit" class="growth-primary">保存する</button>
+          <button type="submit" id="growth-submit-next" class="growth-secondary">保存して次の植栽へ</button>
           <button type="button" id="growth-edit-cancel" class="growth-secondary" hidden>編集をやめる</button>
           <button type="button" id="growth-delete-record" class="growth-danger" hidden>この記録をアーカイブ</button>
           <button type="button" id="photo-clear" class="growth-secondary">写真をクリア</button>
@@ -238,6 +253,12 @@
           </select>
         </label>
       </div>
+      <div class="growth-backup-row growth-backup-row--spaced">
+        <button type="button" id="bulk-missing-comments-ai" class="growth-secondary">
+          表示中の未入力コメントにAIコメントを追加
+        </button>
+      </div>
+      <p id="bulk-missing-comments-ai-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div id="growth-feed" class="growth-feed"></div>
     </section>
 
@@ -437,6 +458,6 @@
   </script>
   <script src="./hub-link.js?v=20260405i" defer></script>
   <script src="./edit-page-common.js?v=20260418a" defer></script>
-    <script src="./growth.js?v=20260418b" defer></script>
+    <script src="./growth.js?v=20260418d" defer></script>
 </body>
 </html>
