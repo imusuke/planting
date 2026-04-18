@@ -441,7 +441,24 @@ function pickComparisonImage(images, slotIndex) {
   return images[slotIndex] || images[0] || null;
 }
 
-function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount, previousRecord, previousMemo) {
+function normalizeAiUserInstruction(value) {
+  if (value == null) return "";
+  return String(value)
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 400);
+}
+
+function buildAiContextFromRecord(
+  record,
+  slotIndex,
+  currentMemo,
+  photoCount,
+  previousRecord,
+  previousMemo,
+  userInstruction
+) {
   return {
     recordedDate: record && record.recordedAt ? String(record.recordedAt).slice(0, 10) : "",
     areaId: record && record.areaId ? String(record.areaId) : "",
@@ -458,6 +475,7 @@ function buildAiContextFromRecord(record, slotIndex, currentMemo, photoCount, pr
     photoIndex: slotIndex + 1,
     photoCount: photoCount,
     mode: "edit",
+    userInstruction: normalizeAiUserInstruction(userInstruction),
   };
 }
 
@@ -473,6 +491,7 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
   var options = arguments.length > 2 && arguments[2] ? arguments[2] : {};
   var jobId = options.id ? String(options.id) : "";
   var jobSource = options.source ? String(options.source) : "save";
+  var userInstruction = normalizeAiUserInstruction(options.userInstruction);
   var expectedRevision = !jobId ? record.updatedAt || record.createdAt || "" : "";
 
   async function markFailed(skipCode, detailText, failedCount) {
@@ -551,7 +570,8 @@ async function refreshGrowthPhotoCommentsInBackground(record, targetIndexes) {
       currentMemoForGeneration,
       images.length,
       previousRecord,
-      previousSlot && previousSlot.memo ? previousSlot.memo : ""
+      previousSlot && previousSlot.memo ? previousSlot.memo : "",
+      userInstruction
     );
     try {
       var buf = await readSourceImageBuffer(slot, token);
@@ -1080,3 +1100,4 @@ module.exports.readRecords = readRecords;
 module.exports.readAiCommentJob = readAiCommentJob;
 module.exports.queueGrowthAiCommentJob = queueGrowthAiCommentJob;
 module.exports.refreshGrowthPhotoCommentsInBackground = refreshGrowthPhotoCommentsInBackground;
+module.exports.normalizeAiUserInstruction = normalizeAiUserInstruction;

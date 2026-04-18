@@ -1056,6 +1056,16 @@
     return "植栽を時系列で見る";
   }
 
+  function promptGrowthLightboxAiUserInstruction() {
+    if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
+    var raw = window.prompt(
+      "AIコメントの参考にしたいメモがあれば入力してください。空欄のままでも実行できます。",
+      ""
+    );
+    if (raw == null) return null;
+    return String(raw).trim().slice(0, 400);
+  }
+
   function growthTimelinePreviewImageIndex(record, preferredIndex) {
     var slots = growthImageSlots(record);
     if (!slots.length) return -1;
@@ -1379,9 +1389,15 @@
 
     var baseRecord = growthRecordById(ref.recordId);
     var targets = [targetIndex];
+    var userInstruction = promptGrowthLightboxAiUserInstruction();
+    if (userInstruction === null) return;
     growthLightboxAiBusy = true;
     growthLightboxSyncAiButton(pack);
-    showToast("この写真のAIコメントを更新しています。");
+    showToast(
+      userInstruction
+        ? "補足メモを添えて、この写真のAIコメントを更新しています。"
+        : "この写真のAIコメントを更新しています。"
+    );
 
     fetch(API_GROWTH_AI_REFRESH, {
       method: "POST",
@@ -1391,6 +1407,7 @@
       body: JSON.stringify({
         id: ref.recordId,
         targets: targets,
+        userInstruction: userInstruction,
       }),
     })
       .then(function (res) {

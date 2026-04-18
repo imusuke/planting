@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
     var imageCount =
       record && Array.isArray(record.images) ? record.images.length : record && record.imageUrl ? 1 : 0;
     var targets = growthApi.normalizeAiCommentTargets(body.targets, imageCount);
+    var userInstruction = growthApi.normalizeAiUserInstruction(body && body.userInstruction);
     if (!targets.length) {
       return res.status(400).json({ error: "missing_targets" });
     }
@@ -46,6 +47,7 @@ module.exports = async function handler(req, res) {
       refreshResult = await growthApi.refreshGrowthPhotoCommentsInBackground(queued.record, targets, {
         id: queued.job.id,
         source: "manual",
+        userInstruction: userInstruction,
       });
     } catch (err) {
       var refreshDetail =

@@ -22,6 +22,29 @@ test("pickStyleProfile varies by context seed", function () {
   assert.notEqual(a.id, b.id);
 });
 
+test("prompt includes optional user instruction when supplied", function () {
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "deck",
+    recordedDate: "2026-04-18",
+    plantNames: ["heuchera"],
+    userInstruction: "花色の濃淡を中心に見てほしい",
+  });
+
+  assert.match(prompt, /補足メモ/);
+  assert.ok(prompt.includes("花色の濃淡を中心に見てほしい"));
+});
+
+test("prompt omits optional user instruction line when blank", function () {
+  const prompt = photoAi.buildGrowthPhotoCommentPrompt({
+    areaLabel: "deck",
+    recordedDate: "2026-04-18",
+    plantNames: ["heuchera"],
+    userInstruction: "   ",
+  });
+
+  assert.doesNotMatch(prompt, /補足メモ/);
+});
+
 test("prompt includes profile-specific guidance", function () {
   const context = {
     areaLabel: "デッキ",
