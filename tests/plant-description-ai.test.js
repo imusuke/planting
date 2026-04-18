@@ -83,3 +83,27 @@ test("parsePlantDescriptionResponse falls back to plain prose", function () {
   assert.match(parsed.body, /夏は/);
   assert.match(parsed.body, /最新の写真/);
 });
+
+test("parsePlantDescriptionResponse salvages malformed json-like response", function () {
+  const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
+    '{"summary":"初夏の訪れを告げるアジサイ。谷津畑では、春の芽吹きから力強い葉の展開へと移り変わり、日ごとに瑞々しい緑のボリュームを増しています。","body":"アジサイは季節が進むにつれて葉の量感や花房の表情がはっきり変わる植栽です。\\n\\n春は芽吹きのあとに混み合った古枝を見ながら風通しを整え、夏は乾きすぎを防ぎつつ西日と蒸れを避けるのが大切です。\\n\\n2026年3月下旬の谷津畑ではまだ静かな株姿でしたが、その後は葉の重なりが増え、季節の進みとともに見どころが広がってきました。"'
+  );
+
+  assert.match(parsed.summary, /アジサイ/);
+  assert.doesNotMatch(parsed.summary, /^\s*\{/);
+  assert.doesNotMatch(parsed.summary, /"summary"/);
+  assert.match(parsed.body, /春は/);
+  assert.doesNotMatch(parsed.body, /^\s*\{/);
+  assert.doesNotMatch(parsed.body, /"body"/);
+});
+
+test("parsePlantDescriptionResponse strips json-like wrapper noise before prose fallback", function () {
+  const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
+    '{ "summary": "初夏の訪れを告げるアジサイ。谷津畑では葉の重なりが増えています。", "body": "アジサイは梅雨前後の移り変わりを楽しめる植栽です。春は芽吹きのあとに古枝を整え、夏は乾きすぎと蒸れを避けます。秋は株姿を見ながら弱った枝を整理し、冬は落葉後の骨格を見て剪定につなげます。記録の初期では静かな枝ぶりでしたが、最新の写真では葉の量感が増して季節の進みが読み取りやすくなっています。" }'
+  );
+
+  assert.match(parsed.summary, /アジサイ/);
+  assert.doesNotMatch(parsed.summary, /"summary"|^\s*\{/);
+  assert.match(parsed.body, /最新の写真/);
+  assert.doesNotMatch(parsed.body, /"body"|^\s*\{/);
+});
