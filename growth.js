@@ -4430,8 +4430,12 @@
 
   function renderFeed(records) {
     if (!el.feed) return;
+    var sourceRecords = Array.isArray(records) ? records : [];
+    if (!IS_VIEW) {
+      state.lastGrowthRecords = sourceRecords.slice();
+    }
 
-    var filtered = getFilteredEditRecords(records);
+    var filtered = getFilteredEditRecords(sourceRecords);
 
     sortFilteredGrowthRecords(filtered);
 
