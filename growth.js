@@ -739,8 +739,9 @@
     });
   }
 
-  function collectVisibleMissingCommentTargets() {
-    return getFilteredEditRecords(state.lastGrowthRecords).reduce(function (out, record) {
+  function collectVisibleMissingCommentTargets(records) {
+    var visibleRecords = Array.isArray(records) ? records.slice() : getFilteredEditRecords(state.lastGrowthRecords);
+    return visibleRecords.reduce(function (out, record) {
       var job = readRecordAiCommentJob(record);
       if (job && (job.status === "queued" || job.status === "running")) return out;
       var targets = [];
@@ -759,9 +760,9 @@
     }, []);
   }
 
-  function syncBulkMissingCommentsAiButton() {
+  function syncBulkMissingCommentsAiButton(records) {
     if (!el.bulkMissingCommentsAiBtn) return;
-    var targets = collectVisibleMissingCommentTargets();
+    var targets = collectVisibleMissingCommentTargets(records);
     el.bulkMissingCommentsAiBtn.disabled = state.photoAiBusy || !targets.length;
     el.bulkMissingCommentsAiBtn.textContent = targets.length
       ? "表示中の未入力コメントにAIコメントを追加（" + targets.length + "件）"
@@ -4440,7 +4441,7 @@
     sortFilteredGrowthRecords(filtered);
 
     el.feed.innerHTML = "";
-    syncBulkMissingCommentsAiButton();
+    syncBulkMissingCommentsAiButton(filtered);
 
     if (filtered.length === 0) {
       var empty = document.createElement("p");
@@ -5121,6 +5122,7 @@
     el.toast = $("growth-toast");
     el.filterArea = $("filter-area");
     el.filterPlant = $("filter-plant");
+    el.filterCommentState = $("filter-comment-state");
     el.feed = $("growth-feed");
     el.exportBtn = $("export-btn");
     el.cloudToken = $("cloud-token");
