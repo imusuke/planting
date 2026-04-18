@@ -107,3 +107,22 @@ test("parsePlantDescriptionResponse strips json-like wrapper noise before prose 
   assert.match(parsed.body, /最新の写真/);
   assert.doesNotMatch(parsed.body, /"body"|^\s*\{/);
 });
+
+test("parsePlantDescriptionResponse strips leading quotes and escaped newlines from json-like fields", function () {
+  const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
+    [
+      'タイトル：',
+      '"初夏の訪れを告げるアジサイ。谷津畑では、春の芽吹きから力強い葉の展開へと移り変わり、日ごとに瑞々しい緑のボリュームを増しています。"',
+      "",
+      '詳細メモ：',
+      '"アジサイは、日本の初夏を彩る代表的な花木として親しまれています。\\n\\n美しい姿を保つためには、季節ごとの丁寧な手入れが欠かせません。\\n\\n記録の初期では芽吹きの動きが中心でしたが、最新の写真では葉の量感が増しています。"'
+    ].join("\n")
+  );
+
+  assert.doesNotMatch(parsed.summary, /^"/);
+  assert.match(parsed.summary, /アジサイ/);
+  assert.match(parsed.body, /美しい姿を保つためには/);
+  assert.match(parsed.body, /記録の初期/);
+  assert.doesNotMatch(parsed.body, /\\n/);
+  assert.doesNotMatch(parsed.body, /^"/);
+});
