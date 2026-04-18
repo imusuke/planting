@@ -102,6 +102,11 @@
       </label>
 
       <div class="growth-actions">
+        <button type="button" id="plant-description-ai-generate" class="growth-secondary">AIで植栽説明を作成</button>
+      </div>
+      <p id="plant-description-ai-status" class="growth-hint growth-photo-ai-status" hidden></p>
+
+      <div class="growth-actions">
         <button type="submit" id="plant-edit-save" class="growth-primary">保存する</button>
         <a href="./plant.html" id="plant-edit-open-detail" class="growth-secondary">この植栽を見る</a>
       </div>
@@ -532,8 +537,9 @@
   ]
 }
   </script>
+  <script src="./data/growth-snapshot.boot.js?v=20260405i"></script>
   <script src="./hub-link.js?v=20260405i" defer></script>
   <script src="./edit-page-common.js?v=20260418a" defer></script>
-  <script src="./plant-edit.js?v=20260418b" defer></script>
+  <script src="./plant-edit.js?v=20260418c" defer></script>
 </body>
 </html>

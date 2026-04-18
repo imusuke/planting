@@ -6,10 +6,15 @@
   var API_CHANGE_LOG = "/api/change-log";
   var API_PLANTS = "/api/plants";
   var API_PLANT_DETAILS = "/api/plant-details";
+  var API_PLANT_DESCRIPTION = "/api/plant-description";
+  var API_GROWTH = "/api/growth";
+  var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
 
   var state = {
     areas: [],
     entries: [],
+    growthRecords: [],
+    descriptionAiBusy: false,
   };
 
   var el = {};
@@ -27,6 +32,20 @@
     showToast._timer = setTimeout(function () {
       el.toast.className = "growth-toast";
     }, 4200);
+  }
+
+  function setDescriptionAiStatus(message, isError) {
+    if (!el.descriptionAiStatus) return;
+    if (!message) {
+      el.descriptionAiStatus.hidden = true;
+      el.descriptionAiStatus.textContent = "";
+      el.descriptionAiStatus.className = "growth-hint growth-photo-ai-status";
+      return;
+    }
+    el.descriptionAiStatus.hidden = false;
+    el.descriptionAiStatus.textContent = message;
+    el.descriptionAiStatus.className =
+      "growth-hint growth-photo-ai-status" + (isError ? " growth-photo-ai-status--error" : "");
   }
 
   function cloudHeaders(jsonBody) {
@@ -60,6 +79,29 @@
           embedId: "plants-embed",
         })
       : loadJson(API_PLANTS);
+  }
+
+  function readWindowSnapshotRecords(key) {
+    var data = window[key];
+    return data && Array.isArray(data.records) ? data.records : [];
+  }
+
+  function loadGrowthRecords() {
+    return loadJson(API_GROWTH)
+      .then(function (data) {
+        return data && Array.isArray(data.records) ? data.records : [];
+      })
+      .catch(function () {
+        return loadJson(GROWTH_SNAPSHOT_JSON).then(function (data) {
+          return data && Array.isArray(data.records) ? data.records : [];
+        });
+      })
+      .catch(function () {
+        return readWindowSnapshotRecords("__PLANTING_GROWTH_SNAPSHOT__");
+      })
+      .catch(function () {
+        return [];
+      });
   }
 
   function loadPlantDetailsMerged() {
@@ -127,6 +169,64 @@
       }
     }
     state.entries.push(entry);
+  }
+
+  function normalizeRecordImages(record) {
+    return common.normalizeImageSlots
+      ? common.normalizeImageSlots(record)
+      : (function () {
+          if (!record) return [];
+          if (Array.isArray(record.images) && record.images.length) {
+            return record.images
+              .map(function (img) {
+                return {
+                  imageUrl: img && img.imageUrl ? img.imageUrl : null,
+                  imagePathname: img && img.imagePathname ? img.imagePathname : null,
+                  localSnapshotImage: img && img.localSnapshotImage ? img.localSnapshotImage : null,
+                  memo: img && typeof img.memo === "string" ? img.memo : "",
+                };
+              })
+              .filter(Boolean);
+          }
+          if (record.imageUrl || record.imagePathname || record.localSnapshotImage) {
+            return [
+              {
+                imageUrl: record.imageUrl || null,
+                imagePathname: record.imagePathname || null,
+                localSnapshotImage: record.localSnapshotImage || null,
+                memo: typeof record.memo === "string" ? record.memo : "",
+              },
+            ];
+          }
+          return [];
+        })();
+  }
+
+  function recordHasPlant(record, plantName) {
+    var wanted = normalizePlantName(plantName);
+    if (!wanted || !record || !Array.isArray(record.plants)) return false;
+    return record.plants.some(function (name) {
+      return normalizePlantName(name) === wanted;
+    });
+  }
+
+  function plantHasSavedPhotoHistory(areaId, plantName) {
+    var wantedArea = String(areaId || "").trim();
+    var wantedPlant = normalizePlantName(plantName);
+    if (!wantedArea || !wantedPlant) return false;
+    return state.growthRecords.some(function (record) {
+      return (
+        String((record && record.areaId) || "").trim() === wantedArea &&
+        recordHasPlant(record, wantedPlant) &&
+        normalizeRecordImages(record).length > 0
+      );
+    });
+  }
+
+  function syncDescriptionAiButtonState() {
+    if (!el.descriptionAiGenerate) return;
+    el.descriptionAiGenerate.disabled =
+      state.descriptionAiBusy || !plantHasSavedPhotoHistory(selectedAreaId(), selectedPlantName());
   }
 
   function setAreaOptions(selectedAreaId) {
@@ -288,6 +388,7 @@
     if (el.body) el.body.value = entry && entry.body ? String(entry.body) : "";
     syncLinks(areaId, plantName);
     document.title = "植栽メモ — " + (plantName ? plantName + "の説明を編集" : "植栽の説明を編集");
+    syncDescriptionAiButtonState();
   }
 
   function updateQuery(areaId, plantName) {
@@ -321,15 +422,79 @@
     var currentPlant = selectedPlantName();
     var plants = areaPlants(selectedAreaId());
     setPlantOptions(plants.indexOf(currentPlant) !== -1 ? currentPlant : "");
+    setDescriptionAiStatus("", false);
     syncFormFromSelection();
     updateQuery(selectedAreaId(), selectedPlantName());
     refreshChangeLog().catch(function () {});
   }
 
   function onPlantChange() {
+    setDescriptionAiStatus("", false);
     syncFormFromSelection();
     updateQuery(selectedAreaId(), selectedPlantName());
     refreshChangeLog().catch(function () {});
+  }
+
+  function generatePlantDescriptionDraft() {
+    var areaId = selectedAreaId();
+    var plantName = selectedPlantName();
+    if (!areaId || !plantName) {
+      setDescriptionAiStatus("先にエリアと植栽を選んでください。", true);
+      showToast("先にエリアと植栽を選んでください。", true);
+      return;
+    }
+    if (!plantHasSavedPhotoHistory(areaId, plantName)) {
+      setDescriptionAiStatus("この植栽には、説明生成に使える保存済み写真がまだありません。", true);
+      showToast("この植栽には、説明生成に使える保存済み写真がまだありません。", true);
+      return;
+    }
+
+    state.descriptionAiBusy = true;
+    syncDescriptionAiButtonState();
+    setDescriptionAiStatus("植栽写真の流れをもとに、AIが概要と本文の案を作成しています。", false);
+
+    fetch(API_PLANT_DESCRIPTION, {
+      method: "POST",
+      headers: cloudHeaders(true),
+      body: JSON.stringify({
+        areaId: areaId,
+        name: plantName,
+        currentSummary: el.summary ? el.summary.value.trim() : "",
+        currentBody: el.body ? el.body.value.trim() : "",
+      }),
+    })
+      .then(function (res) {
+        if (res.status === 401) {
+          throw new Error("トークンが違います。");
+        }
+        if (!res.ok) {
+          return apiErrorMessage(res, "植栽説明の生成に失敗しました").then(function (message) {
+            throw new Error(message);
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || typeof data.summary !== "string" || typeof data.body !== "string") {
+          throw new Error("AIが植栽説明を正しく返せませんでした。");
+        }
+        if (el.summary) el.summary.value = data.summary;
+        if (el.body) el.body.value = data.body;
+        setDescriptionAiStatus(
+          "AIで植栽説明の案を作成しました。必要なら整えてから保存してください。",
+          false
+        );
+        showToast("AIで植栽説明の案を作成しました。");
+      })
+      .catch(function (err) {
+        var message = err && err.message ? err.message : String(err);
+        setDescriptionAiStatus(message, true);
+        showToast(message, true);
+      })
+      .finally(function () {
+        state.descriptionAiBusy = false;
+        syncDescriptionAiButtonState();
+      });
   }
 
   function onSaveToken() {
@@ -397,6 +562,8 @@
     el.plant = $("plant-edit-plant");
     el.summary = $("plant-edit-summary");
     el.body = $("plant-edit-body");
+    el.descriptionAiGenerate = $("plant-description-ai-generate");
+    el.descriptionAiStatus = $("plant-description-ai-status");
     el.detailBreadcrumbLink = $("plant-edit-detail-breadcrumb-link");
     el.breadcrumbCurrent = $("plant-edit-breadcrumb-current");
     el.detailLink = $("plant-edit-detail-link");
@@ -419,6 +586,11 @@
     el.area.addEventListener("change", onAreaChange);
     el.plant.addEventListener("change", onPlantChange);
     el.form.addEventListener("submit", onSubmit);
+    if (el.descriptionAiGenerate) {
+      el.descriptionAiGenerate.addEventListener("click", function () {
+        generatePlantDescriptionDraft();
+      });
+    }
     if (el.changeLogReload) {
       el.changeLogReload.addEventListener("click", function () {
         refreshChangeLog().catch(function () {});
@@ -434,13 +606,15 @@
       requestedPlantName = requestedPlantName.trim();
     }
 
-    Promise.all([loadPlantsData(), loadPlantDetailsMerged()])
+    Promise.all([loadPlantsData(), loadPlantDetailsMerged(), loadGrowthRecords()])
       .then(function (results) {
         state.areas = results[0] && Array.isArray(results[0].areas) ? results[0].areas : [];
         state.entries = Array.isArray(results[1]) ? results[1] : [];
+        state.growthRecords = Array.isArray(results[2]) ? results[2] : [];
         if (!state.areas.length) throw new Error("植栽一覧を読み込めませんでした。");
         setAreaOptions(requestedAreaId);
         setPlantOptions(requestedPlantName);
+        setDescriptionAiStatus("", false);
         syncFormFromSelection();
         updateQuery(selectedAreaId(), selectedPlantName());
         refreshChangeLog().catch(function () {});

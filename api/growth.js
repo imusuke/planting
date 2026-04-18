@@ -1101,3 +1101,5 @@ module.exports.readAiCommentJob = readAiCommentJob;
 module.exports.queueGrowthAiCommentJob = queueGrowthAiCommentJob;
 module.exports.refreshGrowthPhotoCommentsInBackground = refreshGrowthPhotoCommentsInBackground;
 module.exports.normalizeAiUserInstruction = normalizeAiUserInstruction;
+module.exports.normalizeRecordImages = normalizeRecordImages;
+module.exports.readSourceImageBuffer = readSourceImageBuffer;
