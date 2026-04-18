@@ -156,10 +156,20 @@
     return window.confirm(lines.join("\n"));
   }
 
+  function currentCloudToken() {
+    var typed = !IS_VIEW && el.cloudToken && typeof el.cloudToken.value === "string" ? el.cloudToken.value.trim() : "";
+    if (typed) return typed;
+    try {
+      return localStorage.getItem(LS_CLOUD_TOKEN) || "";
+    } catch (eToken) {
+      return "";
+    }
+  }
+
   function cloudHeaders(jsonBody) {
     var h = { Accept: "application/json" };
     if (jsonBody) h["Content-Type"] = "application/json";
-    var t = localStorage.getItem(LS_CLOUD_TOKEN);
+    var t = currentCloudToken();
     if (t) h["x-growth-token"] = t;
     return h;
   }
@@ -774,8 +784,10 @@
 
   function runBulkMissingCommentsAiRefresh() {
     if (!el.bulkMissingCommentsAiBtn) return;
-    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    var storedToken = currentCloudToken();
     if (!storedToken) {
+      setBulkMissingCommentsAiStatus("アップロード用トークンを入力してから実行してください。", true);
+      if (el.cloudToken && typeof el.cloudToken.focus === "function") el.cloudToken.focus();
       showToast("アップロード用トークンを保存するとAIコメントを追加できます。", true);
       return;
     }
