@@ -41,6 +41,31 @@ test("buildPlantDescriptionPrompt includes requested structure, timeline, and dr
   assert.match(prompt, /"body"/);
 });
 
+test("buildPlantSummaryPrompt asks for a short single-paragraph overview", function () {
+  const prompt = plantDescriptionAi.buildPlantSummaryPrompt({
+    plantName: "アジサイ",
+    areaLabel: "谷津畑",
+    timelineRecords: [{ recordedDate: "2026-03-01", note: "芽吹きが見え始めた", photoCount: 1 }],
+  });
+
+  assert.match(prompt, /概要だけ/);
+  assert.match(prompt, /45〜110文字/);
+  assert.match(prompt, /引用符、見出し、JSON/);
+});
+
+test("buildPlantBodyPrompt asks for three headed paragraphs", function () {
+  const prompt = plantDescriptionAi.buildPlantBodyPrompt({
+    plantName: "アジサイ",
+    areaLabel: "谷津畑",
+    timelineRecords: [{ recordedDate: "2026-03-01", note: "芽吹きが見え始めた", photoCount: 1 }],
+  });
+
+  assert.match(prompt, /【一般的な特徴】/);
+  assert.match(prompt, /【季節ごとの手入れ】/);
+  assert.match(prompt, /【この場所での変遷】/);
+  assert.match(prompt, /420〜900文字/);
+});
+
 test("parsePlantDescriptionResponse extracts JSON from fenced block", function () {
   const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
     [
@@ -125,4 +150,25 @@ test("parsePlantDescriptionResponse strips leading quotes and escaped newlines f
   assert.match(parsed.body, /記録の初期/);
   assert.doesNotMatch(parsed.body, /\\n/);
   assert.doesNotMatch(parsed.body, /^"/);
+});
+
+test("normalizeGeneratedPlantSummary shortens an overlong summary to a readable overview", function () {
+  const summary = plantDescriptionAi.normalizeGeneratedPlantSummary(
+    "初夏の彩りとして親しまれるアジサイ。谷津畑では、春の訪れとともに細い枝先から瑞々しい若葉が次々と芽吹き、日ごとに力強い緑のボリュームを増していく生命力あふれる姿が見どころです。アジサイは、日本の初夏を象徴する花木として古くから親しまれています。"
+  );
+
+  assert.ok(summary.length <= 110);
+  assert.match(summary, /アジサイ/);
+  assert.match(summary, /。$/);
+});
+
+test("normalizeGeneratedPlantBody rewrites body into three complete sections", function () {
+  const body = plantDescriptionAi.normalizeGeneratedPlantBody(
+    "アジサイは、日本の初夏を象徴する花木として古くから親しまれています。雨に映える多彩な花色はもちろんのこと、光沢のある大きな葉が重なり合う株姿も魅力です。\n\n春は芽吹きのエネルギーを支えるため、土の乾燥に注意して見守ります。夏は花後の剪定を早めに行い、秋から冬は古い枝や細い枝を整理して風通しを整えます。\n\n2026年3月下旬の谷津畑ではまだ静かな枝ぶりでしたが、その後は葉の重なりが増え、季節の進みとともに見どころが広がってきました。"
+  );
+
+  assert.match(body, /【一般的な特徴】/);
+  assert.match(body, /【季節ごとの手入れ】/);
+  assert.match(body, /【この場所での変遷】/);
+  assert.match(body, /。$/);
 });
