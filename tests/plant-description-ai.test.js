@@ -51,3 +51,30 @@ test("parsePlantDescriptionResponse extracts JSON from fenced block", function (
   assert.match(parsed.body, /花茎/);
   assert.match(parsed.body, /最新の写真/);
 });
+
+test("parsePlantDescriptionResponse falls back to labeled plain text", function () {
+  const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
+    [
+      "概要: 葉の重なりが増え、春の後半に向けて株のまとまりがはっきりしてきました。花茎の動きも見え始め、変化を追いやすい時期です。",
+      "",
+      "本文:",
+      "記録の初期では葉色がやわらかく、株元はまだ静かな印象でした。そこから日を追うごとに葉の重なりが増え、地際の密度が少しずつ上がっています。",
+      "",
+      "途中の写真では花茎が立ち上がり、葉だけを見ていた時期から上方向の動きが加わってきました。最新の写真では色の濃淡や花茎の数にも変化があり、春の終わりに向けて一段進んだ姿として読めます。",
+    ].join("\n")
+  );
+
+  assert.match(parsed.summary, /株のまとまり/);
+  assert.match(parsed.body, /途中の写真/);
+  assert.match(parsed.body, /最新の写真/);
+});
+
+test("parsePlantDescriptionResponse falls back to plain prose", function () {
+  const parsed = plantDescriptionAi.parsePlantDescriptionResponse(
+    "記録の初期では葉色がやわらかく、株元はまだ静かな印象でした。そこから日を追うごとに葉の重なりが増え、地際の密度が少しずつ上がっています。途中の写真では花茎が立ち上がり、葉だけを見ていた時期から上方向の動きが加わってきました。最新の写真では色の濃淡や花茎の数にも変化があり、春の終わりに向けて一段進んだ姿として読めます。"
+  );
+
+  assert.ok(parsed.summary.length >= 40);
+  assert.match(parsed.body, /花茎/);
+  assert.match(parsed.body, /最新の写真/);
+});
