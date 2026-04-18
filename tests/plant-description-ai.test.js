@@ -53,6 +53,18 @@ test("buildPlantSummaryPrompt asks for a short single-paragraph overview", funct
   assert.match(prompt, /引用符、見出し、JSON/);
 });
 
+test("buildPlantTitlePrompt asks for a short heading-like title", function () {
+  const prompt = plantDescriptionAi.buildPlantTitlePrompt({
+    plantName: "アジサイ",
+    areaLabel: "谷津畑",
+    timelineRecords: [{ recordedDate: "2026-03-01", note: "芽吹きが見え始めた", photoCount: 1 }],
+  });
+
+  assert.match(prompt, /タイトルだけ/);
+  assert.match(prompt, /10〜48文字/);
+  assert.match(prompt, /見出しとして読みやすい一行/);
+});
+
 test("buildPlantBodyPrompt asks for three headed paragraphs", function () {
   const prompt = plantDescriptionAi.buildPlantBodyPrompt({
     plantName: "アジサイ",
@@ -157,9 +169,20 @@ test("normalizeGeneratedPlantSummary shortens an overlong summary to a readable 
     "初夏の彩りとして親しまれるアジサイ。谷津畑では、春の訪れとともに細い枝先から瑞々しい若葉が次々と芽吹き、日ごとに力強い緑のボリュームを増していく生命力あふれる姿が見どころです。アジサイは、日本の初夏を象徴する花木として古くから親しまれています。"
   );
 
-  assert.ok(summary.length <= 110);
+  assert.ok(summary.length <= 48);
   assert.match(summary, /アジサイ/);
-  assert.match(summary, /。$/);
+  assert.doesNotMatch(summary, /。$/);
+});
+
+test("normalizeGeneratedPlantTitle trims long sentence into short title", function () {
+  const title = plantDescriptionAi.normalizeGeneratedPlantTitle(
+    'タイトル: "初夏の彩りとして親しまれるアジサイ。谷津畑では若葉が伸びています。"',
+    { plantName: "アジサイ", areaLabel: "谷津畑" }
+  );
+
+  assert.ok(title.length <= 48);
+  assert.doesNotMatch(title, /^タイトル|^"/);
+  assert.match(title, /アジサイ/);
 });
 
 test("normalizeGeneratedPlantBody rewrites body into three complete sections", function () {
@@ -171,4 +194,16 @@ test("normalizeGeneratedPlantBody rewrites body into three complete sections", f
   assert.match(body, /【季節ごとの手入れ】/);
   assert.match(body, /【この場所での変遷】/);
   assert.match(body, /。$/);
+});
+
+test("buildPlantBodyFromSections assembles the three final sections", function () {
+  const body = plantDescriptionAi.buildPlantBodyFromSections({
+    general: "アジサイは梅雨前後の移り変わりを楽しめる植栽で、葉の量感や花房の表情が見どころです。",
+    care: "春は芽吹き後の枝ぶりを見ながら風通しを整え、夏は花後の剪定を早めに行います。秋から冬は弱った枝を整理して次の芽吹きにつなげます。",
+    story: "記録の初期は静かな枝ぶりでしたが、その後は葉の重なりが増え、最新の写真では季節の進みが読み取りやすくなっています。",
+  });
+
+  assert.match(body, /【一般的な特徴】/);
+  assert.match(body, /【季節ごとの手入れ】/);
+  assert.match(body, /【この場所での変遷】/);
 });
