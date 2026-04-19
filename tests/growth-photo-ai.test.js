@@ -368,7 +368,18 @@ test("getValidationError rejects comments that copy user instruction too directl
     }
   );
 
-  assert.match(error, /補足メモ/);
+  assert.match(error, /内部向け|補足メモ/);
+});
+
+test("getValidationError rejects internal note wording in user-facing comments", function () {
+  const error = photoAi.getValidationError(
+    "補足メモで示された見方を手がかりにしながら、実際に写っている見どころへ自然につなげて説明しやすい写真です。葉先の重なりや株元のまとまりも見えており、花色の濃淡まで一文の中で説明してしまっています。さらにユーザーからの意図にも触れながら、写真メモとしてまとめた形だと書いてしまっています。",
+    {
+      currentPhotoMemo: "",
+    }
+  );
+
+  assert.match(error, /内部向け/);
 });
 
 test("normalizeComment strips image embed code from AI output", function () {
