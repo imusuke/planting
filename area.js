@@ -4,6 +4,7 @@
   var API_GROWTH_IMAGE = "/api/growth-image";
   var API_GROWTH = "/api/growth";
   var API_AREA_GROWTH = "/api/area-growth";
+  var API_AREA_AI_REFRESH = "/api/area-ai-refresh";
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var GROWTH_SNAPSHOT_JSON = "./data/growth-snapshot.json";
   var AREA_GROWTH_SNAPSHOT_JSON = "./data/area-growth-snapshot.json";
@@ -550,6 +551,75 @@
     return out;
   }
 
+  function buildAreaPhotoCaptionText(item) {
+    var line1 = formatDateLabel(item && item.recordedAt);
+    var memo = sanitizeDetailText(item && item.slot && item.slot.memo);
+    var note = item && item.recordNote ? String(item.recordNote).trim() : "";
+    var sub = memo || note || "";
+    return sub ? line1 + " - " + sub : line1;
+  }
+
+  function bindAreaGalleryLightboxImage(img, galleryNodes, galleryCaptions, galleryIndex) {
+    return bindLightboxImage(img, function () {
+      return {
+        items: (galleryNodes || []).map(function (node, idx) {
+          return {
+            src: (node && (node.currentSrc || node.src)) || "",
+            alt: (node && node.alt) || "",
+            caption: (galleryCaptions && galleryCaptions[idx]) || "",
+            meta: (node && node._sitePhotoLightboxMeta) || null,
+          };
+        }),
+        index: galleryIndex || 0,
+        actions:
+          img && typeof img._sitePhotoLightboxActionsFactory === "function"
+            ? img._sitePhotoLightboxActionsFactory()
+            : [],
+      };
+    });
+  }
+
+  function appendAreaPhotoGalleryFigure(target, galleryNodes, galleryCaptions, options) {
+    var opts = options || {};
+    var figureParts = createDetailImageFigure(opts);
+    var figure = figureParts.figure;
+    var img = figureParts.img;
+    var captionEl = null;
+    if (opts.slot) {
+      attachSnapshotFallback(img, opts.slot, opts.apiPath, opts.datasetKey);
+    }
+    if (opts.captionText) {
+      captionEl = createDetailPlaceholder(
+        opts.captionText,
+        opts.captionClass || "detail-page-photo-date",
+        "figcaption"
+      );
+      figure.appendChild(captionEl);
+    }
+    if (Array.isArray(opts.actions)) {
+      opts.actions.forEach(function (action) {
+        if (action) figure.appendChild(action);
+      });
+    }
+    var galleryIndex = Array.isArray(galleryNodes) ? galleryNodes.length : 0;
+    var lightboxMeta = opts.lightboxMeta && typeof opts.lightboxMeta === "object" ? opts.lightboxMeta : null;
+    if (lightboxMeta) {
+      lightboxMeta.galleryCaptions = galleryCaptions;
+      lightboxMeta.galleryIndex = galleryIndex;
+      lightboxMeta.captionEl = captionEl;
+    }
+    img._sitePhotoLightboxMeta = lightboxMeta;
+    img._sitePhotoLightboxActionsFactory =
+      typeof opts.lightboxActionsFactory === "function" ? opts.lightboxActionsFactory : null;
+    if (Array.isArray(galleryNodes)) galleryNodes.push(img);
+    if (Array.isArray(galleryCaptions)) {
+      galleryCaptions.push(opts.galleryCaptionText || opts.captionText || "");
+    }
+    bindAreaGalleryLightboxImage(img, galleryNodes || [], galleryCaptions || [], galleryIndex);
+    if (target) target.appendChild(figure);
+    return { figure: figure, img: img, captionEl: captionEl };
+  }
+
   function renderPhotoRecordsSection(areaLabel, areaId, records, options) {
     var opts = options || {};
     var sectionParts = createDetailSection({
@@ -569,13 +639,11 @@
     grid.className = "detail-page-photos-grid";
     var galleryNodes = [];
     var galleryCaptions = [];
+    var lightboxActionsFactory =
+      typeof opts.buildLightboxActions === "function" ? opts.buildLightboxActions : null;
     for (var k = 0; k < items.length; k++) {
       (function (it) {
-        var line1 = formatDateLabel(it.recordedAt);
-        var memo = sanitizeDetailText(it.slot && it.slot.memo);
-        var note = it.recordNote;
-        var sub = memo || note || "";
-        var captionText = sub ? line1 + " — " + sub : line1;
+        var captionText = buildAreaPhotoCaptionText(it);
         var actions = [];
 
         if (opts.allowImportFromPlant && typeof opts.onImportPhoto === "function") {
@@ -608,7 +676,7 @@
           });
           actions.push(delBtn);
         }
-        appendDetailGalleryFigure(grid, galleryNodes, galleryCaptions, {
+        appendAreaPhotoGalleryFigure(grid, galleryNodes, galleryCaptions, {
           figureClass: "detail-page-photo-figure",
           imageClass: "detail-page-photo-img",
           src: it.url,
@@ -618,6 +686,13 @@
           datasetKey: "areaPhotoFb",
           captionClass: "detail-page-photo-date",
           captionText: captionText,
+          lightboxMeta: {
+            source: "area-record",
+            recordId: it.recordId ? String(it.recordId) : "",
+            slotIndex: it.slotIndex,
+            item: it,
+          },
+          lightboxActionsFactory: lightboxActionsFactory,
           actions: actions,
         });
       })(items[k]);
@@ -800,6 +875,164 @@
       photoStatus.style.display = "block";
       photoStatus.textContent = msg;
       photoStatus.style.color = isError ? "#b00020" : "";
+    }
+
+    var areaLightboxAiBusy = false;
+
+    function replaceAreaGrowthRecordInList(record) {
+      if (!record || !record.id || !Array.isArray(areaGrowthRecords)) return;
+      var wanted = String(record.id);
+      for (var i = 0; i < areaGrowthRecords.length; i++) {
+        if (areaGrowthRecords[i] && String(areaGrowthRecords[i].id || "") === wanted) {
+          areaGrowthRecords[i] = record;
+          return;
+        }
+      }
+      areaGrowthRecords.unshift(record);
+    }
+
+    function resolveAreaLightboxTarget(item) {
+      var meta = item && item.meta && typeof item.meta === "object" ? item.meta : null;
+      var slotIndex =
+        meta && typeof meta.slotIndex === "number"
+          ? meta.slotIndex
+          : parseInt(String(meta && meta.slotIndex != null ? meta.slotIndex : ""), 10);
+      var recordId = meta && meta.recordId ? String(meta.recordId) : "";
+      if (!meta || meta.source !== "area-record" || !recordId || !isFinite(slotIndex) || slotIndex < 0) {
+        return null;
+      }
+      return {
+        recordId: recordId,
+        slotIndex: slotIndex,
+        meta: meta,
+        sourceItem: meta.item && typeof meta.item === "object" ? meta.item : null,
+      };
+    }
+
+    function areaLightboxAiActionLabel(item) {
+      if (areaLightboxAiBusy) return "AIコメント更新中...";
+      var target = resolveAreaLightboxTarget(item);
+      if (!target) return "AIでコメント追加";
+      var memo = sanitizeDetailText(target.sourceItem && target.sourceItem.slot && target.sourceItem.slot.memo);
+      return memo ? "AIでコメント再生成" : "AIでコメント追加";
+    }
+
+    function updateAreaLightboxItemAfterAi(lightboxItem, target, latestRecord) {
+      if (!lightboxItem || !target || !latestRecord) return;
+      var slot = growthImageSlots(latestRecord)[target.slotIndex];
+      if (!slot) return;
+      var sourceItem = target.sourceItem || {};
+      sourceItem.recordedAt = latestRecord.recordedAt || sourceItem.recordedAt || "";
+      sourceItem.recordNote = String(latestRecord.note || "").trim();
+      sourceItem.slot = slot;
+      target.meta.item = sourceItem;
+      lightboxItem.caption = buildAreaPhotoCaptionText(sourceItem);
+      if (Array.isArray(target.meta.galleryCaptions) && target.meta.galleryIndex >= 0) {
+        target.meta.galleryCaptions[target.meta.galleryIndex] = lightboxItem.caption;
+      }
+      if (target.meta.captionEl) {
+        target.meta.captionEl.textContent = lightboxItem.caption;
+      }
+    }
+
+    function buildAreaLightboxActions() {
+      return [
+        {
+          className: "site-photo-lightbox-action-ai",
+          ariaLabel: "AIでコメントを追加または再生成",
+          label: function (ctx) {
+            return areaLightboxAiActionLabel(ctx && ctx.item);
+          },
+          hidden: function (ctx) {
+            return !resolveAreaLightboxTarget(ctx && ctx.item);
+          },
+          disabled: function () {
+            return !!areaLightboxAiBusy;
+          },
+          onClick: function (ctx) {
+            runAreaLightboxAiRefresh(ctx);
+          },
+        },
+      ];
+    }
+
+    function runAreaLightboxAiRefresh(ctx) {
+      if (areaLightboxAiBusy) return;
+      var item = ctx && ctx.item ? ctx.item : null;
+      var target = resolveAreaLightboxTarget(item);
+      if (!target) {
+        setPhotoStatus("AIコメントを追加できる写真情報が見つかりません。", true);
+        return;
+      }
+      var storedToken = "";
+      try {
+        storedToken = localStorage.getItem(LS_CLOUD_TOKEN) || "";
+      } catch (e) {
+        storedToken = "";
+      }
+      if (!storedToken) {
+        setPhotoStatus("アップロード用トークンを保存するとAIコメントを追加できます。", true);
+        return;
+      }
+
+      var hadMemo = !!sanitizeDetailText(target.sourceItem && target.sourceItem.slot && target.sourceItem.slot.memo);
+      areaLightboxAiBusy = true;
+      if (ctx && typeof ctx.sync === "function") ctx.sync();
+      setPhotoStatus(
+        hadMemo ? "この写真のAIコメントを更新しています..." : "この写真にAIコメントを追加しています...",
+        false
+      );
+
+      fetch(API_AREA_AI_REFRESH, {
+        method: "POST",
+        headers: cloudHeadersForAreaWrite(),
+        body: JSON.stringify({
+          id: target.recordId,
+          targets: [target.slotIndex],
+        }),
+      })
+        .then(function (res) {
+          return res
+            .json()
+            .catch(function () {
+              return {};
+            })
+            .then(function (payload) {
+              if (res.status === 401) {
+                throw new Error("トークンが違います。ページ上部で再設定してください。");
+              }
+              if (!res.ok) {
+                throw new Error(
+                  (payload && (payload.detail || payload.error)) ||
+                    ("AIコメントの更新に失敗しました (" + res.status + ")")
+                );
+              }
+              return payload || {};
+            });
+        })
+        .then(function (payload) {
+          var latestRecord = payload.record || payload.latestRecord || null;
+          if (latestRecord) {
+            replaceAreaGrowthRecordInList(latestRecord);
+            updateAreaLightboxItemAfterAi(item, target, latestRecord);
+          }
+          if (payload.updated) {
+            setPhotoStatus(hadMemo ? "AIコメントを更新しました。" : "AIコメントを追加しました。", false);
+          } else {
+            setPhotoStatus(
+              payload.detail || "AIコメントはまだ反映されていません。少ししてから開き直してください。",
+              true
+            );
+          }
+          if (ctx && typeof ctx.sync === "function") ctx.sync();
+        })
+        .catch(function (err) {
+          setPhotoStatus(err && err.message ? err.message : "AIコメントの更新に失敗しました。", true);
+        })
+        .finally(function () {
+          areaLightboxAiBusy = false;
+          if (ctx && typeof ctx.sync === "function") ctx.sync();
+        });
     }
 
     function importPlantPhotoToArea(item, buttonEl) {
@@ -1182,6 +1415,7 @@
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
         ctaText: "このエリアの説明と活動報告を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
+        buildLightboxActions: buildAreaLightboxActions,
       })
     );
 
