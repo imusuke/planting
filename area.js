@@ -917,6 +917,16 @@
       return memo ? "AIでコメント再生成" : "AIでコメント追加";
     }
 
+    function promptAreaLightboxAiUserInstruction() {
+      if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
+      var raw = window.prompt(
+        "AIコメントの参考にしたいメモがあれば入力してください。空欄のままでも実行できます。",
+        ""
+      );
+      if (raw == null) return null;
+      return String(raw).trim().slice(0, 400);
+    }
+
     function updateAreaLightboxItemAfterAi(lightboxItem, target, latestRecord) {
       if (!lightboxItem || !target || !latestRecord) return;
       var slot = growthImageSlots(latestRecord)[target.slotIndex];
@@ -975,11 +985,19 @@
         return;
       }
 
+      var userInstruction = promptAreaLightboxAiUserInstruction();
+      if (userInstruction === null) return;
       var hadMemo = !!sanitizeDetailText(target.sourceItem && target.sourceItem.slot && target.sourceItem.slot.memo);
       areaLightboxAiBusy = true;
       if (ctx && typeof ctx.sync === "function") ctx.sync();
       setPhotoStatus(
-        hadMemo ? "この写真のAIコメントを更新しています..." : "この写真にAIコメントを追加しています...",
+        userInstruction
+          ? hadMemo
+            ? "補足メモを添えて、この写真のAIコメントを更新しています..."
+            : "補足メモを添えて、この写真にAIコメントを追加しています..."
+          : hadMemo
+            ? "この写真のAIコメントを更新しています..."
+            : "この写真にAIコメントを追加しています...",
         false
       );
 
@@ -989,6 +1007,7 @@
         body: JSON.stringify({
           id: target.recordId,
           targets: [target.slotIndex],
+          userInstruction: userInstruction,
         }),
       })
         .then(function (res) {

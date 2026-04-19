@@ -350,6 +350,7 @@ function pickComparisonImage(images, slotIndex) {
 }
 
 function buildAiContextFromAreaRecord(record, slotIndex, currentMemo, photoCount, previousRecord, previousMemo) {
+  var userInstruction = arguments.length > 6 ? arguments[6] : "";
   return {
     recordedDate: record && record.recordedAt ? String(record.recordedAt).slice(0, 10) : "",
     areaId: record && record.areaId ? String(record.areaId) : "",
@@ -366,7 +367,17 @@ function buildAiContextFromAreaRecord(record, slotIndex, currentMemo, photoCount
     photoIndex: slotIndex + 1,
     photoCount: photoCount,
     mode: "edit",
+    userInstruction: normalizeAiUserInstruction(userInstruction),
   };
+}
+
+function normalizeAiUserInstruction(value) {
+  if (value == null) return "";
+  return String(value)
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 400);
 }
 
 function fallbackDetailText(originalDetail) {
@@ -381,6 +392,7 @@ async function refreshAreaPhotoCommentsInBackground(record, targetIndexes) {
   var options = arguments.length > 2 && arguments[2] ? arguments[2] : {};
   var jobId = options.id ? String(options.id) : "";
   var jobSource = options.source ? String(options.source) : "save";
+  var userInstruction = normalizeAiUserInstruction(options.userInstruction);
   var expectedRevision = !jobId ? record.updatedAt || record.createdAt || "" : "";
 
   async function markFailed(skipCode, detailText, failedCount) {
@@ -459,7 +471,8 @@ async function refreshAreaPhotoCommentsInBackground(record, targetIndexes) {
       currentMemoForGeneration,
       images.length,
       previousRecord,
-      previousSlot && previousSlot.memo ? previousSlot.memo : ""
+      previousSlot && previousSlot.memo ? previousSlot.memo : "",
+      userInstruction
     );
     try {
       var buf = await readSourceImageBuffer(slot, token);
@@ -915,6 +928,7 @@ module.exports = async function handler(req, res) {
 
 module.exports.assertAuth = assertAuth;
 module.exports.normalizeAiCommentTargets = normalizeAiCommentTargets;
+module.exports.normalizeAiUserInstruction = normalizeAiUserInstruction;
 module.exports.normalizeRecordImages = normalizeRecordImages;
 module.exports.readJsonBody = readJsonBody;
 module.exports.readRecords = readRecords;
