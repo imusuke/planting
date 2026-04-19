@@ -357,6 +357,7 @@ test("buildFallbackGrowthPhotoComment does not echo user instruction verbatim", 
   });
 
   assert.doesNotMatch(comment, /花色の濃淡を中心に見てほしい/);
+  assert.doesNotMatch(comment, /気になっている見方/);
   assert.match(comment, /花色|濃淡/);
   assert.equal(photoAi.getValidationError(comment, { currentPhotoMemo: "" }), "");
 });
@@ -388,6 +389,17 @@ test("getValidationError rejects comments that copy user instruction too directl
 test("getValidationError rejects internal note wording in user-facing comments", function () {
   const error = photoAi.getValidationError(
     "ユーザーが見てほしい点を手がかりにしながら、実際に写っている見どころへ自然につなげて説明しやすい写真です。葉先の重なりや株元のまとまりも見えており、花色の濃淡まで一文の中で説明してしまっています。さらに指示に触れながら、写真メモとしてまとめた形だと書いてしまっています。",
+    {
+      currentPhotoMemo: "",
+    }
+  );
+
+  assert.match(error, /内部向け/);
+});
+
+test("getValidationError rejects generic internal bridge phrasing", function () {
+  const error = photoAi.getValidationError(
+    "気になっている見方を手がかりにしながら、実際に写っている見どころへ自然につなげて説明しやすい写真です。葉先の広がりや株元のまとまりにも触れていますが、読み手に向けたコメントではなく内部の下書き説明のまま残っています。",
     {
       currentPhotoMemo: "",
     }
