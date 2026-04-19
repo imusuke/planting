@@ -826,11 +826,11 @@ dialog.growth-photo-lightbox::backdrop {
   position: relative;
   width: min(96vw, 1400px);
   max-width: min(96vw, 1400px);
+  height: min(92dvh, calc(100dvh - 32px));
   max-height: 92dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto auto auto;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 0;
   overflow: hidden;
   cursor: default;
@@ -841,11 +841,12 @@ dialog.growth-photo-lightbox::backdrop {
 .growth-photo-lightbox-media-frame {
   position: relative;
   width: 100%;
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: min(70dvh, calc(92dvh - 240px));
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 button.growth-photo-lightbox-nav {
@@ -907,6 +908,7 @@ button.growth-photo-lightbox-nav:focus-visible {
 }
 
 .growth-photo-lightbox-corner-nav {
+  flex: 0 0 auto;
   position: static;
   z-index: 25;
   width: min(100%, 920px);
@@ -1037,6 +1039,7 @@ button.growth-photo-lightbox-timeline-btn:disabled {
 }
 
 .growth-photo-lightbox-area-row {
+  flex: 0 0 auto;
   margin: 10px 0 0;
   padding: 0 8px;
   display: flex;
@@ -1067,6 +1070,7 @@ select.growth-photo-lightbox-area-select {
 }
 
 .growth-photo-lightbox-caption {
+  flex: 0 0 auto;
   margin: 12px 0 0;
   padding: 0 8px;
   text-align: center;
@@ -1082,6 +1086,7 @@ select.growth-photo-lightbox-area-select {
 }
 
 .growth-photo-lightbox-timeline-panel {
+  flex: 0 0 auto;
   width: min(100%, 960px);
   margin-top: 12px;
   padding: 14px 16px 16px;
@@ -1235,11 +1240,8 @@ select.growth-photo-lightbox-area-select {
 
 @media (max-width: 640px) {
   .growth-photo-lightbox-inner {
+    height: min(94dvh, calc(100dvh - 24px));
     max-height: 94dvh;
-  }
-
-  .growth-photo-lightbox-media-frame {
-    max-height: min(58dvh, calc(100dvh - 300px));
   }
 
   .growth-photo-lightbox-caption {
