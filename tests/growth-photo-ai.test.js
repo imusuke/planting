@@ -344,6 +344,33 @@ test("generateGrowthPhotoComment runs proofread and final quality review before 
   }
 });
 
+test("buildFallbackGrowthPhotoComment does not echo user instruction verbatim", function () {
+  const userInstruction = "花色の濃淡を中心に見てほしい。";
+  const comment = photoAi.buildFallbackGrowthPhotoComment({
+    areaLabel: "デッキ",
+    recordedDate: "2026-04-18",
+    plantNames: ["ヒューケラ"],
+    userInstruction: userInstruction,
+    photoIndex: 1,
+    photoCount: 1,
+  });
+
+  assert.doesNotMatch(comment, /花色の濃淡を中心に見てほしい/);
+  assert.equal(photoAi.getValidationError(comment, { currentPhotoMemo: "" }), "");
+});
+
+test("getValidationError rejects comments that copy user instruction too directly", function () {
+  const error = photoAi.getValidationError(
+    "花色の濃淡を中心に見てほしいという補足メモの通りに、花色の濃淡を中心に見てほしい場面です。実際にも花色の濃淡を中心に見てほしい印象が続き、葉先の動きや株元のまとまりより先にその文言が前面に出ています。",
+    {
+      userInstruction: "花色の濃淡を中心に見てほしい",
+      currentPhotoMemo: "",
+    }
+  );
+
+  assert.match(error, /補足メモ/);
+});
+
 test("normalizeComment strips image embed code from AI output", function () {
   const comment = photoAi.normalizeComment(
     [
