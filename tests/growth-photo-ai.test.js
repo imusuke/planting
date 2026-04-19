@@ -345,6 +345,80 @@ test("generateGrowthPhotoComment runs proofread and final quality review before 
   }
 });
 
+test("generateGrowthPhotoComment splits user-instructed drafting into plan and writing passes", async function () {
+  const originalFetch = global.fetch;
+  const prompts = [];
+  let call = 0;
+
+  global.fetch = async function (_url, options) {
+    call += 1;
+    const body = JSON.parse(options.body);
+    prompts.push(body.contents[0].parts[0].text);
+
+    const text =
+      call === 1
+        ? JSON.stringify({
+            requestedViewpoint: "花色の濃淡を、株全体の見え方と結びつけて追う",
+            observations: [
+              "淡い花と濃い花が隣り合い、色の差が画面の中で見分けやすい",
+              "株元から細い花茎が立ち上がり、先端に小さな花が集まっている",
+            ],
+            comparison: "",
+            closingAngle: "色の重なりが、この株の見頃の入り方を感じさせる",
+          })
+        : call === 2
+          ? "淡い花と少し濃い花が隣り合い、画面の中で花色の差が自然に見比べやすくなっています。株元から細い花茎が立ち上がり、先端に集まる小さな花まで追えるので、株全体の見え方にも奥行きが出てきました。色の重なり方から、この株が見頃へ入り始めた流れも静かに感じ取れます。"
+          : call === 3
+            ? "淡い花と少し濃い花が隣り合い、画面の中で花色の差が自然に見比べやすくなっています。株元から細い花茎が立ち上がり、先端に集まる小さな花まで追えるので、株全体の見え方にも奥行きが出てきました。色の重なり方から、この株が見頃へ入り始めた流れも静かに感じ取れます。"
+            : JSON.stringify({
+                ok: true,
+                issues: [],
+                revisedComment:
+                  "淡い花と少し濃い花が隣り合い、画面の中で花色の差が自然に見比べやすくなっています。株元から細い花茎が立ち上がり、先端に集まる小さな花まで追えるので、株全体の見え方にも奥行きが出てきました。色の重なり方から、この株が見頃へ入り始めた流れも静かに感じ取れます。",
+              });
+
+    return {
+      ok: true,
+      json: async function () {
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [{ text }],
+              },
+            },
+          ],
+        };
+      },
+    };
+  };
+
+  try {
+    const result = await photoAi.generateGrowthPhotoComment({
+      apiKey: "test-key",
+      imageBase64: Buffer.from("fake-image").toString("base64"),
+      context: {
+        areaLabel: "ウッドデッキ",
+        recordedDate: "2026-04-18",
+        plantNames: ["ヒューケラ"],
+        userInstruction: "花色の濃淡を中心に見てほしい",
+        photoIndex: 2,
+        photoCount: 10,
+      },
+    });
+
+    assert.equal(call, 4);
+    assert.match(prompts[0], /観察設計図/);
+    assert.match(prompts[0], /まだ完成コメントは書かないでください/);
+    assert.match(prompts[1], /観察設計図をもとに/);
+    assert.match(prompts[1], /見てほしい点の解釈:/);
+    assert.match(prompts[1], /花色の濃淡/);
+    assert.match(result.comment, /花色の差/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("buildFallbackGrowthPhotoComment does not echo user instruction verbatim", function () {
   const userInstruction = "花色の濃淡を中心に見てほしい。";
   const comment = photoAi.buildFallbackGrowthPhotoComment({
