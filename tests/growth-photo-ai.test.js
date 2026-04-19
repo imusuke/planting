@@ -30,8 +30,8 @@ test("prompt frames user notes as supporting context instead of overriding the p
     userInstruction: "花色の濃淡を中心に見てほしい",
   });
 
-  assert.ok(prompt.includes("その内容を踏まえつつ"));
-  assert.ok(prompt.includes("写真そのものの説明として読めるコメント"));
+  assert.ok(prompt.includes("その意図をできるだけ本文へ反映しつつ"));
+  assert.ok(prompt.includes("写真そのものの見どころとして自然に読めるコメント"));
 });
 
 test("prompt includes optional user instruction when supplied", function () {
@@ -42,7 +42,7 @@ test("prompt includes optional user instruction when supplied", function () {
     userInstruction: "花色の濃淡を中心に見てほしい",
   });
 
-  assert.match(prompt, /補足メモ/);
+  assert.match(prompt, /見てほしい点/);
   assert.ok(prompt.includes("花色の濃淡を中心に見てほしい"));
 });
 
@@ -55,7 +55,8 @@ test("prompt tells ai to analyze from the user's viewpoint", function () {
   });
 
   assert.ok(prompt.includes("写真の中で確かめられる根拠"));
-  assert.ok(prompt.includes("補足メモをそのまま言い換えるだけで終わらせず"));
+  assert.ok(prompt.includes("要望の文をなぞるのではなく"));
+  assert.ok(prompt.includes("花色、濃淡"));
 });
 
 test("prompt omits optional user instruction line when blank", function () {
@@ -66,7 +67,7 @@ test("prompt omits optional user instruction line when blank", function () {
     userInstruction: "   ",
   });
 
-  assert.doesNotMatch(prompt, /補足メモ/);
+  assert.doesNotMatch(prompt, /見てほしい点/);
 });
 
 test("prompt includes profile-specific guidance", function () {
@@ -356,7 +357,20 @@ test("buildFallbackGrowthPhotoComment does not echo user instruction verbatim", 
   });
 
   assert.doesNotMatch(comment, /花色の濃淡を中心に見てほしい/);
+  assert.match(comment, /花色|濃淡/);
   assert.equal(photoAi.getValidationError(comment, { currentPhotoMemo: "" }), "");
+});
+
+test("getValidationError rejects comments that ignore the user's requested viewpoint", function () {
+  const error = photoAi.getValidationError(
+    "葉先の緑がやわらかく広がり、株元にも新しい芽の動きが見えてきました。全体の輪郭も少し整っており、枝先から株元まで茎葉の重なり方を落ち着いて追いやすい状態です。次はまとまり方の違いまで見比べると、この株の動きがさらに読み取りやすくなりそうです。",
+    {
+      userInstruction: "花色の濃淡を中心に見てほしい",
+      currentPhotoMemo: "",
+    }
+  );
+
+  assert.match(error, /見てほしい観点|反映/);
 });
 
 test("getValidationError rejects comments that copy user instruction too directly", function () {
@@ -373,7 +387,7 @@ test("getValidationError rejects comments that copy user instruction too directl
 
 test("getValidationError rejects internal note wording in user-facing comments", function () {
   const error = photoAi.getValidationError(
-    "補足メモで示された見方を手がかりにしながら、実際に写っている見どころへ自然につなげて説明しやすい写真です。葉先の重なりや株元のまとまりも見えており、花色の濃淡まで一文の中で説明してしまっています。さらにユーザーからの意図にも触れながら、写真メモとしてまとめた形だと書いてしまっています。",
+    "ユーザーが見てほしい点を手がかりにしながら、実際に写っている見どころへ自然につなげて説明しやすい写真です。葉先の重なりや株元のまとまりも見えており、花色の濃淡まで一文の中で説明してしまっています。さらに指示に触れながら、写真メモとしてまとめた形だと書いてしまっています。",
     {
       currentPhotoMemo: "",
     }
