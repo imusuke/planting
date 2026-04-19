@@ -60,6 +60,7 @@
     dialog.className = "site-photo-lightbox";
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-label", "写真の拡大表示");
+    dialog.tabIndex = -1;
 
     var shell = document.createElement("div");
     shell.className = "site-photo-lightbox-shell";
@@ -194,6 +195,7 @@
     });
     dialog.addEventListener("keydown", function (e) {
       if (!gallery.items.length) return;
+      if (e.target && e.target.closest && e.target.closest("input, textarea, select")) return;
       if (e.key === "ArrowLeft" && gallery.items.length > 1) {
         e.preventDefault();
         showAt(gallery.index - 1);
@@ -228,6 +230,11 @@
       }
     } else {
       box.dialog.setAttribute("open", "");
+    }
+    if (typeof box.dialog.focus === "function") {
+      try {
+        box.dialog.focus();
+      } catch (e2) {}
     }
   }
 

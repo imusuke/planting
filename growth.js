@@ -1531,6 +1531,7 @@
     dlg.className = "growth-photo-lightbox";
     dlg.setAttribute("aria-modal", "true");
     dlg.setAttribute("aria-label", "写真の拡大表示");
+    dlg.tabIndex = -1;
 
     var shell = document.createElement("div");
     shell.className = "growth-photo-lightbox-shell";
@@ -1718,6 +1719,7 @@
 
     dlg.addEventListener("keydown", function (e) {
       if (!growthPhotoLightboxEls || !growthLightboxCanNavigate()) return;
+      if (e.target && e.target.closest && e.target.closest("input, textarea, select")) return;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         showAt(growthPhotoLightboxEls, growthLightboxGallery.index - 1);
@@ -1985,6 +1987,11 @@
         }
       } else {
         d.setAttribute("open", "");
+      }
+      if (typeof d.focus === "function") {
+        try {
+          d.focus();
+        } catch (e2) {}
       }
     }
     setTimeout(doOpen, 0);
