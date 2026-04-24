@@ -55,6 +55,66 @@
     statusEl.textContent = localStorage.getItem(storageKey) ? savedMessage : emptyMessage;
   }
 
+  function getCloudToken(options) {
+    var opts = options || {};
+    var inputEl = opts.inputEl || null;
+    var typed = inputEl && typeof inputEl.value === "string" ? inputEl.value.trim() : "";
+    if (typed) return typed;
+    try {
+      return localStorage.getItem(opts.storageKey || CLOUD_TOKEN_KEY) || "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function promptPhotoAiInstruction(options) {
+    var opts = options || {};
+    if (typeof window === "undefined" || typeof window.prompt !== "function") {
+      return typeof opts.defaultValue === "string" ? opts.defaultValue : "";
+    }
+    var raw = window.prompt(
+      opts.message ||
+        "この1枚の写真について、AIコメントで触れてほしい点があれば入力してください。空欄のままでも実行できます。",
+      typeof opts.defaultValue === "string" ? opts.defaultValue : ""
+    );
+    if (raw == null) return null;
+    var maxLength = typeof opts.maxLength === "number" && opts.maxLength > 0 ? opts.maxLength : 400;
+    return String(raw).trim().slice(0, maxLength);
+  }
+
+  function buildPhotoAiActionLabel(options) {
+    var opts = options || {};
+    if (opts.isBusy) return opts.busyLabel || "AIコメント更新中…";
+    if (opts.hasTarget === false) return opts.unavailableLabel || "AIでコメント追加";
+    return opts.hasMemo ? opts.refreshLabel || "AIでコメント再生成" : opts.addLabel || "AIでコメント追加";
+  }
+
+  function buildPhotoAiRequestStatus(options) {
+    var opts = options || {};
+    var subject = typeof opts.subject === "string" && opts.subject.trim() ? opts.subject.trim() : "この1枚の写真";
+    var noun = typeof opts.noun === "string" && opts.noun.trim() ? opts.noun.trim() : "AIコメント";
+    var prefix = opts.withUserInstruction ? opts.userInstructionPrefix || "入力内容を踏まえながら、" : "";
+    var particle = opts.hasMemo ? "の" : "に";
+    var action = opts.hasMemo ? opts.refreshVerb || "更新" : opts.addVerb || "追加";
+    var suffix = typeof opts.suffix === "string" ? opts.suffix : "しています。";
+    return prefix + subject + particle + noun + "を" + action + suffix;
+  }
+
+  function buildPhotoAiResultMessage(options) {
+    var opts = options || {};
+    var noun = typeof opts.noun === "string" && opts.noun.trim() ? opts.noun.trim() : "AIコメント";
+    var suffix = typeof opts.suffix === "string" ? opts.suffix : "";
+    return noun + "を" + (opts.hasMemo ? "更新" : "追加") + "しました。" + suffix;
+  }
+
+  function buildPhotoAiDeferredMessage(detail, options) {
+    var opts = options || {};
+    var base =
+      opts.baseMessage || "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+    var text = typeof detail === "string" ? detail.trim() : "";
+    return text ? base + "（" + text + "）" : base;
+  }
+
   function normalizeName(value) {
     return typeof value === "string" ? value.trim() : "";
   }
@@ -192,6 +252,45 @@
 
   function isAiCommentJobTerminal(job) {
     return !!job && (job.status === "done" || job.status === "failed");
+  }
+
+  function buildAiCommentJobStatusMessage(job, options) {
+    var opts = options || {};
+    if (!job) {
+      return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "queued") {
+      return opts.queuedMessage || "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "running") {
+      return opts.runningMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    }
+    if (job.status === "done") {
+      if (job.failedCount && job.updatedCount) {
+        if (job.detail) {
+          return (
+            (opts.partialFailureWithDetailPrefix ||
+              "AIコメントを反映しました。一部の写真は更新できませんでした。") +
+            "（" +
+            job.detail +
+            "）"
+          );
+        }
+        return (
+          opts.partialFailureMessage || "AIコメントを反映しました。一部の写真は更新できませんでした。"
+        );
+      }
+      if ((opts.detailPassThroughPattern || /自然な補助コメント/).test(String(job.detail || ""))) {
+        return String(job.detail || "");
+      }
+      return opts.doneMessage || "AIコメントを反映しました。必要なら確認して保存してください。";
+    }
+    if (job.status === "failed") {
+      return job.detail
+        ? (opts.failedWithDetailPrefix || "AIコメントの更新に失敗しました。") + "（" + job.detail + "）"
+        : opts.failedMessage || "AIコメントの更新に失敗しました。";
+    }
+    return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
   }
 
   function humanizeApiErrorCode(code) {
@@ -556,7 +655,12 @@
     CLOUD_TOKEN_KEY: CLOUD_TOKEN_KEY,
     applyStoredCloudToken: applyStoredCloudToken,
     apiErrorMessage: apiErrorMessage,
+    buildAiCommentJobStatusMessage: buildAiCommentJobStatusMessage,
     buildCloudHeaders: buildCloudHeaders,
+    buildPhotoAiActionLabel: buildPhotoAiActionLabel,
+    buildPhotoAiDeferredMessage: buildPhotoAiDeferredMessage,
+    buildPhotoAiRequestStatus: buildPhotoAiRequestStatus,
+    buildPhotoAiResultMessage: buildPhotoAiResultMessage,
     createButtonElement: createButtonElement,
     confirmIrreversibleAction: confirmIrreversibleAction,
     createGrowthCardImageWrap: createGrowthCardImageWrap,
@@ -566,6 +670,7 @@
     describeChangeLogEntry: describeChangeLogEntry,
     findAreaById: findAreaById,
     formatChangeLogTime: formatChangeLogTime,
+    getCloudToken: getCloudToken,
     imageSrcFromSlot: imageSrcFromSlot,
     isAiCommentJobTerminal: isAiCommentJobTerminal,
     listAreaPlants: listAreaPlants,
@@ -575,6 +680,7 @@
     normalizeName: normalizeName,
     readAiCommentJob: readAiCommentJob,
     normalizeImageSlots: normalizeImageSlots,
+    promptPhotoAiInstruction: promptPhotoAiInstruction,
     readEmbeddedJson: readEmbeddedJson,
     renderChangeLogItems: renderChangeLogItems,
     saveCloudToken: saveCloudToken,

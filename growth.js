@@ -12,6 +12,74 @@
     function (value) {
       return String(value || "").trim();
     };
+  var buildAiCommentJobStatusMessage =
+    common.buildAiCommentJobStatusMessage ||
+    function (job, options) {
+      var opts = options || {};
+      if (!job) return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+      if (job.status === "queued") {
+        return opts.queuedMessage || "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
+      }
+      if (job.status === "running") {
+        return opts.runningMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+      }
+      if (job.status === "done") {
+        if (job.failedCount && job.updatedCount) {
+          return job.detail
+            ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
+            : "AIコメントを反映しました。一部の写真は更新できませんでした。";
+        }
+        if (job.detail && /自然な補助コメント/.test(job.detail)) {
+          return job.detail;
+        }
+        return opts.doneMessage || "AIコメントを反映しました。必要なら微調整して保存してください。";
+      }
+      if (job.status === "failed") {
+        return job.detail
+          ? "AIコメントの更新に失敗しました。（" + job.detail + "）"
+          : "AIコメントの更新に失敗しました。";
+      }
+      return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    };
+  var buildPhotoAiActionLabel =
+    common.buildPhotoAiActionLabel ||
+    function (options) {
+      var opts = options || {};
+      if (opts.isBusy) return opts.busyLabel || "AIコメント更新中…";
+      if (opts.hasTarget === false) return opts.unavailableLabel || "AIでコメント追加";
+      return opts.hasMemo ? opts.refreshLabel || "AIでコメント再生成" : opts.addLabel || "AIでコメント追加";
+    };
+  var buildPhotoAiRequestStatus =
+    common.buildPhotoAiRequestStatus ||
+    function (options) {
+      var opts = options || {};
+      var prefix = opts.withUserInstruction ? "入力内容を踏まえながら、" : "";
+      return prefix + "この1枚の写真" + (opts.hasMemo ? "の" : "に") + "AIコメントを" + (opts.hasMemo ? "更新" : "追加") + "しています。";
+    };
+  var buildPhotoAiResultMessage =
+    common.buildPhotoAiResultMessage ||
+    function (options) {
+      var opts = options || {};
+      return "AIコメントを" + (opts.hasMemo ? "更新" : "追加") + "しました。" + (opts.suffix || "");
+    };
+  var buildPhotoAiDeferredMessage =
+    common.buildPhotoAiDeferredMessage ||
+    function (detail, options) {
+      var opts = options || {};
+      var base = opts.baseMessage || "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+      return detail ? base + "（" + detail + "）" : base;
+    };
+  var promptPhotoAiInstruction =
+    common.promptPhotoAiInstruction ||
+    function () {
+      if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
+      var raw = window.prompt(
+        "この1枚の写真について、AIコメントで触れてほしい点があれば入力してください。空欄のままでも実行できます。",
+        ""
+      );
+      if (raw == null) return null;
+      return String(raw).trim().slice(0, 400);
+    };
 
   var LS_CLOUD_TOKEN = "growthCloudToken";
   var LS_THUMB_SIZE = "growthThumbSize";
@@ -157,6 +225,12 @@
   }
 
   function currentCloudToken() {
+    if (common.getCloudToken) {
+      return common.getCloudToken({
+        inputEl: !IS_VIEW ? el.cloudToken : null,
+        storageKey: LS_CLOUD_TOKEN,
+      });
+    }
     var typed = !IS_VIEW && el.cloudToken && typeof el.cloudToken.value === "string" ? el.cloudToken.value.trim() : "";
     if (typed) return typed;
     try {
@@ -717,33 +791,7 @@
   }
 
   function growthAiJobStatusMessage(job, options) {
-    var opts = options || {};
-    if (!job) {
-      return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "queued") {
-      return opts.queuedMessage || "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "running") {
-      return opts.runningMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "done") {
-      if (job.failedCount && job.updatedCount) {
-        return job.detail
-          ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
-          : "AIコメントを反映しました。一部の写真は更新できませんでした。";
-      }
-      if (job.detail && /自然な補助コメント/.test(job.detail)) {
-        return job.detail;
-      }
-      return opts.doneMessage || "AIコメントを反映しました。必要なら微調整して保存してください。";
-    }
-    if (job.status === "failed") {
-      return job.detail
-        ? "AIコメントの更新に失敗しました。（" + job.detail + "）"
-        : "AIコメントの更新に失敗しました。";
-    }
-    return opts.pendingMessage || "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    return buildAiCommentJobStatusMessage(job, options || { doneMessage: "AIコメントを反映しました。必要なら微調整して保存してください。" });
   }
 
   function setBulkMissingCommentsAiStatus(message, isError) {
@@ -1046,7 +1094,7 @@
   }
 
   function growthLightboxAiButtonLabel() {
-    return growthLightboxCurrentMemo() ? "AIでコメント再生成" : "AIでコメント追加";
+    return buildPhotoAiActionLabel({ hasMemo: !!growthLightboxCurrentMemo() });
   }
 
   function growthLightboxTimelineButtonLabel() {
@@ -1057,13 +1105,7 @@
   }
 
   function promptGrowthLightboxAiUserInstruction() {
-    if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
-    var raw = window.prompt(
-      "AIコメントの参考にしたいメモがあれば入力してください。空欄のままでも実行できます。",
-      ""
-    );
-    if (raw == null) return null;
-    return String(raw).trim().slice(0, 400);
+    return promptPhotoAiInstruction();
   }
 
   function growthTimelinePreviewImageIndex(record, preferredIndex) {
@@ -1266,13 +1308,13 @@
     if (!IS_VIEW || !ref || !ref.recordId) {
       aiButton.hidden = true;
       aiButton.disabled = true;
-      aiButton.textContent = "AIでコメント追加";
+      aiButton.textContent = buildPhotoAiActionLabel({ hasTarget: false });
       return;
     }
     aiButton.hidden = false;
     aiButton.disabled = !!growthLightboxAiBusy;
     aiButton.textContent = growthLightboxAiBusy
-      ? "AIコメント更新中…"
+      ? buildPhotoAiActionLabel({ isBusy: true })
       : growthLightboxAiButtonLabel();
   }
 
@@ -1377,7 +1419,7 @@
     var ref = growthLightboxCurrentRef();
     if (!ref || !ref.recordId) return;
 
-    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    var storedToken = currentCloudToken();
     if (!storedToken) {
       showToast("アップロード用トークンを保存するとAIコメントを追加できます。", true);
       return;
@@ -1393,11 +1435,7 @@
     if (userInstruction === null) return;
     growthLightboxAiBusy = true;
     growthLightboxSyncAiButton(pack);
-    showToast(
-      userInstruction
-        ? "補足メモを添えて、この写真のAIコメントを更新しています。"
-        : "この写真のAIコメントを更新しています。"
-    );
+    showToast(buildPhotoAiRequestStatus({ hasMemo: true, withUserInstruction: !!userInstruction }));
 
     fetch(API_GROWTH_AI_REFRESH, {
       method: "POST",
@@ -1468,9 +1506,9 @@
           return;
         }
         var detail = result && result.detail ? String(result.detail) : "";
-        var message = detail
-          ? "AIコメントはまだ反映されていません。少ししてから開き直してください。(" + detail + ")"
-          : "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+        var message = buildPhotoAiDeferredMessage(detail, {
+          baseMessage: "AIコメントはまだ反映されていません。少ししてから開き直してください。",
+        });
         showToast(message, true);
       })
       .catch(function (err) {
@@ -1599,7 +1637,7 @@
     aiButton.type = "button";
     aiButton.className = "growth-photo-lightbox-ai-btn";
     aiButton.setAttribute("aria-label", "AIでコメントを追加または再生成");
-    aiButton.textContent = "AIでコメント追加";
+    aiButton.textContent = buildPhotoAiActionLabel({ hasTarget: false });
     aiButton.hidden = true;
 
     var editLink = document.createElement("a");
@@ -2103,7 +2141,7 @@
 
   function loadChangeLog() {
     if (!el.changeLogList || !el.changeLogStatus) return Promise.resolve();
-    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    var storedToken = currentCloudToken();
     if (!storedToken) {
       el.changeLogStatus.textContent = "アップロード用トークンを保存すると更新履歴を読み込めます。";
       renderChangeLogItems([]);
@@ -2520,11 +2558,13 @@
   }
 
   function photoQueuePreviewAiActionLabel(lightboxItem) {
-    if (state.photoAiBusy) return "AIでコメント生成中...";
     var target = resolvePhotoQueuePreviewTarget(lightboxItem);
-    if (!target || !target.item) return "AIでコメント追加";
-    var memo = target.item.memo != null ? String(target.item.memo).trim() : "";
-    return memo ? "AIでコメント再生成" : "AIでコメント追加";
+    var memo = target && target.item && target.item.memo != null ? String(target.item.memo).trim() : "";
+    return buildPhotoAiActionLabel({
+      isBusy: state.photoAiBusy,
+      hasTarget: !!(target && target.item),
+      hasMemo: !!memo,
+    });
   }
 
   function runPhotoQueuePreviewAiRefresh(ctx) {
@@ -2554,13 +2594,10 @@
     if (ctx && typeof ctx.sync === "function") ctx.sync();
 
     setPhotoAiStatus(
-      userInstruction
-        ? hadMemo
-          ? "補足メモを添えて、この写真のAIコメントを更新しています。"
-          : "補足メモを添えて、この写真にAIコメントを追加しています。"
-        : hadMemo
-          ? "この写真のAIコメントを更新しています。"
-          : "この写真にAIコメントを追加しています。",
+      buildPhotoAiRequestStatus({
+        hasMemo: !!hadMemo,
+        withUserInstruction: !!userInstruction,
+      }),
       false
     );
 
@@ -2576,12 +2613,13 @@
         renderPhotoQueueUi();
         if (ctx && typeof ctx.sync === "function") ctx.sync();
         setPhotoAiStatus(
-          hadMemo
-            ? "AIコメントを更新しました。必要に応じて書き直して保存してください。"
-            : "AIコメントを追加しました。必要に応じて書き直して保存してください。",
+          buildPhotoAiResultMessage({
+            hasMemo: !!hadMemo,
+            suffix: "必要に応じて書き直して保存してください。",
+          }),
           false
         );
-        showToast(hadMemo ? "AIコメントを更新しました。" : "AIコメントを追加しました。");
+        showToast(buildPhotoAiResultMessage({ hasMemo: !!hadMemo }));
       })
       .catch(function (err) {
         if (photoQueueContainsItem(target.item) && target.item.aiState === "loading") {
@@ -5095,7 +5133,8 @@
   function onCloudTokenSave() {
     if (!el.cloudToken) return;
     var v = el.cloudToken.value.trim();
-    if (v) localStorage.setItem(LS_CLOUD_TOKEN, v);
+    if (common.saveCloudToken) common.saveCloudToken(v, LS_CLOUD_TOKEN);
+    else if (v) localStorage.setItem(LS_CLOUD_TOKEN, v);
     else localStorage.removeItem(LS_CLOUD_TOKEN);
     showToast(v ? "アップロード用トークンを保存しました。" : "アップロード用トークンを削除しました。");
     loadChangeLog().catch(function () {});
@@ -5441,8 +5480,11 @@
       });
     }
 
-    var tokenStored = localStorage.getItem(LS_CLOUD_TOKEN);
-    if (el.cloudToken && tokenStored) el.cloudToken.value = tokenStored;
+    if (common.applyStoredCloudToken) common.applyStoredCloudToken(el.cloudToken, LS_CLOUD_TOKEN);
+    else {
+      var tokenStored = currentCloudToken();
+      if (el.cloudToken && tokenStored) el.cloudToken.value = tokenStored;
+    }
 
     if (el.cloudTokenSave) el.cloudTokenSave.addEventListener("click", onCloudTokenSave);
 

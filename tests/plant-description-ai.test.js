@@ -121,3 +121,40 @@ test("buildPlantBodyFromSections assembles the three final sections", function (
   assert.match(body, /【季節ごとの手入れ】/);
   assert.match(body, /【この場所での変遷】/);
 });
+
+test("buildPlantBodyWithFallback replaces comment-like section phrasing", function () {
+  const body = plantDescriptionAi.buildPlantBodyWithFallback(
+    [
+      "【一般的な特徴】",
+      "アジサイは花色に目を向けると、今回の見どころが自然に浮かび上がってきます。葉の広がりまで説明しやすい場面です。",
+      "",
+      "【季節ごとの手入れ】",
+      "春は乾きすぎを防ぎ、夏は蒸れた枝葉を整えると株の調子を保ちやすくなります。秋から冬は古い枝を軽く整理すると、次の季節の立ち上がりを支えやすくなります。",
+      "",
+      "【この場所での変遷】",
+      "前回の印象と比べると、見どころが少し増えてきたように見えます。色や形の変化が重なり、季節の進み方まで伝わってくる記録です。",
+    ].join("\n"),
+    {
+      plantName: "アジサイ",
+      areaLabel: "谷津畑",
+      timelineRecords: [
+        {
+          recordedDate: "2026-03-01",
+          note: "芽がふくらみ始めています。",
+          photoMemos: ["枝先に小さな芽が見えます。"],
+        },
+        {
+          recordedDate: "2026-06-18",
+          note: "葉が大きく広がってきました。",
+          photoMemos: ["株のボリュームが増しています。"],
+        },
+      ],
+    }
+  );
+
+  assert.match(body, /【一般的な特徴】/);
+  assert.match(body, /【季節ごとの手入れ】/);
+  assert.match(body, /【この場所での変遷】/);
+  assert.doesNotMatch(body, /に目を向けると|見どころが自然に浮かび上がってきます|説明しやすい/);
+  assert.doesNotMatch(body, /前回の印象と比べると|季節の進み方まで伝わってくる記録/);
+});

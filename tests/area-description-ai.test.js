@@ -57,3 +57,13 @@ test("parseAreaDescriptionResponse extracts JSON from fenced block", function ()
   assert.match(parsed.body, /三月の記録/);
   assert.match(parsed.body, /四月に入ると/);
 });
+
+test("isValidAreaBody rejects bridge-like photo comment phrasing", function () {
+  const badBody = [
+    "玄関前では青い花の面積が広がり、入口まわりの色がまとまってきたように見えます。",
+    "",
+    "花色に目を向けると、今回の写真で押さえたい見どころが自然に浮かび上がってきます。足元の草花も説明しやすい場面です。",
+  ].join("\n\n");
+
+  assert.equal(areaDescriptionAi.isValidAreaBody(badBody), false);
+});

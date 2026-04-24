@@ -3,6 +3,74 @@
 
   var common = window.PlantingEditCommon || {};
   var LS_CLOUD_TOKEN = common.CLOUD_TOKEN_KEY || "growthCloudToken";
+  var getCloudToken =
+    common.getCloudToken ||
+    function (options) {
+      var opts = options || {};
+      try {
+        return localStorage.getItem(opts.storageKey || LS_CLOUD_TOKEN) || "";
+      } catch (err) {
+        return "";
+      }
+    };
+  var buildAiCommentJobStatusMessage =
+    common.buildAiCommentJobStatusMessage ||
+    function (job) {
+      if (!job) return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+      if (job.status === "queued") return "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
+      if (job.status === "running") return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+      if (job.status === "done") {
+        if (job.failedCount && job.updatedCount) {
+          return job.detail
+            ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
+            : "AIコメントを反映しました。一部の写真は更新できませんでした。";
+        }
+        if (job.detail && /自然な補助コメント/.test(job.detail)) return job.detail;
+        return "AIコメントを反映しました。必要なら確認して保存してください。";
+      }
+      if (job.status === "failed") {
+        return job.detail ? "AIコメントの更新に失敗しました。（" + job.detail + "）" : "AIコメントの更新に失敗しました。";
+      }
+      return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    };
+  var buildPhotoAiActionLabel =
+    common.buildPhotoAiActionLabel ||
+    function (options) {
+      var opts = options || {};
+      if (opts.isBusy) return "AIコメント更新中…";
+      if (opts.hasTarget === false) return opts.unavailableLabel || "AIでコメント追加";
+      return opts.hasMemo ? "AIでコメント再生成" : "AIでコメント追加";
+    };
+  var buildPhotoAiRequestStatus =
+    common.buildPhotoAiRequestStatus ||
+    function (options) {
+      var opts = options || {};
+      return (opts.withUserInstruction ? "入力内容を踏まえながら、" : "") + "この1枚の写真" + (opts.hasMemo ? "の" : "に") + "AIコメントを" + (opts.hasMemo ? "更新" : "追加") + "しています。";
+    };
+  var buildPhotoAiResultMessage =
+    common.buildPhotoAiResultMessage ||
+    function (options) {
+      var opts = options || {};
+      return "AIコメントを" + (opts.hasMemo ? "更新" : "追加") + "しました。" + (opts.suffix || "");
+    };
+  var buildPhotoAiDeferredMessage =
+    common.buildPhotoAiDeferredMessage ||
+    function (detail, options) {
+      var opts = options || {};
+      var base = opts.baseMessage || "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+      return detail ? base + "（" + detail + "）" : base;
+    };
+  var promptPhotoAiInstruction =
+    common.promptPhotoAiInstruction ||
+    function () {
+      if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
+      var raw = window.prompt(
+        "この1枚の写真について、AIコメントで触れてほしい点があれば入力してください。空欄のままでも実行できます。",
+        ""
+      );
+      if (raw == null) return null;
+      return String(raw).trim().slice(0, 400);
+    };
   var API_CHANGE_LOG = "/api/change-log";
   var API_AREA_AI_REFRESH = "/api/area-ai-refresh";
   var API_AREA_DESCRIPTION = "/api/area-description";
@@ -290,19 +358,16 @@
   }
 
   function areaLightboxAiActionLabel(item) {
-    if (state.photoAiBusy) return "AIコメント更新中...";
-    if (!resolveAreaLightboxAiTarget(item)) return "保存後にAIコメント追加";
-    return areaLightboxCurrentMemo(item) ? "AIでコメント再生成" : "AIでコメント追加";
+    return buildPhotoAiActionLabel({
+      isBusy: state.photoAiBusy,
+      hasTarget: !!resolveAreaLightboxAiTarget(item),
+      hasMemo: !!areaLightboxCurrentMemo(item),
+      unavailableLabel: "保存後にAIコメント追加",
+    });
   }
 
   function promptAreaLightboxAiUserInstruction() {
-    if (typeof window === "undefined" || typeof window.prompt !== "function") return "";
-    var raw = window.prompt(
-      "AIコメントの参考にしたいメモがあれば入力してください。空欄のままでも実行できます。",
-      ""
-    );
-    if (raw == null) return null;
-    return String(raw).trim().slice(0, 400);
+    return promptPhotoAiInstruction();
   }
 
   function areaLightboxLabelFromItem(item) {
@@ -349,7 +414,7 @@
       return;
     }
 
-    var storedToken = localStorage.getItem(LS_CLOUD_TOKEN);
+    var storedToken = getCloudToken({ storageKey: LS_CLOUD_TOKEN });
     if (!storedToken) {
       showToast("アップロード用トークンを保存するとAIコメントを追加できます。", true);
       return;
@@ -361,15 +426,7 @@
     state.photoAiBusy = true;
     syncPhotoAiButtonState();
     if (ctx && typeof ctx.sync === "function") ctx.sync();
-    showToast(
-      userInstruction
-        ? hadMemo
-          ? "補足メモを添えて、この写真のAIコメントを更新しています。"
-          : "補足メモを添えて、この写真にAIコメントを追加しています。"
-        : hadMemo
-          ? "この写真のAIコメントを更新しています。"
-          : "この写真にAIコメントを追加しています。"
-    );
+    showToast(buildPhotoAiRequestStatus({ hasMemo: hadMemo, withUserInstruction: !!userInstruction }));
 
     fetch(API_AREA_AI_REFRESH, {
       method: "POST",
@@ -406,15 +463,14 @@
           syncDescriptionAiButtonState();
         }
         if (payload && payload.updated) {
-          showToast(hadMemo ? "AIコメントを更新しました。" : "AIコメントを追加しました。");
+          showToast(buildPhotoAiResultMessage({ hasMemo: hadMemo }));
           if (state.editRecord && String(state.editRecord.id || "") === String(target.recordId)) {
-            setPhotoAiStatus("AIコメントを更新しました。", false);
+            setPhotoAiStatus(buildPhotoAiResultMessage({ hasMemo: hadMemo }), false);
           }
         } else {
-          var detail =
-            payload && payload.detail
-              ? String(payload.detail)
-              : "AIコメントはまだ反映されていません。少ししてから開き直してください。";
+          var detail = buildPhotoAiDeferredMessage(payload && payload.detail ? String(payload.detail) : "", {
+            baseMessage: "AIコメントはまだ反映されていません。少ししてから開き直してください。",
+          });
           showToast(detail, true);
           if (state.editRecord && String(state.editRecord.id || "") === String(target.recordId)) {
             setPhotoAiStatus(detail, true);
@@ -521,32 +577,7 @@
   }
 
   function areaAiJobStatusMessage(job) {
-    if (!job) {
-      return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "queued") {
-      return "AIコメントを更新予約しました。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "running") {
-      return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
-    }
-    if (job.status === "done") {
-      if (job.failedCount && job.updatedCount) {
-        return job.detail
-          ? "AIコメントを反映しました。一部の写真は更新できませんでした。（" + job.detail + "）"
-          : "AIコメントを反映しました。一部の写真は更新できませんでした。";
-      }
-      if (job.detail && /自然な補助コメント/.test(job.detail)) {
-        return job.detail;
-      }
-      return "AIコメントを反映しました。必要なら確認して保存してください。";
-    }
-    if (job.status === "failed") {
-      return job.detail
-        ? "AIコメントの更新に失敗しました。（" + job.detail + "）"
-        : "AIコメントの更新に失敗しました。";
-    }
-    return "AIコメントを更新しています。保存後は画面を離れても大丈夫です。";
+    return buildAiCommentJobStatusMessage(job);
   }
 
   function buildAreaAiRefreshResult(record, jobId, fallbackDetail) {
@@ -1765,7 +1796,7 @@
     el.growthLink = $("area-edit-growth-link");
 
     if (common.applyStoredCloudToken) common.applyStoredCloudToken(el.cloudToken, LS_CLOUD_TOKEN);
-    else if (el.cloudToken) el.cloudToken.value = localStorage.getItem(LS_CLOUD_TOKEN) || "";
+    else if (el.cloudToken) el.cloudToken.value = getCloudToken({ storageKey: LS_CLOUD_TOKEN });
     if (el.cloudTokenSave) {
       el.cloudTokenSave.addEventListener("click", function () {
         var value = el.cloudToken ? el.cloudToken.value.trim() : "";
