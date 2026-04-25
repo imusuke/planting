@@ -1219,7 +1219,7 @@
     var recordHref = wanted
       ? "./growth-edit.html?area=" + encodeURIComponent(wanted)
       : "./growth-edit.html";
-    var recordText = wanted ? "このエリアの植栽ごとの記録を編集" : "植栽の記録と一覧を編集";
+    var recordText = wanted ? "このエリアの植栽ごとの写真と記録を編集" : "植栽の写真と記録を編集";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
     if (el.detailLink) el.detailLink.href = viewHref;
@@ -1262,32 +1262,32 @@
 
     if (area) {
       if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = area.label || area.id;
-      if (crumbEl) crumbEl.textContent = state.editRecord ? "このエリアの記録を編集" : "エリアの説明と記録を編集";
+      if (crumbEl) crumbEl.textContent = state.editRecord ? "このエリアの記録を編集" : "エリア全体を編集";
       if (titleEl) {
         titleEl.textContent =
-          area.label + (state.editRecord ? "の記録を編集" : "の説明と記録を編集");
+          area.label + (state.editRecord ? "の記録を編集" : "全体を編集");
       }
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = state.editRecord
           ? "このエリアの過去の記録、写真コメント、説明文を編集します。"
-          : "このエリアの説明、記録メモ、写真をまとめて追加・更新できます。";
+          : "このエリア全体の説明、記録メモ、写真をまとめて追加・更新できます。";
       }
       document.title =
       "庭と植栽の記録 — " +
         area.label +
-        (state.editRecord ? "の記録を編集" : "の説明と記録を編集");
+        (state.editRecord ? "の記録を編集" : "全体を編集");
       return;
     }
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = "エリア";
-    if (crumbEl) crumbEl.textContent = "エリアの説明と記録を編集";
-    if (titleEl) titleEl.textContent = "エリアの説明と記録を編集";
+    if (crumbEl) crumbEl.textContent = "エリア全体を編集";
+    if (titleEl) titleEl.textContent = "エリア全体を編集";
     if (contextEl) {
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "庭と植栽の記録 — エリアの説明と記録を編集";
+    document.title = "庭と植栽の記録 — エリア全体を編集";
   }
 
   function recordDateLabel(record) {

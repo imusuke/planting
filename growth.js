@@ -122,6 +122,8 @@
     /** 写真メモの AI 生成が進行中か */
     photoAiBusy: false,
     pendingEditPhotoIndex: null,
+    /** 連続入力モード中のエリアID。null のときは連続入力ガイドを出さない */
+    sequentialAreaId: null,
   };
 
   var el = {
@@ -2424,7 +2426,8 @@
     var areaId = String(el.area.value || "").trim();
     var area = findAreaById(areaId);
     var editing = !!state.editRecord;
-    if (editing || !area || !Array.isArray(area.plants) || !area.plants.length) {
+    var sequenceActive = !!state.sequentialAreaId && state.sequentialAreaId === areaId;
+    if (editing || !sequenceActive || !area || !Array.isArray(area.plants) || !area.plants.length) {
       el.sequenceGuide.hidden = true;
       el.sequencePlants.innerHTML = "";
       if (el.sequenceArea) el.sequenceArea.textContent = "";
@@ -3312,30 +3315,30 @@
     }
 
     if (plantName) {
-      if (crumbEl) crumbEl.textContent = "\u690d\u683d\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
-      if (titleEl) titleEl.textContent = plantName + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+      if (crumbEl) crumbEl.textContent = "\u690d\u683d\u3054\u3068\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u7de8\u96c6";
+      if (titleEl) titleEl.textContent = plantName + "\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = area
-          ? area.label + "\u306e\u300c" + plantName + "\u300d\u3092\u5bfe\u8c61\u306b\u3001\u690d\u683d\u6642\u7cfb\u5217\u3078\u8a18\u9332\u3092\u8ffd\u52a0\u3057\u307e\u3059\u3002"
-          : "\u300c" + plantName + "\u300d\u306e\u690d\u683d\u6642\u7cfb\u5217\u3078\u8a18\u9332\u3092\u8ffd\u52a0\u3057\u307e\u3059\u3002";
+          ? area.label + "\u306e\u300c" + plantName + "\u300d\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6\u3057\u307e\u3059\u3002"
+          : "\u300c" + plantName + "\u300d\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6\u3057\u307e\u3059\u3002";
       }
       return;
     }
 
     if (area) {
-      if (crumbEl) crumbEl.textContent = "\u30a8\u30ea\u30a2\u6642\u7cfb\u5217\u306e\u7de8\u96c6";
-      if (titleEl) titleEl.textContent = area.label + "\u306e\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
+      if (crumbEl) crumbEl.textContent = "\u690d\u683d\u3054\u3068\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u7de8\u96c6";
+      if (titleEl) titleEl.textContent = area.label + "\u306e\u690d\u683d\u3054\u3068\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6";
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent =
-          "\u3053\u306e\u30a8\u30ea\u30a2\u306b\u7d10\u3065\u304f\u690d\u683d\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6\u3057\u307e\u3059\u3002";
+          "\u3053\u306e\u30a8\u30ea\u30a2\u306b\u3042\u308b\u690d\u683d\u3054\u3068\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u8ffd\u52a0\u30fb\u7de8\u96c6\u3057\u307e\u3059\u3002";
       }
       return;
     }
 
-    if (crumbEl) crumbEl.textContent = "\u8a18\u9332\u306e\u8ffd\u52a0\u30fb\u7de8\u96c6";
-    if (titleEl) titleEl.textContent = "\u8a18\u9332\u306e\u8ffd\u52a0\u30fb\u7de8\u96c6";
+    if (crumbEl) crumbEl.textContent = "\u690d\u683d\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u7de8\u96c6";
+    if (titleEl) titleEl.textContent = "\u690d\u683d\u306e\u5199\u771f\u3068\u8a18\u9332\u3092\u7de8\u96c6";
     if (contextEl) {
       contextEl.hidden = true;
       contextEl.textContent = "";
@@ -3344,6 +3347,7 @@
 
   function clearEditMode() {
     state.editRecord = null;
+    state.sequentialAreaId = null;
     revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = [];
     state.photosTouched = false;
@@ -3361,6 +3365,7 @@
 
   function prepareNextRecordInSameArea(areaId, dateVal) {
     state.editRecord = null;
+    state.sequentialAreaId = areaId ? String(areaId).trim() : null;
     revokePhotoQueuePreviews(state.photoQueue);
     state.photoQueue = [];
     state.photosTouched = false;
@@ -3396,6 +3401,7 @@
       localSnapshotImage: r.localSnapshotImage || null,
       images: r.images ? JSON.parse(JSON.stringify(r.images)) : null,
     };
+    state.sequentialAreaId = null;
     syncEditUrlParam(r.id);
     if (el._setGrowthEditTab) el._setGrowthEditTab("record");
     if (el.area) el.area.value = r.areaId || el.area.value || "";
@@ -4663,12 +4669,12 @@
       }
       if (areaSecondaryEl) {
         areaSecondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-        areaSecondaryEl.textContent = "このエリアの説明と記録を編集";
+        areaSecondaryEl.textContent = "このエリア全体を編集";
       }
       if (areaTertiaryEl) {
         areaTertiaryEl.hidden = false;
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-        areaTertiaryEl.textContent = "このエリアの植栽ごとの記録を編集";
+        areaTertiaryEl.textContent = "このエリアの植栽ごとの写真と記録を編集";
       }
       document.title = "庭と植栽の記録 — " + area.label + "の記録一覧";
       return;
@@ -4682,7 +4688,7 @@
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
-          "まずはエリア一覧か植栽一覧から見始めます。最近の記録は下に並びます。編集が必要なときは右上の「植栽の記録と一覧を編集」から進めます。"
+          "エリア一覧や植栽一覧から見始められます。最近の記録はこのページで続けて追えます。編集が必要なときは右上の「植栽の写真と記録を編集」から進めます。"
         );
       }
     document.title = "庭と植栽の記録";
@@ -4887,7 +4893,7 @@
         if (data === null || data === undefined) return;
         if (IS_VIEW) {
           updateCloudStatus(
-            "記録と写真を表示できています。追加・編集・削除は「植栽の記録と一覧を編集」から行ってください。"
+            "記録と写真を表示できています。追加・編集・削除は「植栽の写真と記録を編集」から行えます。"
           );
         } else {
           updateCloudStatus(
@@ -5239,7 +5245,7 @@
         '<div class="home-quick-grid">' +
         '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリア一覧を見る</h2><p>エリアごとの説明と記録を見ます。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽一覧を見る</h2><p>植栽名から写真、記録、説明を探します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">編集</span><h2>植栽の記録と一覧を編集</h2><p>植栽ごとの記録追加や一覧の整理を行います。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">編集</span><h2>植栽の写真と記録を編集</h2><p>植栽ごとの写真と記録の追加や、一覧の整理を行います。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>使い方を確認する</h2><p>画面の使い分けとページのつながりを確認します。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
@@ -5575,6 +5581,10 @@
       });
 
     el.area.addEventListener("change", function () {
+      var currentAreaId = String(el.area.value || "").trim();
+      if (!state.editRecord && state.sequentialAreaId && state.sequentialAreaId !== currentAreaId) {
+        state.sequentialAreaId = null;
+      }
       renderPlantChecks(el.area.value);
       if (state.editRecord && state.editRecord.plants) {
         applyPlantsToForm(state.editRecord.plants, el.area.value);

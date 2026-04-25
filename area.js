@@ -883,11 +883,11 @@
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-      editLink.textContent = "このエリアの説明と記録を編集";
+      editLink.textContent = "このエリア全体を編集";
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-      growthEditLinkEl.textContent = "このエリアの植栽ごとの記録を編集";
+      growthEditLinkEl.textContent = "このエリアの植栽ごとの写真と記録を編集";
     }
 
     if (entry && entry.summary) {
@@ -1456,8 +1456,8 @@
     areaPhotoGroup.appendChild(
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
-        emptyText: "エリア写真の記録はまだありません。「エリアの説明と記録を編集」から追加できます。",
-        ctaText: "このエリアの説明と記録を編集",
+        emptyText: "エリア写真の記録はまだありません。「このエリア全体を編集」から追加できます。",
+        ctaText: "このエリア全体を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
         buildLightboxActions: buildAreaLightboxActions,
       })
@@ -1469,8 +1469,8 @@
     plantPhotoGroup.appendChild(
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
-        emptyText: "植栽ごとの写真はまだありません。「植栽の記録と一覧を編集」から追加できます。",
-        ctaText: "このエリアの植栽ごとの記録を編集",
+        emptyText: "植栽ごとの写真はまだありません。「このエリアの植栽ごとの写真と記録を編集」から追加できます。",
+        ctaText: "このエリアの植栽ごとの写真と記録を編集",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1493,7 +1493,7 @@
     if (!bodyWrap.childElementCount) {
       bodyWrap.appendChild(
         createDetailPlaceholder(
-          "このエリアの説明はまだ登録されていません。「このエリアの説明と記録を編集」から追加できます。",
+          "このエリアの説明はまだ登録されていません。「このエリア全体を編集」から追加できます。",
           "detail-page-placeholder"
         )
       );
@@ -1506,7 +1506,7 @@
     actions.className = "detail-page-actions";
     var aRecord = createDetailLink(
       "./area-edit.html?area=" + encodeURIComponent(area.id),
-      "このエリアの説明と記録を編集",
+      "このエリア全体を編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);

@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>庭と植栽の記録 — エリアの説明と記録を編集</title>
+  <title>庭と植栽の記録 — エリア全体を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260419e" />
-    <link rel="stylesheet" href="./growth.css?v=20260425a" />
+  <link rel="stylesheet" href="./growth.css?v=20260425a" />
 </head>
 <body>
   <main class="panel growth-panel">
@@ -17,7 +17,7 @@
         <li><a href="./index.html">庭と植栽の記録</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
         <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア</a></li>
-        <li aria-current="page" id="area-edit-breadcrumb-current">エリアの説明と記録を編集</li>
+        <li aria-current="page" id="area-edit-breadcrumb-current">エリア全体を編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
@@ -29,10 +29,10 @@
 
     <header class="page-header">
       <p class="eyebrow">エリア</p>
-      <h1 id="area-edit-page-title">エリアの説明と記録を編集</h1>
+      <h1 id="area-edit-page-title">エリア全体を編集</h1>
       <p id="area-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="area-edit-page-lead" class="lead">
-        ここではエリアページ上部の<strong>説明</strong>と、そのエリア全体の<strong>記録</strong>をまとめて編集できます。植栽ごとの記録は、下の「このエリアの植栽ごとの記録を編集」から進めます。閲覧は右上の「このエリアを見る」から見られます。
+        ここではこのエリア全体の<strong>説明</strong>と<strong>記録</strong>をまとめて編集できます。植栽ごとの写真と記録は、下の「このエリアの植栽ごとの写真と記録を編集」から進めます。閲覧は右上の「このエリアを見る」から見られます。
       </p>
     </header>
 
@@ -41,7 +41,7 @@
       <div class="growth-task-guide-grid">
         <a class="card growthlog" href="#area-edit-description-group">
           <span class="card-label">説明</span>
-          <h2>エリアの説明を編集</h2>
+          <h2>エリア全体の説明を編集</h2>
           <p>エリアページ上部の概要と説明本文を編集します。</p>
           <span class="open">開く</span>
         </a>
@@ -58,8 +58,8 @@
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="./growth-edit.html" id="area-edit-guide-record-link">
-          <span class="card-label">植栽ごとの記録</span>
-          <h2>このエリアの植栽ごとの記録を編集</h2>
+          <span class="card-label">植栽ごと</span>
+          <h2>このエリアの植栽ごとの写真と記録を編集</h2>
           <p>植栽ごとの写真、記録メモ、写真コメントを編集します。</p>
           <span class="open">開く</span>
         </a>
@@ -292,6 +292,6 @@
   <script src="./data/area-growth-snapshot.boot.js?v=20260405i" defer></script>
   <script src="./photo-lightbox.js?v=20260419b" defer></script>
     <script src="./edit-page-common.js?v=20260425a" defer></script>
-    <script src="./area-edit.js?v=20260425a" defer></script>
+    <script src="./area-edit.js?v=20260425b" defer></script>
 </body>
 </html>

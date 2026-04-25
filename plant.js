@@ -653,7 +653,7 @@
         area: area.id,
         plant: plantName,
       });
-      recordEditLinkEl.textContent = "この植栽の記録を編集";
+      recordEditLinkEl.textContent = "この植栽の写真と記録を編集";
     }
 
     if (areaLineEl) {
@@ -696,7 +696,7 @@
         area: area.id,
         plant: plantName,
       }),
-      "この植栽の記録を編集",
+      "この植栽の写真と記録を編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);
