@@ -361,7 +361,7 @@
     var plantLabel = item.plantName ? String(item.plantName) : "";
     switch (item.action) {
       case "catalog_saved":
-        return "エリア・植栽マスタを保存";
+        return "エリア一覧と植栽一覧を保存";
       case "plant_detail_saved":
         return plantLabel ? plantLabel + " の説明を保存" : "植栽の説明を保存";
       case "area_detail_saved":
@@ -441,14 +441,14 @@
     var token = localStorage.getItem(storageKey);
     if (!token) {
       statusEl.textContent =
-        opts.noTokenMessage || "アップロード用トークンを保存すると更新履歴を読み込めます。";
+        opts.noTokenMessage || "アップロード用トークンを保存すると最近の更新を読み込めます。";
       renderChangeLogItems(listEl, [], opts.noTokenEmptyText || "");
       return Promise.resolve([]);
     }
 
     var limit = parseInt(String(opts.limit || 20), 10);
     if (isNaN(limit) || limit < 1) limit = 20;
-    statusEl.textContent = opts.loadingMessage || "更新履歴を読み込んでいます…";
+    statusEl.textContent = opts.loadingMessage || "最近の更新を読み込んでいます…";
 
     return fetch((opts.apiPath || "/api/change-log") + "?limit=" + encodeURIComponent(limit), {
       headers: buildCloudHeaders(false, storageKey),
@@ -456,7 +456,7 @@
     })
       .then(function (res) {
         if (!res.ok) {
-          return apiErrorMessage(res, opts.failurePrefix || "更新履歴の読み込みに失敗しました").then(function (message) {
+          return apiErrorMessage(res, opts.failurePrefix || "最近の更新の読み込みに失敗しました").then(function (message) {
             throw new Error(message);
           });
         }
@@ -467,18 +467,18 @@
         if (typeof opts.filter === "function") {
           items = items.filter(opts.filter);
         }
-        renderChangeLogItems(listEl, items, opts.emptyMessage || "更新履歴はまだありません。");
+        renderChangeLogItems(listEl, items, opts.emptyMessage || "最近の更新はまだありません。");
         statusEl.textContent =
           typeof opts.successMessage === "function"
             ? opts.successMessage(items)
             : items.length
               ? "最近 " + items.length + " 件の更新を表示しています。"
-              : opts.emptyMessage || "更新履歴はまだありません。";
+              : opts.emptyMessage || "最近の更新はまだありません。";
         return items;
       })
       .catch(function (err) {
         statusEl.textContent =
-          err && err.message ? err.message : opts.failurePrefix || "更新履歴の読み込みに失敗しました。";
+          err && err.message ? err.message : opts.failurePrefix || "最近の更新の読み込みに失敗しました。";
         renderChangeLogItems(listEl, [], "");
         return [];
       });

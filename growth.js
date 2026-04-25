@@ -4654,7 +4654,7 @@
       if (leadEl) {
         setLeadTextKeepingButton(
           leadEl,
-          "「" + area.label + "」の記録を一覧で見ています。必要に応じて、そのエリアの概要や写真も確認できます。"
+          "「" + area.label + "」の記録を一覧で見ています。必要に応じて、そのエリアの概要や写真も見られます。"
         );
       }
       if (areaPrimaryEl) {
@@ -4856,17 +4856,17 @@
   }
 
   function refreshFeed() {
-    updateCloudStatus("一覧を取得中…");
+    updateCloudStatus("記録一覧を読み込んでいます…");
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
         if (res.status === 404) {
           if (IS_VIEW) {
             return tryRenderViewFromSnapshot(
-              "サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。"
+              "サーバーに接続できません。公開サイトのURLで開いているか確認してください。"
             );
           }
           updateCloudStatus(
-            "サーバーに接続できません。インターネット上のサイトのURLで開いているか確認してください。"
+            "サーバーに接続できません。公開サイトのURLで開いているか確認してください。"
           );
           if (el.feed) renderFeed([]);
           return null;
