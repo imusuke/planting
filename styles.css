@@ -939,6 +939,44 @@ a.detail-page-cta:focus-visible {
   padding: 0 24px 24px;
 }
 
+.sitemap-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.sitemap-guide-card {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(45, 106, 79, 0.12);
+  box-shadow: 0 10px 24px rgba(26, 46, 36, 0.05);
+}
+
+.sitemap-guide-card strong {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.sitemap-guide-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.92rem;
+}
+
+.sitemap-guide-card a {
+  color: var(--green);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sitemap-guide-card a:hover,
+.sitemap-guide-card a:focus-visible {
+  text-decoration: underline;
+}
+
 .sitemap-tree-shell {
   padding: 18px;
   border-radius: 24px;

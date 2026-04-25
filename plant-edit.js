@@ -350,10 +350,6 @@
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = detailHref;
     if (el.detailLink) el.detailLink.href = detailHref;
-    if (el.leadDetailLink) el.leadDetailLink.href = detailHref;
-    if (el.openDetail) el.openDetail.href = detailHref;
-    if (el.recordLink) el.recordLink.href = recordHref;
-    if (el.guideDetailLink) el.guideDetailLink.href = detailHref;
     if (el.guideRecordLink) el.guideRecordLink.href = recordHref;
   }
 
@@ -567,11 +563,7 @@
     el.detailBreadcrumbLink = $("plant-edit-detail-breadcrumb-link");
     el.breadcrumbCurrent = $("plant-edit-breadcrumb-current");
     el.detailLink = $("plant-edit-detail-link");
-    el.leadDetailLink = $("plant-edit-lead-detail-link");
-    el.recordLink = $("plant-edit-record-link");
-    el.openDetail = $("plant-edit-open-detail");
     el.guideRecordLink = $("plant-edit-guide-record-link");
-    el.guideDetailLink = $("plant-edit-guide-detail-link");
     el.changeLogStatus = $("plant-edit-change-log-status");
     el.changeLogList = $("plant-edit-change-log-list");
     el.changeLogReload = $("plant-edit-change-log-reload");

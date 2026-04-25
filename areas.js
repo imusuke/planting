@@ -239,7 +239,7 @@
 
     var count = Array.isArray(area.plants) ? area.plants.length : 0;
     var desc = document.createElement("p");
-    desc.textContent = "植栽数: " + count + " / 概要と記録を見る";
+    desc.textContent = "植栽数: " + count + " / 説明と記録を見る";
     card.appendChild(desc);
 
     var open = document.createElement("span");

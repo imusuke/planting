@@ -248,7 +248,7 @@
       var areaPage = document.createElement("a");
       areaPage.href = "area.html?area=" + encodeURIComponent(area.id);
       areaPage.className = "plant-area-link";
-      areaPage.setAttribute("title", area.label + " の概要と記録を見る");
+      areaPage.setAttribute("title", area.label + " の説明と記録を見る");
 
       var areaName = document.createElement("span");
       areaName.className = "plant-area-name";
@@ -471,7 +471,7 @@
       tbody.innerHTML = "";
       tbody.appendChild(
         createEmptyRow(
-          "植栽一覧の読み込みに失敗しました。data/plants.json と埋め込みデータを確認してください。",
+          "植栽一覧の読み込みに失敗しました。しばらくしてから開き直してください。",
           "plant-load-error"
         )
       );

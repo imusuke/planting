@@ -19,7 +19,7 @@
       <div class="growth-nav-extra">
         <a href="./areas.html">エリア一覧</a>
         <a href="./plants.html">植栽一覧</a>
-        <a href="./growth-edit.html" class="growth-nav-cta">活動報告・一覧の修正</a>
+        <a href="./growth-edit.html" class="growth-nav-cta">植栽の記録と一覧を編集</a>
       </div>
     </nav>
 
@@ -27,9 +27,31 @@
       <p class="eyebrow">サイトマップ</p>
       <h1>サイトマップ</h1>
       <p class="lead">
-        一覧、各ページ、説明編集、活動報告編集のつながりを、できるだけシンプルに確認できます。
+        迷ったら、見るなら一覧、直すなら編集画面へ進みます。下の案内で使い分けとページのつながりを確認できます。
       </p>
     </header>
+
+    <section class="sitemap-section" aria-labelledby="sitemap-guide-heading">
+      <h2 id="sitemap-guide-heading">迷ったときの使い分け</h2>
+      <div class="sitemap-guide-grid">
+        <div class="sitemap-guide-card">
+          <strong>見るなら</strong>
+          <p><a href="./areas.html">エリア一覧</a> か <a href="./plants.html">植栽一覧</a> から入ります。</p>
+        </div>
+        <div class="sitemap-guide-card">
+          <strong>植栽の記録を直すなら</strong>
+          <p><a href="./growth-edit.html">植栽の記録と一覧を編集</a> へ進みます。</p>
+        </div>
+        <div class="sitemap-guide-card">
+          <strong>エリアの説明を直すなら</strong>
+          <p><a href="./area-edit.html">エリアの説明と記録を編集</a> を使います。</p>
+        </div>
+        <div class="sitemap-guide-card">
+          <strong>植栽の説明を直すなら</strong>
+          <p><a href="./plant-edit.html">植栽の説明を編集</a> を使います。</p>
+        </div>
+      </div>
+    </section>
 
     <section class="sitemap-section" aria-labelledby="sitemap-structure-heading">
       <h2 id="sitemap-structure-heading">ページ構成</h2>
@@ -41,7 +63,7 @@
                 <a href="./index.html">植栽メモ</a>
                 <span class="sitemap-node-label">入口</span>
               </div>
-              <p>サイト全体の入口です。エリア一覧と植栽一覧から、各ページや編集画面へ進みます。</p>
+              <p>最初の入口です。見るときはエリア一覧か植栽一覧へ進みます。</p>
             </div>
             <ul class="sitemap-tree">
               <li>
@@ -50,16 +72,16 @@
                     <a href="./areas.html">エリア一覧</a>
                     <span class="sitemap-node-label">一覧</span>
                   </div>
-                  <p>エリアごとの入口です。各エリアの概要と記録へ進みます。</p>
+                  <p>エリアごとの説明と記録を見る入口です。</p>
                 </div>
                 <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <a href="./growth-edit.html#areas">エリア一覧を直す</a>
+                        <a href="./growth-edit.html#areas">エリア一覧を編集</a>
                         <span class="sitemap-node-label">編集</span>
                       </div>
-                      <p>活動報告・一覧の修正ページの「エリア一覧」タブで、一覧全体のエリア名やエリアIDを編集します。</p>
+                      <p>一覧全体のエリア名やエリアIDを編集します。</p>
                     </div>
                   </li>
                   <li>
@@ -68,16 +90,16 @@
                         <a href="./area.html">エリア</a>
                         <span class="sitemap-node-label">ページ</span>
                       </div>
-                      <p>各エリアの概要、写真、植栽一覧、記録をまとめて確認します。</p>
+                      <p>そのエリアの説明、写真、植栽一覧、記録を見ます。</p>
                     </div>
                     <ul class="sitemap-tree">
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <a href="./area-edit.html">エリアの説明と活動報告を編集</a>
+                            <a href="./area-edit.html">エリアの説明と記録を編集</a>
                             <span class="sitemap-node-label">編集</span>
                           </div>
-                          <p>エリアページ上部の説明と、そのエリアの活動報告や写真をまとめて編集します。</p>
+                          <p>エリアページ上部の説明と、そのエリア全体の記録を編集します。</p>
                         </div>
                       </li>
                     </ul>
@@ -90,16 +112,16 @@
                     <a href="./plants.html">植栽一覧</a>
                     <span class="sitemap-node-label">一覧</span>
                   </div>
-                  <p>植栽ごとの入口です。その植栽を開くと、写真・記録・詳細メモをまとめて確認できます。</p>
+                  <p>植栽ごとの写真、記録、説明を見る入口です。</p>
                 </div>
                 <ul class="sitemap-tree">
                   <li>
                     <div class="sitemap-node">
                       <div class="sitemap-node-title">
-                        <a href="./growth-edit.html#plants">植栽一覧を直す</a>
+                        <a href="./growth-edit.html#plants">植栽一覧を編集</a>
                         <span class="sitemap-node-label">編集</span>
                       </div>
-                      <p>活動報告・一覧の修正ページの「植栽一覧」タブで、一覧全体の植栽名を編集します。</p>
+                      <p>一覧全体の植栽名や並びを編集します。</p>
                     </div>
                   </li>
                   <li>
@@ -108,16 +130,16 @@
                         <a href="./plant.html">植栽</a>
                         <span class="sitemap-node-label">ページ</span>
                       </div>
-                      <p>その植栽の写真・記録・詳細メモをまとめて確認します。</p>
+                      <p>その植栽の写真、記録、説明を見ます。</p>
                     </div>
                     <ul class="sitemap-tree">
                       <li>
                         <div class="sitemap-node">
                           <div class="sitemap-node-title">
-                            <a href="./growth-edit.html">活動報告を書く・直す</a>
+                            <a href="./growth-edit.html">植栽の記録と一覧を編集</a>
                             <span class="sitemap-node-label">編集</span>
                           </div>
-                          <p>その植栽の活動報告や写真コメントを追加・編集します。</p>
+                          <p>植栽ごとの記録や写真コメントを編集します。</p>
                         </div>
                       </li>
                       <li>
@@ -126,7 +148,7 @@
                             <a href="./plant-edit.html">植栽の説明を編集</a>
                             <span class="sitemap-node-label">編集</span>
                           </div>
-                          <p>植栽ページ上部の概要と詳細メモを編集します。</p>
+                          <p>植栽ページ上部の概要と説明本文を編集します。</p>
                         </div>
                       </li>
                     </ul>
@@ -139,7 +161,7 @@
                     <span>サイトマップ</span>
                     <span class="sitemap-node-label">案内</span>
                   </div>
-                  <p>ページのつながりを確認するための案内ページです。</p>
+                  <p>ページのつながりと使い分けを確認する案内ページです。</p>
                 </div>
               </li>
             </ul>

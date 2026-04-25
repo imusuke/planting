@@ -417,6 +417,8 @@
     root.appendChild(createDetailMessage("detail-page-error", message));
     titleEl.textContent = "植栽";
     if (crumbEl) crumbEl.textContent = "エラー";
+    if (detailEditLinkEl) detailEditLinkEl.hidden = true;
+    if (recordEditLinkEl) recordEditLinkEl.hidden = true;
     if (areaLineEl) {
       areaLineEl.hidden = true;
       areaLineEl.textContent = "";
@@ -427,7 +429,7 @@
     var sectionParts = createDetailSection({
       className: "detail-page-section",
       headingClass: "detail-page-section-heading",
-      headingText: "詳細メモ",
+      headingText: "説明本文",
     });
     var section = sectionParts.section;
 
@@ -568,18 +570,60 @@
     return section;
   }
 
+  function renderAreaChoicePage(plantName, matches) {
+    clearDetailRoot(root);
+    document.title = "植栽メモ — " + plantName;
+    titleEl.textContent = plantName;
+    if (crumbEl) crumbEl.textContent = "エリアを選ぶ";
+    if (detailEditLinkEl) detailEditLinkEl.hidden = true;
+    if (recordEditLinkEl) recordEditLinkEl.hidden = true;
+    if (areaLineEl) {
+      areaLineEl.hidden = true;
+      areaLineEl.textContent = "";
+    }
+
+    var warn = document.createElement("p");
+    warn.className = "detail-page-warning";
+    warn.setAttribute("role", "status");
+    warn.textContent =
+      "同じ植栽名が複数エリアにあります。どのエリアの植栽を見るか選んでください。";
+    root.appendChild(warn);
+
+    var sectionParts = createDetailSection({
+      className: "detail-page-section",
+      headingClass: "detail-page-section-heading",
+      headingText: "エリアを選ぶ",
+    });
+    var section = sectionParts.section;
+    var lead = createDetailPlaceholder(
+      "植栽一覧やエリアページから開くと、エリア付きのURLでそのまま表示できます。",
+      "detail-page-placeholder"
+    );
+    section.appendChild(lead);
+
+    var actions = document.createElement("p");
+    actions.className = "detail-page-actions";
+    matches.forEach(function (area) {
+      if (!area) return;
+      actions.appendChild(
+        createDetailLink(
+          buildQuery("./plant.html", {
+            area: area.id,
+            plant: plantName,
+          }),
+          (area.label || area.id) + "の「" + plantName + "」を見る",
+          "detail-page-cta"
+        )
+      );
+    });
+    actions.appendChild(createDetailLink("./plants.html", "植栽一覧へ戻る", "detail-page-cta"));
+    section.appendChild(actions);
+    root.appendChild(section);
+  }
+
   function renderPage(area, plantName, entry, options) {
     options = options || {};
     clearDetailRoot(root);
-
-    if (options.warnMultipleAreaMatch) {
-      var wMulti = document.createElement("p");
-      wMulti.className = "detail-page-warning";
-      wMulti.setAttribute("role", "status");
-      wMulti.textContent =
-        "同じ植栽名が複数エリアにあります。このページはそのうちの1つを表示しています。エリアを確実に指定するには、植栽一覧からエリア付きで開いてください。";
-      root.appendChild(wMulti);
-    }
     if (options.warnNotInMaster) {
       var warn = document.createElement("p");
       warn.className = "detail-page-warning";
@@ -594,6 +638,8 @@
     document.title = "植栽メモ — " + plantName;
     titleEl.textContent = plantName;
     if (crumbEl) crumbEl.textContent = plantName;
+    if (detailEditLinkEl) detailEditLinkEl.hidden = false;
+    if (recordEditLinkEl) recordEditLinkEl.hidden = false;
 
     if (detailEditLinkEl) {
       detailEditLinkEl.href = buildQuery("./plant-edit.html", {
@@ -607,7 +653,7 @@
         area: area.id,
         plant: plantName,
       });
-      recordEditLinkEl.textContent = "この植栽の活動報告を追加・編集";
+      recordEditLinkEl.textContent = "この植栽の記録を編集";
     }
 
     if (areaLineEl) {
@@ -650,7 +696,7 @@
         area: area.id,
         plant: plantName,
       }),
-      "この植栽の活動報告を追加・編集",
+      "この植栽の記録を編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);
@@ -671,7 +717,7 @@
     renderError(
       "URL に植栽名が必要です。例: plant.html?area=entrance&plant=" +
         encodeURIComponent("ノリウツギ") +
-        " （エリア省略時は名前が一覧に1件だけのときに自動で特定します）"
+        " （エリアを付けると、どの植栽かを確実に特定できます）"
     );
     return;
   }
@@ -683,7 +729,6 @@
       var growthRecords = results[2] || [];
       var areas = plantsData.areas || [];
       var area;
-      var warnMulti = false;
       var resolvedAreaId;
 
       if (areaId) {
@@ -707,20 +752,22 @@
           );
           return;
         }
+        if (matches.length > 1) {
+          renderAreaChoicePage(plantName, matches);
+          return;
+        }
         area = matches[0];
         resolvedAreaId = area.id;
-        warnMulti = matches.length > 1;
       }
 
       var inMaster = areaHasPlant(area, plantName);
       var entry = findDetailEntry(entries, resolvedAreaId, plantName);
       renderPage(area, plantName, entry, {
         warnNotInMaster: !!areaId && !inMaster,
-        warnMultipleAreaMatch: warnMulti,
         growthRecords: growthRecords,
       });
     })
     .catch(function () {
-      renderError("データを読み込めませんでした。data/plants.json またはネットワークを確認してください。");
+      renderError("データを読み込めませんでした。しばらくしてから開き直してください。");
     });
 })();

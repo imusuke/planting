@@ -21,7 +21,6 @@
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html" id="plant-edit-record-link" class="growth-nav-cta">この植栽の活動報告を追加・編集</a>
         <a href="./plant.html" id="plant-edit-detail-link">この植栽を見る</a>
       </div>
     </nav>
@@ -33,9 +32,7 @@
       <h1 id="plant-edit-page-title">植栽の説明を編集</h1>
       <p id="plant-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p class="lead">
-        ここは植栽ページ上部の説明専用です。活動報告や写真コメントは別画面で編集します。閲覧は
-        <a href="./plant.html" id="plant-edit-lead-detail-link" class="detail-page-link">この植栽を見る</a>
-        から確認できます。
+        ここは植栽ページ上部の説明専用です。記録や写真コメントは下の「この植栽の記録を編集」から進めます。閲覧は右上の「この植栽を見る」から確認できます。
       </p>
     </header>
 
@@ -43,15 +40,9 @@
       <h2 id="plant-edit-guide-heading">この画面でやること</h2>
       <div class="growth-task-guide-grid">
         <a class="card growthlog" href="./growth-edit.html" id="plant-edit-guide-record-link">
-          <span class="card-label">活動報告</span>
-          <h2>この植栽の活動報告を直す</h2>
-          <p>写真、活動報告メモ、写真コメントを編集します。</p>
-          <span class="open">開く</span>
-        </a>
-        <a class="card growthlog" href="./plant.html" id="plant-edit-guide-detail-link">
-          <span class="card-label">確認</span>
-          <h2>植栽ページを見る</h2>
-          <p>今の概要、詳細メモ、活動報告の見え方を確認します。</p>
+          <span class="card-label">記録</span>
+          <h2>この植栽の記録を編集</h2>
+          <p>写真、記録メモ、写真コメントを編集します。</p>
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="./plants.html">
@@ -97,7 +88,7 @@
       </label>
 
       <label class="block">
-        <span class="growth-label">詳細メモ（段落は空行で区切り）</span>
+        <span class="growth-label">説明本文（段落は空行で区切り）</span>
         <textarea id="plant-edit-body" rows="10" class="growth-textarea"></textarea>
       </label>
 
@@ -108,7 +99,6 @@
 
       <div class="growth-actions">
         <button type="submit" id="plant-edit-save" class="growth-primary">保存する</button>
-        <a href="./plant.html" id="plant-edit-open-detail" class="growth-secondary">この植栽を見る</a>
       </div>
     </form>
 

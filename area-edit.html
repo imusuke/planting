@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリアの説明と活動報告を編集</title>
+  <title>植栽メモ — エリアの説明と記録を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260419e" />
@@ -17,11 +17,10 @@
         <li><a href="./index.html">植栽メモ</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
         <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア</a></li>
-        <li aria-current="page" id="area-edit-breadcrumb-current">エリアの説明と活動報告を編集</li>
+        <li aria-current="page" id="area-edit-breadcrumb-current">エリアの説明と記録を編集</li>
       </ol>
       <div class="growth-nav-extra">
         <a href="./sitemap.html">サイトマップ</a>
-        <a href="./growth-edit.html" id="area-edit-record-link" class="growth-nav-cta">このエリアの活動報告を追加・編集</a>
         <a href="./area.html" id="area-edit-detail-link">このエリアを見る</a>
       </div>
     </nav>
@@ -30,12 +29,10 @@
 
     <header class="page-header">
       <p class="eyebrow">エリア</p>
-      <h1 id="area-edit-page-title">エリアの説明と活動報告を編集</h1>
+      <h1 id="area-edit-page-title">エリアの説明と記録を編集</h1>
       <p id="area-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="area-edit-page-lead" class="lead">
-        ここではエリアページ上部の<strong>説明</strong>と、そのエリアの<strong>活動報告</strong>をまとめて直せます。閲覧は
-        <a href="./area.html" id="area-edit-view-link" class="detail-page-link">このエリアを見る</a>
-        から確認できます。
+        ここではエリアページ上部の<strong>説明</strong>と、そのエリア全体の<strong>記録</strong>をまとめて編集できます。植栽ごとの記録は、下の「このエリアの植栽記録を編集」から進めます。閲覧は右上の「このエリアを見る」から確認できます。
       </p>
     </header>
 
@@ -44,20 +41,26 @@
       <div class="growth-task-guide-grid">
         <a class="card growthlog" href="#area-edit-description-group">
           <span class="card-label">説明</span>
-          <h2>エリアの説明を直す</h2>
+          <h2>エリアの説明を編集</h2>
           <p>エリアページ上部の概要と本文を編集します。</p>
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="#area-edit-record-group">
-          <span class="card-label">活動報告</span>
-          <h2>今日の活動報告を書く</h2>
-          <p>日付、活動報告メモ、写真を追加します。</p>
+          <span class="card-label">記録</span>
+          <h2>今日の記録を追加</h2>
+          <p>日付、記録メモ、写真を追加します。</p>
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="#area-edit-past-records-heading">
-          <span class="card-label">活動報告</span>
-          <h2>過去の活動報告を直す</h2>
-          <p>過去の写真コメントや活動報告メモを編集します。</p>
+          <span class="card-label">記録</span>
+          <h2>過去の記録を編集</h2>
+          <p>過去の写真コメントや記録メモを編集します。</p>
+          <span class="open">開く</span>
+        </a>
+        <a class="card growthlog" href="./growth-edit.html" id="area-edit-guide-record-link">
+          <span class="card-label">植栽記録</span>
+          <h2>このエリアの植栽記録を編集</h2>
+          <p>植栽ごとの写真、記録メモ、写真コメントを編集します。</p>
           <span class="open">開く</span>
         </a>
       </div>
@@ -79,15 +82,15 @@
     </section>
 
     <form id="area-edit-form" class="growth-section growth-section--composer growth-form">
-      <h2 id="area-edit-form-heading">今日のエリア活動報告を追加</h2>
+      <h2 id="area-edit-form-heading">今日のエリア記録を追加</h2>
       <p id="area-edit-banner" class="growth-edit-banner" role="status" hidden>
-        このエリア活動報告を編集しています。写真コメントもここで書き直せます。
+        このエリア記録を編集しています。写真コメントもここで書き直せます。
       </p>
       <div id="area-edit-record-group" class="growth-form-group" aria-labelledby="area-edit-record-group-heading">
         <div class="section-heading-row">
-          <h3 id="area-edit-record-group-heading">活動報告</h3>
+          <h3 id="area-edit-record-group-heading">記録</h3>
         </div>
-        <p class="growth-hint">ここで記録日、活動報告メモ、写真を追加します。</p>
+        <p class="growth-hint">ここで記録日、記録メモ、写真を追加します。</p>
         <label class="block">
           <span class="growth-label">エリア</span>
           <select id="area-edit-area" required></select>
@@ -99,7 +102,7 @@
         </label>
 
         <label class="block">
-          <span class="growth-label">活動報告メモ（任意）</span>
+          <span class="growth-label">記録メモ（任意）</span>
           <textarea id="area-edit-record-note" rows="3" class="growth-textarea"></textarea>
         </label>
       </div>
@@ -127,7 +130,7 @@
 
       <div id="area-edit-photo-group" class="growth-form-group" aria-labelledby="area-edit-photo-group-heading">
         <div class="section-heading-row">
-          <h3 id="area-edit-photo-group-heading">活動報告の写真</h3>
+          <h3 id="area-edit-photo-group-heading">記録の写真</h3>
         </div>
         <div class="block growth-photo-block">
           <span class="growth-photo-block-title">エリア全体の写真（最大12枚）</span>
@@ -168,14 +171,13 @@
         <button type="button" id="area-edit-cancel" class="growth-secondary" hidden>編集をやめる</button>
         <button type="button" id="area-edit-delete-record" class="growth-danger" hidden>この記録をアーカイブ</button>
         <button type="button" id="area-edit-photo-clear" class="growth-secondary" hidden>写真をクリア</button>
-        <a href="./growth-edit.html" id="area-edit-growth-link" class="growth-secondary">このエリアの活動報告を追加・編集</a>
       </div>
     </form>
 
     <section class="growth-section" aria-labelledby="area-edit-past-records-heading">
-      <h2 id="area-edit-past-records-heading">過去のエリア活動報告を編集</h2>
+      <h2 id="area-edit-past-records-heading">過去のエリア記録を編集</h2>
       <p class="growth-hint">
-        上のエリアで絞り込みながら、過去の写真コメントや活動報告メモを開いて編集できます。
+        上のエリアで絞り込みながら、過去の写真コメントや記録メモを開いて編集できます。
       </p>
       <div id="area-edit-records" class="growth-feed growth-feed--thumb-sm"></div>
     </section>

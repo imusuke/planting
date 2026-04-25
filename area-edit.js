@@ -268,7 +268,7 @@
           var label = (areaLabelById(wantedAreaId) || "エリア") + " " + recordDateLabel(record);
           items.push({
             src: src,
-            alt: label + " の活動報告写真",
+            alt: label + " の記録写真",
             caption: buildLightboxCaption(label, slot && slot.memo, record && record.note),
             meta: {
               source: "area-edit-record",
@@ -372,7 +372,7 @@
 
   function areaLightboxLabelFromItem(item) {
     var alt = String((item && item.alt) || "").trim();
-    return alt.replace(/\s+の活動報告写真$/, "");
+    return alt.replace(/\s+の記録写真$/, "");
   }
 
   function replaceAreaGrowthRecordInState(record) {
@@ -1219,25 +1219,20 @@
     var recordHref = wanted
       ? "./growth-edit.html?area=" + encodeURIComponent(wanted)
       : "./growth-edit.html";
-    var recordText = wanted ? "このエリアの活動報告を追加・編集" : "活動報告・一覧の修正";
+    var recordText = wanted ? "このエリアの植栽記録を編集" : "植栽の記録と一覧を編集";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
     if (el.detailLink) el.detailLink.href = viewHref;
-    if (el.viewLink) el.viewLink.href = viewHref;
-    if (el.recordLink) {
-      el.recordLink.href = recordHref;
-      el.recordLink.textContent = recordText;
-    }
-    if (el.growthLink) {
-      el.growthLink.href = recordHref;
-      el.growthLink.textContent = recordText;
+    if (el.guideRecordLink) {
+      el.guideRecordLink.href = recordHref;
+      el.guideRecordLink.textContent = recordText;
     }
   }
 
   function syncEditFormUI() {
     var editing = !!state.editRecord;
     if (el.formHeading) {
-      el.formHeading.textContent = editing ? "このエリアの活動報告を編集" : "今日のエリア活動報告を追加";
+      el.formHeading.textContent = editing ? "このエリアの記録を編集" : "今日のエリア記録を追加";
     }
     if (el.save) {
       el.save.textContent = editing ? "更新して保存" : "保存する";
@@ -1267,32 +1262,32 @@
 
     if (area) {
       if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = area.label || area.id;
-      if (crumbEl) crumbEl.textContent = state.editRecord ? "このエリアの活動報告を編集" : "エリアの説明と活動報告を編集";
+      if (crumbEl) crumbEl.textContent = state.editRecord ? "このエリアの記録を編集" : "エリアの説明と記録を編集";
       if (titleEl) {
         titleEl.textContent =
-          area.label + (state.editRecord ? "の活動報告を編集" : "の説明と活動報告を編集");
+          area.label + (state.editRecord ? "の記録を編集" : "の説明と記録を編集");
       }
       if (contextEl) {
         contextEl.hidden = false;
         contextEl.textContent = state.editRecord
-          ? "このエリアの過去の活動報告、写真コメント、説明文を編集します。"
-          : "このエリアの説明、活動報告メモ、写真をまとめて追加・更新できます。";
+          ? "このエリアの過去の記録、写真コメント、説明文を編集します。"
+          : "このエリアの説明、記録メモ、写真をまとめて追加・更新できます。";
       }
       document.title =
         "植栽メモ — " +
         area.label +
-        (state.editRecord ? "の活動報告を編集" : "の説明と活動報告を編集");
+        (state.editRecord ? "の記録を編集" : "の説明と記録を編集");
       return;
     }
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.textContent = "エリア";
-    if (crumbEl) crumbEl.textContent = "エリアの説明と活動報告を編集";
-    if (titleEl) titleEl.textContent = "エリアの説明と活動報告を編集";
+    if (crumbEl) crumbEl.textContent = "エリアの説明と記録を編集";
+    if (titleEl) titleEl.textContent = "エリアの説明と記録を編集";
     if (contextEl) {
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "植栽メモ — エリアの説明と活動報告を編集";
+    document.title = "植栽メモ — エリアの説明と記録を編集";
   }
 
   function recordDateLabel(record) {
@@ -1791,9 +1786,7 @@
     el.save = $("area-edit-save");
     el.detailBreadcrumbLink = $("area-edit-detail-breadcrumb-link");
     el.detailLink = $("area-edit-detail-link");
-    el.recordLink = $("area-edit-record-link");
-    el.viewLink = $("area-edit-view-link");
-    el.growthLink = $("area-edit-growth-link");
+    el.guideRecordLink = $("area-edit-guide-record-link");
 
     if (common.applyStoredCloudToken) common.applyStoredCloudToken(el.cloudToken, LS_CLOUD_TOKEN);
     else if (el.cloudToken) el.cloudToken.value = getCloudToken({ storageKey: LS_CLOUD_TOKEN });

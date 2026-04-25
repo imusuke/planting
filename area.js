@@ -883,11 +883,11 @@
     var editLink = document.getElementById("area-detail-edit-link");
     if (editLink && area && area.id) {
       editLink.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-      editLink.textContent = "このエリアの説明と活動報告を編集";
+      editLink.textContent = "このエリアの説明と記録を編集";
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-      growthEditLinkEl.textContent = "このエリアの活動報告を追加・編集";
+      growthEditLinkEl.textContent = "このエリアの植栽記録を編集";
     }
 
     if (entry && entry.summary) {
@@ -1457,7 +1457,7 @@
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
         emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
-        ctaText: "このエリアの説明と活動報告を編集",
+        ctaText: "このエリアの説明と記録を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
         buildLightboxActions: buildAreaLightboxActions,
       })
@@ -1470,7 +1470,7 @@
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
         emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
-        ctaText: "このエリアの活動報告を追加・編集",
+        ctaText: "このエリアの植栽記録を編集",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1493,7 +1493,7 @@
     if (!bodyWrap.childElementCount) {
       bodyWrap.appendChild(
         createDetailPlaceholder(
-          "エリアの説明メモはまだありません。area-edit.html で編集するか、data/area-details.json に summary・body を追加してください。",
+          "このエリアの説明はまだ登録されていません。「このエリアの説明と記録を編集」から追加できます。",
           "detail-page-placeholder"
         )
       );
@@ -1506,7 +1506,7 @@
     actions.className = "detail-page-actions";
     var aRecord = createDetailLink(
       "./area-edit.html?area=" + encodeURIComponent(area.id),
-      "このエリアの説明と活動報告を編集",
+      "このエリアの説明と記録を編集",
       "detail-page-cta"
     );
     actions.appendChild(aRecord);
@@ -1546,6 +1546,6 @@
       renderPage(area, entry, areaGrowthRecords, plantGrowthRecords);
     })
     .catch(function () {
-      renderError("データを読み込めませんでした。data/plants.json またはネットワークを確認してください。");
+      renderError("データを読み込めませんでした。しばらくしてから開き直してください。");
     });
 })();

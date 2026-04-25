@@ -3743,7 +3743,7 @@
       el.plantsCatalogSource.textContent = "現在の表示: ページ内の埋め込みデータ（オフライン用）";
     } else {
       el.plantsCatalogSource.textContent =
-        "現在の表示: サイトに同梱の既定リスト（サーバーへの上書きがまだないときは data/plants.json と同じ内容です）";
+        "現在の表示: サイトに同梱の既定リスト（サーバーへの上書きがまだないときに使われる初期内容です）";
     }
   }
 
@@ -4199,10 +4199,31 @@
   function plantPageHref(areaId, plantName) {
     var name = normalizeLooseString(plantName);
     if (!name) return "./plant.html";
-    if (areaId) {
+    var resolvedAreaId = areaId ? String(areaId).trim() : "";
+    if (!resolvedAreaId && state.areas && state.areas.length) {
+      var matchedAreaId = "";
+      var matchCount = 0;
+      for (var i = 0; i < state.areas.length; i++) {
+        var area = state.areas[i];
+        if (!area || !Array.isArray(area.plants)) continue;
+        for (var j = 0; j < area.plants.length; j++) {
+          var plant = area.plants[j];
+          var normalized = normalizeLooseString(typeof plant === "string" ? plant : String(plant || ""));
+          if (normalized !== name) continue;
+          matchedAreaId = (area.id && String(area.id).trim()) || "";
+          matchCount += 1;
+          break;
+        }
+        if (matchCount > 1) break;
+      }
+      if (matchCount === 1 && matchedAreaId) {
+        resolvedAreaId = matchedAreaId;
+      }
+    }
+    if (resolvedAreaId) {
       return (
         "./plant.html?area=" +
-        encodeURIComponent(areaId) +
+        encodeURIComponent(resolvedAreaId) +
         "&plant=" +
         encodeURIComponent(name)
       );
@@ -4350,7 +4371,7 @@
           title.appendChild(document.createTextNode("、"));
         }
         firstPlant = false;
-        var aid = resolveGrowthRecordAreaIdForPlant(r, name);
+        var aid = resolveGrowthRecordAreaId(r);
         var a = document.createElement("a");
         a.className = "growth-card-plant-link";
         a.href = plantPageHref(aid, name);
@@ -4643,12 +4664,12 @@
       }
       if (areaSecondaryEl) {
         areaSecondaryEl.href = "./area-edit.html?area=" + encodeURIComponent(area.id);
-        areaSecondaryEl.textContent = "このエリアの説明と活動報告を編集";
+        areaSecondaryEl.textContent = "このエリアの説明と記録を編集";
       }
       if (areaTertiaryEl) {
         areaTertiaryEl.hidden = false;
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-        areaTertiaryEl.textContent = "このエリアの活動報告を追加・編集";
+        areaTertiaryEl.textContent = "このエリアの植栽記録を編集";
       }
       document.title = "植栽メモ — " + area.label + "の記録一覧";
       return;
@@ -4658,13 +4679,13 @@
     if (currentActionsEl && currentActionsEl.parentNode) {
       currentActionsEl.parentNode.removeChild(currentActionsEl);
     }
-    if (titleEl) titleEl.textContent = "植栽メモ";
-    if (leadEl) {
-      setLeadTextKeepingButton(
-        leadEl,
-        "まずはエリアや植栽から見て、必要に応じて活動報告や一覧を直せる入口です。"
-      );
-    }
+      if (titleEl) titleEl.textContent = "庭と植栽の記録";
+      if (leadEl) {
+        setLeadTextKeepingButton(
+          leadEl,
+          "まずはエリア一覧か植栽一覧から見始めます。最近の記録は下に並びます。編集が必要なときは右上の「植栽の記録と一覧を編集」から進めます。"
+        );
+      }
     document.title = "植栽メモ";
   }
 
@@ -4867,11 +4888,11 @@
         if (data === null || data === undefined) return;
         if (IS_VIEW) {
           updateCloudStatus(
-            "記録と写真を表示できています。追加・編集・削除は「活動報告・一覧の修正」から行ってください。"
+            "記録と写真を表示できています。追加・編集・削除は「植栽の記録と一覧を編集」から行ってください。"
           );
         } else {
           updateCloudStatus(
-            "記録と写真を表示できています。新規の投稿・編集・削除や植栽名のサーバー保存には、サイトでトークンが設定されている場合のみ、下の欄への入力が必要です。"
+            "記録と写真を表示できています。新しい記録の追加・編集・削除や植栽名のサーバー保存には、サイトでトークンが設定されている場合のみ、下の欄への入力が必要です。"
           );
         }
         if (IS_VIEW) renderViewMain(data.records || []);
@@ -5031,7 +5052,7 @@
       .then(function (saveResult) {
         var saveMessage = wasEdit ? "更新しました" : "保存しました";
         if (continueInSameArea) {
-          saveMessage += " 同じエリアで続けて投稿できます。";
+          saveMessage += " 同じエリアで続けて記録できます。";
         }
         var saveJob = saveResult && saveResult.record ? readRecordAiCommentJob(saveResult.record) : null;
         if (saveResult && saveResult.aiCommentsQueued) {
@@ -5215,14 +5236,12 @@
       quick.className = "growth-section home-quick";
       quick.setAttribute("aria-labelledby", "home-quick-heading");
       quick.innerHTML =
-        '<h2 id="home-quick-heading">やりたいことから選ぶ</h2>' +
+        '<h2 id="home-quick-heading">まず見る</h2>' +
         '<div class="home-quick-grid">' +
-        '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリアから見る</h2><p>各エリアの説明と活動報告を見ます。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽から見る</h2><p>植栽名とエリアの対応から探します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">活動報告</span><h2>活動報告を書く・直す</h2><p>今日の投稿や過去の写真コメントを編集します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html#areas"><span class="card-label">一覧修正</span><h2>エリア一覧を直す</h2><p>エリア名やエリアIDを整理します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html#plants"><span class="card-label">一覧修正</span><h2>植栽一覧を直す</h2><p>植栽名の表記や並びを直します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>ページの役割を確認する</h2><p>どこで何をするかを一覧で確認します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリア一覧を見る</h2><p>エリアごとの説明と記録を見ます。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽一覧を見る</h2><p>植栽名から写真、記録、説明を探します。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">編集</span><h2>記録や一覧を編集する</h2><p>植栽ごとの記録追加や一覧の整理を行います。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>使い方を確認する</h2><p>画面の使い分けとページのつながりを確認します。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
       else main.appendChild(quick);
