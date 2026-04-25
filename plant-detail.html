@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>植栽へ移動中…</title>
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>庭と植栽の記録 — 植栽ページへ移動中</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css?v=20260419e" />
+  <link rel="stylesheet" href="./growth.css?v=20260419a" />
   <link rel="canonical" href="./plant.html" />
   <script>
     (function () {
@@ -13,12 +18,40 @@
   </script>
 </head>
 <body>
-  <p><a id="plant-detail-redirect-link" href="./plant.html">植栽へ</a></p>
+  <main class="panel growth-panel">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li aria-current="page">古いURLから移動中</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a id="plant-detail-nav-link" href="./plant.html">植栽ページへ</a>
+        <a href="./plants.html">植栽一覧</a>
+      </div>
+    </nav>
+
+    <header class="page-header">
+      <p class="eyebrow">移動中</p>
+      <h1>植栽ページへ移動しています</h1>
+      <p class="lead">
+        古い植栽URLのため、現在の植栽ページへ移動しています。切り替わらないときは下のボタンから開いてください。
+      </p>
+    </header>
+
+    <section class="growth-section" aria-labelledby="plant-detail-redirect-heading">
+      <h2 id="plant-detail-redirect-heading">開きたいページ</h2>
+      <div class="growth-actions">
+        <a id="plant-detail-redirect-link" href="./plant.html" class="growth-primary">植栽ページを開く</a>
+        <a href="./plants.html" class="growth-secondary">植栽一覧を見る</a>
+      </div>
+    </section>
+  </main>
   <script>
     (function () {
-      var link = document.getElementById("plant-detail-redirect-link");
-      if (!link) return;
-      link.href = "./plant.html" + window.location.search + window.location.hash;
+      var target = "./plant.html" + window.location.search + window.location.hash;
+      var navLink = document.getElementById("plant-detail-nav-link");
+      var actionLink = document.getElementById("plant-detail-redirect-link");
+      if (navLink) navLink.href = target;
+      if (actionLink) actionLink.href = target;
     })();
   </script>
 </body>

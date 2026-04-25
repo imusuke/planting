@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — 植栽の記録と一覧を編集</title>
+  <title>庭と植栽の記録 — 植栽の記録と一覧を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260419e" />
@@ -14,7 +14,7 @@
   <main class="panel growth-panel">
     <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">植栽メモ</a></li>
+        <li><a href="./index.html">庭と植栽の記録</a></li>
         <li aria-current="page" id="growth-edit-breadcrumb-current">植栽の記録と一覧を編集</li>
       </ol>
       <div class="growth-nav-extra">
@@ -260,10 +260,10 @@
     <section class="growth-section" aria-labelledby="backup-heading-edit">
       <h2 id="backup-heading-edit">バックアップ</h2>
       <p class="growth-hint">
-        記録を JSON でダウンロードできます（閲覧ページと同じ内容です）。
+        記録の控えをダウンロードできます。写真はリンクのまま含まれます。
       </p>
       <div class="growth-backup-row growth-backup-row--spaced">
-        <button type="button" id="export-btn" class="growth-secondary">JSON をエクスポート</button>
+        <button type="button" id="export-btn" class="growth-secondary">バックアップをダウンロード</button>
       </div>
     </section>
 
@@ -273,7 +273,7 @@
         保存・アーカイブ・写真削除などの最近の操作を表示します。アップロード用トークンを保存していると読み込めます。
       </p>
       <div class="growth-backup-row growth-backup-row--spaced">
-        <button type="button" id="change-log-reload" class="growth-secondary">更新履歴を再読み込み</button>
+        <button type="button" id="change-log-reload" class="growth-secondary">最近の更新を読み直す</button>
       </div>
       <p id="change-log-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div id="change-log-list" class="growth-change-log-list"></div>
@@ -299,16 +299,16 @@
       <p id="plants-catalog-source" class="growth-hint" aria-live="polite"></p>
       <div id="plants-catalog-editor" class="plants-catalog-editor" hidden></div>
       <div class="plants-catalog-actions">
-        <button type="button" id="plants-catalog-reload" class="growth-secondary">最新の一覧を読み直す</button>
+        <button type="button" id="plants-catalog-reload" class="growth-secondary">一覧を読み直す</button>
         <button type="button" id="plants-catalog-add-area" class="growth-secondary plants-catalog-action--areas-only">新しいエリアを追加</button>
-        <button type="button" id="plants-catalog-save" class="growth-primary">一覧の編集を保存</button>
+        <button type="button" id="plants-catalog-save" class="growth-primary">一覧を保存</button>
       </div>
       <p class="growth-hint plants-catalog-hint-swap plants-catalog-hint-swap--areas">
-        ここではエリア一覧そのものを編集します。保存には<strong>上</strong>の「アップロード用トークン」が必要です。各エリアの<strong>エリアID</strong>は英小文字・数字・ハイフンのみ（例:
+        ここではエリア一覧を編集します。保存には<strong>上</strong>の「アップロード用トークン」が必要です。各エリアの<strong>ID</strong>は英小文字・数字・ハイフンのみ（例:
         <code>north-garden</code>）です。IDを変えると、既存の記録のエリア紐づけも保存時に更新されます。
       </p>
       <p class="growth-hint plants-catalog-hint-swap plants-catalog-hint-swap--plants">
-        ここでは植栽一覧そのものを編集します。保存には<strong>上</strong>のトークンが必要です。名前を変えた行について、同じエリアの記録に含まれる旧名を新名へ置き換えます（行の追加・削除や並べ替えだけでは記録は自動では変わりません）。
+        ここでは植栽一覧を編集します。保存には<strong>上</strong>の「アップロード用トークン」が必要です。名前を変えた行は、同じエリアの記録に含まれる旧名も新名へ置き換えます（行の追加・削除や並べ替えだけでは、過去の記録は自動では変わりません）。
       </p>
       <div class="plants-catalog-record-rename plants-catalog-plants-tab-only" aria-label="記録内の旧名をまとめて置き換え（任意）">
         <p class="growth-hint plants-catalog-record-rename-title">記録にだけ古い名前が残っているとき（任意）</p>
@@ -329,7 +329,7 @@
           </label>
         </div>
         <p class="growth-hint">
-          一覧の名前はすでに新しくても、過去の記録だけ旧表記のまま、というときに使います。「一覧の編集を保存」と同時に、指定したエリアの記録だけ置き換えます。
+          一覧はすでに新しくても、過去の記録だけ旧表記のまま残っているときに使います。「一覧を保存」と同時に、指定したエリアの記録だけ置き換えます。
       </p>
       </div>
     </section>
@@ -348,11 +348,11 @@
           </form>
         </div>
         <div class="info-dialog-body">
-          <p>「リンク集へ戻る」は、この植栽メモへのリンクです。インターネット上の本番サイトでは、次の設定で先のアドレスを指定してください。</p>
+          <p>「リンク集へ戻る」の行き先を設定します。公開サイトでは、次の項目にリンク集ページのURLを入れてください。</p>
           <ul>
-            <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集のページのURL（<code>https://…</code> で始まるもの）を書く</li>
+            <li><code>data/hub-link.json</code> の <code>linkCollectionUrl</code> に、リンク集ページのURL（<code>https://…</code> 形式）を入れる</li>
           </ul>
-          <p>自分のパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開くようになっています。</p>
+          <p>このパソコン上のフォルダだけで見ているときは、フォルダの並びに合わせて自動で開きます。</p>
         </div>
       </div>
     </dialog>

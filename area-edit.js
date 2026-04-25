@@ -439,7 +439,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (res.status === 503 || res.status === 502) {
           return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
@@ -1080,7 +1080,7 @@
       return Promise.resolve([]);
     }
     if (!common.loadChangeLog) {
-      el.changeLogStatus.textContent = "更新履歴を読み込めません。";
+      el.changeLogStatus.textContent = "最近の更新の読み込みに失敗しました。";
       return Promise.resolve([]);
     }
     return common.loadChangeLog({
@@ -1157,7 +1157,7 @@
 
     state.descriptionAiBusy = true;
     syncDescriptionAiButtonState();
-    setDescriptionAiStatus("エリア写真の流れをもとに、AIが概要と本文の案を作成しています。", false);
+    setDescriptionAiStatus("エリア写真の流れをもとに、AIが概要と説明本文の案を作成しています。", false);
 
     fetch(API_AREA_DESCRIPTION, {
       method: "POST",
@@ -1170,7 +1170,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) {
           return apiErrorMessage(res, "エリア説明の生成に失敗しました").then(function (message) {
@@ -1219,7 +1219,7 @@
     var recordHref = wanted
       ? "./growth-edit.html?area=" + encodeURIComponent(wanted)
       : "./growth-edit.html";
-    var recordText = wanted ? "このエリアの植栽記録を編集" : "植栽の記録と一覧を編集";
+    var recordText = wanted ? "このエリアの植栽ごとの記録を編集" : "植栽の記録と一覧を編集";
 
     if (el.detailBreadcrumbLink) el.detailBreadcrumbLink.href = viewHref;
     if (el.detailLink) el.detailLink.href = viewHref;
@@ -1274,7 +1274,7 @@
           : "このエリアの説明、記録メモ、写真をまとめて追加・更新できます。";
       }
       document.title =
-        "植栽メモ — " +
+      "庭と植栽の記録 — " +
         area.label +
         (state.editRecord ? "の記録を編集" : "の説明と記録を編集");
       return;
@@ -1287,7 +1287,7 @@
       contextEl.hidden = true;
       contextEl.textContent = "";
     }
-    document.title = "植栽メモ — エリアの説明と記録を編集";
+    document.title = "庭と植栽の記録 — エリアの説明と記録を編集";
   }
 
   function recordDateLabel(record) {
@@ -1582,7 +1582,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) {
           return apiErrorMessage(res, "記録のアーカイブに失敗しました").then(function (msg) {
@@ -1640,15 +1640,15 @@
         body: JSON.stringify(detailPayload),
       }).then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (res.status === 503) {
-          return apiErrorMessage(res, "エリアの概要の保存に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "エリアの説明の保存に失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
         if (!res.ok) {
-          return apiErrorMessage(res, "保存に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "エリアの説明の保存に失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -1705,7 +1705,7 @@
         body: JSON.stringify(payload),
       }).then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (res.status === 503 || res.status === 502) {
           return apiErrorMessage(res, "エリア記録の保存に失敗しました").then(function (msg) {
@@ -1891,7 +1891,7 @@
         refreshChangeLog().catch(function () {});
       })
       .catch(function () {
-        showToast("データを読み込めませんでした。", true);
+        showToast("エリアの説明と記録を読み込めませんでした。しばらくしてから開き直してください。", true);
       });
   }
 

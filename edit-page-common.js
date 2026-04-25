@@ -297,7 +297,7 @@
     var normalized = typeof code === "string" ? code.trim() : "";
     if (!normalized) return "";
     var map = {
-      unauthorized: "トークンが違います。サイト管理者が設定した文字列と同じか確認してください。",
+      unauthorized: "トークンが違います。アップロード用トークンを確認してください。",
       kv_unavailable: "サーバー側の保存先に接続できませんでした。",
       kv_write_failed: "サーバー側の保存先への書き込みに失敗しました。",
       blob_unavailable: "画像保存の設定が見つかりません。",
@@ -363,19 +363,19 @@
       case "catalog_saved":
         return "エリア・植栽マスタを保存";
       case "plant_detail_saved":
-        return plantLabel ? plantLabel + " の詳細を保存" : "植栽の詳細を保存";
+        return plantLabel ? plantLabel + " の説明を保存" : "植栽の説明を保存";
       case "area_detail_saved":
-        return areaLabel ? areaLabel + " の概要を保存" : "エリアの概要を保存";
+        return areaLabel ? areaLabel + " の説明を保存" : "エリアの説明を保存";
       case "growth_record_created":
-        return "植栽記録を追加";
+        return "植栽の記録を追加";
       case "growth_record_updated":
-        return "植栽記録を更新";
+        return "植栽の記録を更新";
       case "growth_record_archived":
-        return "植栽記録をアーカイブ";
+        return "植栽の記録をアーカイブ";
       case "growth_record_photo_removed":
-        return "植栽記録の写真を削除";
+        return "植栽の記録の写真を削除";
       case "growth_record_deleted_after_photo_removal":
-        return "植栽記録を削除";
+        return "植栽の記録を削除";
       case "area_growth_created":
         return "エリア記録を追加";
       case "area_growth_updated":

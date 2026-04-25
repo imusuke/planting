@@ -900,7 +900,7 @@
       })
         .then(function (res) {
           if (res.status === 401) {
-            throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+            throw new Error("トークンが違います。アップロード用トークンを確認してください。");
           }
           if (!res.ok) {
             return apiErrorMessage(res, "AIコメントの追加に失敗しました").then(function (msg) {
@@ -1450,7 +1450,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) {
           return apiErrorMessage(res, "AIコメントの更新に失敗しました").then(function (msg) {
@@ -2072,21 +2072,21 @@
     var plantList = Array.isArray(item.plantNames) ? item.plantNames.filter(Boolean) : [];
     switch (item.action) {
       case "catalog_saved":
-        return "エリア・植栽マスタを保存";
+        return "エリア一覧と植栽一覧を保存";
       case "plant_detail_saved":
-        return plantLabel ? plantLabel + " の詳細を保存" : "植栽の詳細を保存";
+        return plantLabel ? plantLabel + " の説明を保存" : "植栽の説明を保存";
       case "area_detail_saved":
-        return areaLabel ? areaLabel + " の概要を保存" : "エリアの概要を保存";
+        return areaLabel ? areaLabel + " の説明を保存" : "エリアの説明を保存";
       case "growth_record_created":
-        return "植栽記録を追加";
+        return "植栽の記録を追加";
       case "growth_record_updated":
-        return "植栽記録を更新";
+        return "植栽の記録を更新";
       case "growth_record_archived":
-        return "植栽記録をアーカイブ";
+        return "植栽の記録をアーカイブ";
       case "growth_record_photo_removed":
-        return "植栽記録の写真を削除";
+        return "植栽の記録の写真を削除";
       case "growth_record_deleted_after_photo_removal":
-        return "最後の写真削除により植栽記録を削除";
+        return "最後の写真削除により植栽の記録を削除";
       case "area_growth_created":
         return "エリア記録を追加";
       case "area_growth_updated":
@@ -2098,7 +2098,7 @@
       case "area_growth_deleted_after_photo_removal":
         return "最後の写真削除によりエリア記録を削除";
       default:
-        return item.detail ? String(item.detail) : "更新履歴";
+        return item.detail ? String(item.detail) : "最近の更新";
     }
   }
 
@@ -2107,7 +2107,7 @@
     el.changeLogList.innerHTML = "";
     if (!items || !items.length) {
       el.changeLogList.appendChild(
-        createTextElement("p", "growth-hint", "まだ更新履歴はありません。")
+        createTextElement("p", "growth-hint", "まだ最近の更新はありません。")
       );
       return;
     }
@@ -2143,18 +2143,18 @@
     if (!el.changeLogList || !el.changeLogStatus) return Promise.resolve();
     var storedToken = currentCloudToken();
     if (!storedToken) {
-      el.changeLogStatus.textContent = "アップロード用トークンを保存すると更新履歴を読み込めます。";
+      el.changeLogStatus.textContent = "アップロード用トークンを保存すると最近の更新を読み込めます。";
       renderChangeLogItems([]);
       return Promise.resolve();
     }
-    el.changeLogStatus.textContent = "更新履歴を読み込んでいます…";
+    el.changeLogStatus.textContent = "最近の更新を読み込んでいます…";
     return fetch(API_CHANGE_LOG + "?limit=12", {
       headers: cloudHeaders(false),
       cache: "no-store",
     })
       .then(function (res) {
         if (!res.ok) {
-          return apiErrorMessage(res, "更新履歴の読み込みに失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "最近の更新の読み込みに失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -2165,10 +2165,10 @@
         renderChangeLogItems(items);
         el.changeLogStatus.textContent = items.length
           ? "最近 " + items.length + " 件の更新を表示しています。"
-          : "更新履歴はまだありません。";
+          : "最近の更新はまだありません。";
       })
       .catch(function (err) {
-        el.changeLogStatus.textContent = err && err.message ? err.message : "更新履歴の読み込みに失敗しました。";
+        el.changeLogStatus.textContent = err && err.message ? err.message : "最近の更新の読み込みに失敗しました。";
       });
   }
 
@@ -2914,7 +2914,7 @@
       });
     }).then(function (res) {
       if (res.status === 401) {
-        throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+        throw new Error("トークンが違います。アップロード用トークンを確認してください。");
       }
       if (!res.ok) {
         return apiErrorMessage(res, "AIコメントの生成に失敗しました").then(function (msg) {
@@ -3491,7 +3491,7 @@
         if (embedded && embedded.areas) {
           return { areas: embedded.areas, source: "embed" };
         }
-        throw new Error("plants.json を読めず、埋め込みデータも使えません");
+        throw new Error("一覧を読み込めませんでした。ページを開き直してください。");
       });
   }
 
@@ -3737,13 +3737,12 @@
   function updatePlantsCatalogSourceLabel() {
     if (!el.plantsCatalogSource) return;
     if (state.plantsSource === "kv") {
-      el.plantsCatalogSource.textContent =
-        "現在の表示: サーバーに保存した植栽名リスト（Web で編集した内容）";
+      el.plantsCatalogSource.textContent = "現在の表示: サーバーに保存した一覧（Webで編集した内容）";
     } else if (state.plantsSource === "embed") {
-      el.plantsCatalogSource.textContent = "現在の表示: ページ内の埋め込みデータ（オフライン用）";
+      el.plantsCatalogSource.textContent = "現在の表示: ページ内の埋め込み一覧（オフライン用）";
     } else {
       el.plantsCatalogSource.textContent =
-        "現在の表示: サイトに同梱の既定リスト（サーバーへの上書きがまだないときに使われる初期内容です）";
+        "現在の表示: サイトに同梱の一覧（まだ上書き保存していないときの初期内容です）";
     }
   }
 
@@ -3785,10 +3784,10 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが必要です。下の欄に正しい文字列を入れて保存してください。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) {
-          return apiErrorMessage(res, "マスタの保存に失敗しました").then(function (msg) {
+          return apiErrorMessage(res, "一覧の保存に失敗しました").then(function (msg) {
             throw new Error(msg);
           });
         }
@@ -3845,7 +3844,7 @@
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "保存に失敗しました", true);
+        showToast(err && err.message ? err.message : "一覧を保存できませんでした。", true);
       })
       .finally(function () {
         el.plantsCatalogSave.disabled = false;
@@ -3867,11 +3866,11 @@
         if (state.editRecord && state.editRecord.plants) {
           applyPlantsToForm(state.editRecord.plants, el.area.value);
         }
-        showToast("植栽リストを再読み込みしました");
+        showToast("一覧を読み直しました。");
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "読み込みに失敗しました", true);
+        showToast(err && err.message ? err.message : "一覧を読み込めませんでした。", true);
       });
   }
 
@@ -4071,7 +4070,7 @@
   function fetchRecordByIdAndEdit(id) {
     return fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
-        if (!res.ok) throw new Error("一覧の取得に失敗しました");
+        if (!res.ok) throw new Error("記録一覧を読み込めませんでした。");
         return res.json();
       })
       .then(function (data) {
@@ -4090,7 +4089,7 @@
         startEdit(r);
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "読み込みに失敗しました", true);
+        showToast(err && err.message ? err.message : "記録一覧を読み込めませんでした。", true);
       });
   }
 
@@ -4636,7 +4635,7 @@
     if (currentActionsEl) currentActionsEl.hidden = true;
     var currentTertiaryEl = $("growth-context-tertiary");
     if (currentTertiaryEl) currentTertiaryEl.hidden = true;
-    syncViewBreadcrumb([{ label: "植栽メモ", current: true }]);
+    syncViewBreadcrumb([{ label: "庭と植栽の記録", current: true }]);
 
     if (area) {
       var areaLinks = ensureViewContextActions();
@@ -4647,7 +4646,7 @@
       if (quickEl) quickEl.hidden = true;
       if (areaActionsEl) areaActionsEl.hidden = false;
       syncViewBreadcrumb([
-        { label: "植栽メモ", href: "./index.html" },
+        { label: "庭と植栽の記録", href: "./index.html" },
         { label: "エリア一覧", href: "./areas.html" },
         { label: area.label + "の記録一覧", current: true },
       ]);
@@ -4669,9 +4668,9 @@
       if (areaTertiaryEl) {
         areaTertiaryEl.hidden = false;
         areaTertiaryEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-        areaTertiaryEl.textContent = "このエリアの植栽記録を編集";
+        areaTertiaryEl.textContent = "このエリアの植栽ごとの記録を編集";
       }
-      document.title = "植栽メモ — " + area.label + "の記録一覧";
+      document.title = "庭と植栽の記録 — " + area.label + "の記録一覧";
       return;
     }
 
@@ -4686,7 +4685,7 @@
           "まずはエリア一覧か植栽一覧から見始めます。最近の記録は下に並びます。編集が必要なときは右上の「植栽の記録と一覧を編集」から進めます。"
         );
       }
-    document.title = "植栽メモ";
+    document.title = "庭と植栽の記録";
   }
 
   function setLeadTextKeepingButton(node, text) {
@@ -4846,7 +4845,7 @@
       if (snap && snap.records && snap.records.length) {
         updateCloudStatus(
           apiFailMessage +
-            " 代わりに data/growth-snapshot.json（file:// では growth-snapshot.boot.js）を表示しています。写真は data/growth-images または URL から読み込みます。更新は npm run sync:prod（README 参照）。"
+            " 代わりに保存済みの控えを表示しています。写真も保存済みの内容から読み込んでいます。"
         );
         renderViewMain(snap.records);
       } else {
@@ -4875,10 +4874,10 @@
         if (!res.ok) {
           if (IS_VIEW) {
             return tryRenderViewFromSnapshot(
-              "一覧の取得に失敗しました（" + res.status + "）。"
+              "記録一覧を読み込めませんでした（" + res.status + "）。"
             );
           }
-          updateCloudStatus("一覧の取得に失敗しました（" + res.status + "）。");
+          updateCloudStatus("記録一覧を読み込めませんでした（" + res.status + "）。");
           if (el.feed) renderFeed([]);
           return null;
         }
@@ -5021,7 +5020,7 @@
           body: JSON.stringify(payload),
         }).then(function (res) {
           if (res.status === 401) {
-            throw new Error("トークンが違います。サイト管理者が設定した文字列と同じか確認してください。");
+            throw new Error("トークンが違います。アップロード用トークンを確認してください。");
           }
           if (res.status === 413) {
             throw new Error(
@@ -5042,7 +5041,7 @@
             });
           }
           if (!res.ok) {
-            return apiErrorMessage(res, "保存に失敗しました").then(function (msg) {
+            return apiErrorMessage(res, "記録の保存に失敗しました").then(function (msg) {
               throw new Error(msg);
             });
           }
@@ -5106,7 +5105,7 @@
         if (el.feed) return refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "保存に失敗しました", true);
+        showToast(err && err.message ? err.message : "記録の保存に失敗しました。", true);
       })
       .finally(function () {
         el.submit.disabled = false;
@@ -5124,7 +5123,7 @@
   function onExport() {
     fetch(API_GROWTH, { headers: cloudHeaders(false) })
       .then(function (res) {
-        if (!res.ok) throw new Error("取得に失敗しました");
+        if (!res.ok) throw new Error("バックアップの準備に失敗しました");
         return res.json();
       })
       .then(function (data) {
@@ -5144,10 +5143,10 @@
         a.download = "planting-growth-backup.json";
         a.click();
         URL.revokeObjectURL(a.href);
-        showToast("エクスポートしました（画像はリンクのまま含まれます）");
+        showToast("バックアップをダウンロードしました。写真はリンクのまま含まれます。");
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "エクスポートに失敗しました", true);
+        showToast(err && err.message ? err.message : "バックアップのダウンロードに失敗しました。", true);
       });
   }
 
@@ -5182,7 +5181,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが必要です。上の欄に正しい文字列を入れて保存してください。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) throw new Error("アーカイブに失敗しました");
         showToast("アーカイブしました");
@@ -5240,7 +5239,7 @@
         '<div class="home-quick-grid">' +
         '<a class="card growthlog" href="./areas.html"><span class="card-label">閲覧</span><h2>エリア一覧を見る</h2><p>エリアごとの説明と記録を見ます。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./plants.html"><span class="card-label">閲覧</span><h2>植栽一覧を見る</h2><p>植栽名から写真、記録、説明を探します。</p><span class="open">開く</span></a>' +
-        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">編集</span><h2>記録や一覧を編集する</h2><p>植栽ごとの記録追加や一覧の整理を行います。</p><span class="open">開く</span></a>' +
+        '<a class="card growthlog" href="./growth-edit.html"><span class="card-label">編集</span><h2>植栽の記録と一覧を編集</h2><p>植栽ごとの記録追加や一覧の整理を行います。</p><span class="open">開く</span></a>' +
         '<a class="card growthlog" href="./sitemap.html"><span class="card-label">案内</span><h2>使い方を確認する</h2><p>画面の使い分けとページのつながりを確認します。</p><span class="open">開く</span></a>' +
         "</div>";
       if (header.nextSibling) main.insertBefore(quick, header.nextSibling);
@@ -5323,7 +5322,7 @@
         return refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "初期化に失敗しました", true);
+        showToast(err && err.message ? err.message : "一覧を読み込めませんでした。ページを開き直してください。", true);
       });
 
     if (el.filterArea) {
@@ -5572,7 +5571,7 @@
         if (el.feed) refreshFeed();
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "初期化に失敗しました", true);
+        showToast(err && err.message ? err.message : "編集画面を読み込めませんでした。ページを開き直してください。", true);
       });
 
     el.area.addEventListener("change", function () {

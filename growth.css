@@ -330,8 +330,12 @@ main.growth-panel .growth-section:last-of-type {
   align-items: center;
 }
 
-button.growth-primary {
+button.growth-primary,
+a.growth-primary {
   font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
   padding: 12px 20px;
   border: none;
@@ -340,11 +344,20 @@ button.growth-primary {
   background: linear-gradient(135deg, #0f435a, var(--green));
   box-shadow: 0 10px 22px rgba(13, 92, 125, 0.2);
   cursor: pointer;
+  text-decoration: none;
 }
 
 button.growth-primary:hover,
-button.growth-primary:focus-visible {
+a.growth-primary:hover,
+button.growth-primary:focus-visible,
+a.growth-primary:focus-visible {
   transform: translateY(-1px);
+}
+
+button.growth-primary:focus-visible,
+a.growth-primary:focus-visible {
+  outline: 2px solid rgba(13, 92, 125, 0.35);
+  outline-offset: 2px;
 }
 
 button.growth-primary:disabled {

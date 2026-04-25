@@ -412,7 +412,7 @@
   }
 
   function renderError(message) {
-    document.title = "植栽メモ — 植栽";
+    document.title = "庭と植栽の記録 — 植栽";
     clearDetailRoot(root);
     root.appendChild(createDetailMessage("detail-page-error", message));
     titleEl.textContent = "植栽";
@@ -572,7 +572,7 @@
 
   function renderAreaChoicePage(plantName, matches) {
     clearDetailRoot(root);
-    document.title = "植栽メモ — " + plantName;
+    document.title = "庭と植栽の記録 — " + plantName;
     titleEl.textContent = plantName;
     if (crumbEl) crumbEl.textContent = "エリアを選ぶ";
     if (detailEditLinkEl) detailEditLinkEl.hidden = true;
@@ -629,13 +629,13 @@
       warn.className = "detail-page-warning";
       warn.setAttribute("role", "status");
       warn.textContent =
-        "植栽一覧のマスタに「" +
+        "植栽一覧に「" +
         plantName +
         "」が見つかりませんでした（表記の違い、または一覧へ未反映の可能性があります）。成長記録の名前と植栽一覧を照合してください。";
       root.appendChild(warn);
     }
 
-    document.title = "植栽メモ — " + plantName;
+    document.title = "庭と植栽の記録 — " + plantName;
     titleEl.textContent = plantName;
     if (crumbEl) crumbEl.textContent = plantName;
     if (detailEditLinkEl) detailEditLinkEl.hidden = false;
@@ -768,6 +768,6 @@
       });
     })
     .catch(function () {
-      renderError("データを読み込めませんでした。しばらくしてから開き直してください。");
+      renderError("植栽の内容を読み込めませんでした。しばらくしてから開き直してください。");
     });
 })();

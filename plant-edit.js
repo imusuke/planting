@@ -309,7 +309,7 @@
       return Promise.resolve([]);
     }
     if (!common.loadChangeLog) {
-      el.changeLogStatus.textContent = "更新履歴を読み込めません。";
+      el.changeLogStatus.textContent = "最近の更新の読み込みに失敗しました。";
       return Promise.resolve([]);
     }
     return common.loadChangeLog({
@@ -383,7 +383,7 @@
     if (el.summary) el.summary.value = entry && entry.summary ? String(entry.summary) : "";
     if (el.body) el.body.value = entry && entry.body ? String(entry.body) : "";
     syncLinks(areaId, plantName);
-    document.title = "植栽メモ — " + (plantName ? plantName + "の説明を編集" : "植栽の説明を編集");
+    document.title = "庭と植栽の記録 — " + (plantName ? plantName + "の説明を編集" : "植栽の説明を編集");
     syncDescriptionAiButtonState();
   }
 
@@ -447,7 +447,7 @@
 
     state.descriptionAiBusy = true;
     syncDescriptionAiButtonState();
-    setDescriptionAiStatus("植栽写真の流れをもとに、AIが概要と本文の案を作成しています。", false);
+    setDescriptionAiStatus("植栽写真の流れをもとに、AIが概要と説明本文の案を作成しています。", false);
 
     fetch(API_PLANT_DESCRIPTION, {
       method: "POST",
@@ -461,7 +461,7 @@
     })
       .then(function (res) {
         if (res.status === 401) {
-          throw new Error("トークンが違います。");
+          throw new Error("トークンが違います。アップロード用トークンを確認してください。");
         }
         if (!res.ok) {
           return apiErrorMessage(res, "植栽説明の生成に失敗しました").then(function (message) {
@@ -527,7 +527,10 @@
     })
       .then(function (res) {
         if (!res.ok) {
-          var prefix = res.status === 401 ? "保存に失敗しました。アップロード用トークンを確認してください。" : "保存に失敗しました。";
+          var prefix =
+            res.status === 401
+              ? "植栽の説明の保存に失敗しました。アップロード用トークンを確認してください。"
+              : "植栽の説明の保存に失敗しました。";
           return apiErrorMessage(res, prefix).then(function (message) {
             throw new Error(message);
           });
@@ -539,10 +542,10 @@
         syncFormFromSelection();
         updateQuery(areaId, plantName);
         refreshChangeLog().catch(function () {});
-        showToast("植栽の詳細を保存しました。", false);
+        showToast("植栽の説明を保存しました。", false);
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "保存に失敗しました。", true);
+        showToast(err && err.message ? err.message : "植栽の説明の保存に失敗しました。", true);
       });
   }
 
@@ -612,7 +615,12 @@
         refreshChangeLog().catch(function () {});
       })
       .catch(function (err) {
-        showToast(err && err.message ? err.message : "初期化に失敗しました。", true);
+        showToast(
+          err && err.message
+            ? err.message
+            : "植栽の説明を読み込めませんでした。しばらくしてから開き直してください。",
+          true
+        );
       });
   }
 

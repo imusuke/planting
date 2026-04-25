@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
-  <title>植栽メモ — エリアの説明と記録を編集</title>
+  <title>庭と植栽の記録 — エリアの説明と記録を編集</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
   <link rel="stylesheet" href="./styles.css?v=20260419e" />
@@ -14,7 +14,7 @@
   <main class="panel growth-panel">
     <nav class="growth-nav-top" aria-label="パンくずリスト">
       <ol class="growth-breadcrumb">
-        <li><a href="./index.html">植栽メモ</a></li>
+        <li><a href="./index.html">庭と植栽の記録</a></li>
         <li><a href="./areas.html">エリア一覧</a></li>
         <li><a href="./area.html" id="area-edit-detail-breadcrumb-link">エリア</a></li>
         <li aria-current="page" id="area-edit-breadcrumb-current">エリアの説明と記録を編集</li>
@@ -32,7 +32,7 @@
       <h1 id="area-edit-page-title">エリアの説明と記録を編集</h1>
       <p id="area-edit-context-line" class="lead detail-page-subline" hidden></p>
       <p id="area-edit-page-lead" class="lead">
-        ここではエリアページ上部の<strong>説明</strong>と、そのエリア全体の<strong>記録</strong>をまとめて編集できます。植栽ごとの記録は、下の「このエリアの植栽記録を編集」から進めます。閲覧は右上の「このエリアを見る」から確認できます。
+        ここではエリアページ上部の<strong>説明</strong>と、そのエリア全体の<strong>記録</strong>をまとめて編集できます。植栽ごとの記録は、下の「このエリアの植栽ごとの記録を編集」から進めます。閲覧は右上の「このエリアを見る」から確認できます。
       </p>
     </header>
 
@@ -42,7 +42,7 @@
         <a class="card growthlog" href="#area-edit-description-group">
           <span class="card-label">説明</span>
           <h2>エリアの説明を編集</h2>
-          <p>エリアページ上部の概要と本文を編集します。</p>
+          <p>エリアページ上部の概要と説明本文を編集します。</p>
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="#area-edit-record-group">
@@ -58,8 +58,8 @@
           <span class="open">開く</span>
         </a>
         <a class="card growthlog" href="./growth-edit.html" id="area-edit-guide-record-link">
-          <span class="card-label">植栽記録</span>
-          <h2>このエリアの植栽記録を編集</h2>
+          <span class="card-label">植栽ごとの記録</span>
+          <h2>このエリアの植栽ごとの記録を編集</h2>
           <p>植栽ごとの写真、記録メモ、写真コメントを編集します。</p>
           <span class="open">開く</span>
         </a>
@@ -111,14 +111,14 @@
         <div class="section-heading-row">
           <h3 id="area-edit-description-group-heading">エリアページ上部の説明</h3>
         </div>
-        <p class="growth-hint">エリアページの冒頭に出る概要と本文です。AIで写真の変遷から下書きも作れます。</p>
+        <p class="growth-hint">エリアページの冒頭に出る概要と説明本文です。AIで写真の変遷から下書きも作れます。</p>
         <label class="block">
           <span class="growth-label">概要（1〜2文）</span>
           <textarea id="area-edit-summary" rows="3" class="growth-textarea"></textarea>
         </label>
 
         <label class="block">
-          <span class="growth-label">本文（段落は空行で区切り）</span>
+          <span class="growth-label">説明本文（段落は空行で区切り）</span>
           <textarea id="area-edit-body" rows="8" class="growth-textarea"></textarea>
         </label>
 
@@ -135,7 +135,7 @@
         <div class="block growth-photo-block">
           <span class="growth-photo-block-title">エリア全体の写真（最大12枚）</span>
           <p class="growth-hint growth-photo-block-lead">
-            保存するとBlobにアップロードされます。差し替え時は既存分も含めて再アップロードされます。
+            保存すると写真は保存先へアップロードされます。差し替え時は既存分も含めて更新されます。
           </p>
           <div id="area-edit-photo-queue-wrap" class="growth-photo-queue-wrap">
             <div id="area-edit-photo-queue" class="growth-photo-queue" aria-live="polite"></div>
@@ -188,7 +188,7 @@
         今選んでいるエリアに関する最近の保存内容を表示します。アップロード用トークンを保存していると読み込めます。
       </p>
       <div class="growth-backup-row growth-backup-row--spaced">
-        <button type="button" id="area-edit-change-log-reload" class="growth-secondary">更新履歴を再読み込み</button>
+        <button type="button" id="area-edit-change-log-reload" class="growth-secondary">最近の更新を読み直す</button>
       </div>
       <p id="area-edit-change-log-status" class="growth-hint growth-status" aria-live="polite"></p>
       <div id="area-edit-change-log-list" class="growth-change-log-list"></div>

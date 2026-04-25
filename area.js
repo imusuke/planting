@@ -784,7 +784,7 @@
   }
 
   function renderError(message) {
-    document.title = "植栽メモ — エリア";
+    document.title = "庭と植栽の記録 — エリア";
     clearDetailRoot(root);
     root.appendChild(createDetailMessage("detail-page-error", message));
     titleEl.textContent = "エリア";
@@ -806,7 +806,7 @@
     if (plants.length === 0) {
       var li = document.createElement("li");
       li.className = "area-detail-plants-empty";
-      li.textContent = "（植栽マスタに未登録）";
+      li.textContent = "（植栽一覧に未登録）";
       ul.appendChild(li);
     } else {
       plants.forEach(function (pname) {
@@ -877,7 +877,7 @@
   function renderPage(area, entry, areaGrowthRecords, plantGrowthRecords) {
     clearDetailRoot(root);
     var label = area.label || area.id;
-    document.title = "植栽メモ — " + label;
+    document.title = "庭と植栽の記録 — " + label;
     titleEl.textContent = label;
     if (crumbEl) crumbEl.textContent = label;
     var editLink = document.getElementById("area-detail-edit-link");
@@ -887,7 +887,7 @@
     }
     if (growthEditLinkEl && area && area.id) {
       growthEditLinkEl.href = "./growth-edit.html?area=" + encodeURIComponent(area.id);
-      growthEditLinkEl.textContent = "このエリアの植栽記録を編集";
+      growthEditLinkEl.textContent = "このエリアの植栽ごとの記録を編集";
     }
 
     if (entry && entry.summary) {
@@ -1039,7 +1039,7 @@
             })
             .then(function (payload) {
               if (res.status === 401) {
-                throw new Error("トークンが違います。ページ上部で再設定してください。");
+                throw new Error("トークンが違います。アップロード用トークンを確認してください。");
               }
               if (!res.ok) {
                 throw new Error(
@@ -1456,7 +1456,7 @@
     areaPhotoGroup.appendChild(
       renderPhotoRecordsSection(label, area.id, areaGrowthRecords || [], {
         heading: "エリア写真の時系列",
-        emptyText: "エリア写真の記録はまだありません。area-edit から追加できます。",
+        emptyText: "エリア写真の記録はまだありません。「エリアの説明と記録を編集」から追加できます。",
         ctaText: "このエリアの説明と記録を編集",
         ctaHref: "./area-edit.html?area=" + encodeURIComponent(area.id),
         buildLightboxActions: buildAreaLightboxActions,
@@ -1469,8 +1469,8 @@
     plantPhotoGroup.appendChild(
       renderPhotoRecordsSection(label, area.id, plantGrowthRecords || [], {
         heading: "植栽写真の時系列",
-        emptyText: "植栽記録の写真はまだありません。growth-edit から追加できます。",
-        ctaText: "このエリアの植栽記録を編集",
+        emptyText: "植栽ごとの写真はまだありません。「植栽の記録と一覧を編集」から追加できます。",
+        ctaText: "このエリアの植栽ごとの記録を編集",
         ctaHref: "./growth-edit.html?area=" + encodeURIComponent(area.id),
       })
     );
@@ -1546,6 +1546,6 @@
       renderPage(area, entry, areaGrowthRecords, plantGrowthRecords);
     })
     .catch(function () {
-      renderError("データを読み込めませんでした。しばらくしてから開き直してください。");
+      renderError("エリアの内容を読み込めませんでした。しばらくしてから開き直してください。");
     });
 })();

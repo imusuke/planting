@@ -3,14 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>植栽メモへ移動中…</title>
-  <link rel="canonical" href="./" />
-  <meta http-equiv="refresh" content="0;url=./" />
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>庭と植栽の記録 — 入口へ移動中</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="./styles.css?v=20260419e" />
+  <link rel="stylesheet" href="./growth.css?v=20260419a" />
+  <link rel="canonical" href="./index.html" />
+  <meta http-equiv="refresh" content="2;url=./index.html" />
   <script>
-    window.location.replace("./");
+    window.location.replace("./index.html");
   </script>
 </head>
 <body>
-  <p><a href="./">植栽メモ（index.html）へ</a></p>
+  <main class="panel growth-panel">
+    <nav class="growth-nav-top" aria-label="パンくずリスト">
+      <ol class="growth-breadcrumb">
+        <li aria-current="page">古いURLから移動中</li>
+      </ol>
+      <div class="growth-nav-extra">
+        <a href="./index.html">入口へ</a>
+        <a href="./sitemap.html">サイトマップ</a>
+      </div>
+    </nav>
+
+    <header class="page-header">
+      <p class="eyebrow">移動中</p>
+      <h1>入口へ移動しています</h1>
+      <p class="lead">
+        古いURLのため、現在の入口ページへ移動しています。切り替わらないときは下のボタンから開いてください。
+      </p>
+    </header>
+
+    <section class="growth-section" aria-labelledby="growth-redirect-actions-heading">
+      <h2 id="growth-redirect-actions-heading">開きたいページ</h2>
+      <div class="growth-actions">
+        <a href="./index.html" class="growth-primary">庭と植栽の記録を開く</a>
+        <a href="./sitemap.html" class="growth-secondary">サイトマップを見る</a>
+      </div>
+    </section>
+  </main>
 </body>
 </html>

@@ -357,6 +357,6 @@
       renderAreas(plantsData, areaPhotoMap, areaPhotoCountMap);
     })
     .catch(function () {
-      renderError("エリア一覧の読み込みに失敗しました。");
+      renderError("エリア一覧を読み込めませんでした。しばらくしてから開き直してください。");
     });
 })();
